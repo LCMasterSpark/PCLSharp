@@ -1,0 +1,571 @@
+<UserControl x:Class="PCLrmkBYCSharp.Views.Pages.SetupPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource AppBackgroundBrush}"
+             Foreground="{StaticResource AppTextBrush}">
+    <UserControl.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource AppPanelBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="8,6" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AppAccentSoftBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="MinHeight" Value="32" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template" Value="{StaticResource DarkButtonTemplate}" />
+        </Style>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource DarkComboBoxStyle}">
+            <Setter Property="Background" Value="{StaticResource AppPanelBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource DarkComboBoxItemStyle}">
+            <Setter Property="Background" Value="{StaticResource AppPanelBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="Padding" Value="8,6" />
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="ListBox">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+        </Style>
+        <Style TargetType="ListBoxItem">
+            <Setter Property="Margin" Value="0,0,0,8" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="ItemBorder"
+                                Padding="14,11"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{StaticResource AppBorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="6">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource AppHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="ItemBorder" Property="Background" Value="{StaticResource AppAccentSoftBrush}" />
+                                <Setter TargetName="ItemBorder" Property="BorderBrush" Value="{StaticResource AppAccentBrush}" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource AppCardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="18" />
+        </Style>
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,14" />
+        </Style>
+        <Style x:Key="LabelTextStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+        <Style x:Key="MutedTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AppMutedTextBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="SectionPanelStyle" TargetType="Grid">
+            <Setter Property="Visibility" Value="Collapsed" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="28">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="18" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding Subtitle}"
+                       Margin="0,8,0,0"
+                       Foreground="{StaticResource AppMutedTextBrush}"
+                       FontSize="14" />
+        </StackPanel>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="244" />
+                <ColumnDefinition Width="20" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Style="{StaticResource CardBorderStyle}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top"
+                               Text="设置分类"
+                               FontSize="16"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,14" />
+                    <ListBox ItemsSource="{Binding SetupSections}"
+                             SelectedValue="{Binding SelectedSetupSection, Mode=TwoWay}"
+                             SelectedValuePath="Value"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Width="190">
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               FontWeight="SemiBold"
+                                               FontSize="14" />
+                                    <TextBlock Text="{Binding Description}"
+                                               Margin="0,4,0,0"
+                                               FontSize="12"
+                                               Style="{StaticResource MutedTextStyle}" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </DockPanel>
+            </Border>
+
+            <Grid Grid.Column="2">
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsGeneralSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="12" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.ColumnSpan="2" Text="界面" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Grid.Row="1" Text="主题" Style="{StaticResource LabelTextStyle}" />
+                            <ComboBox Grid.Row="1" Grid.Column="1"
+                                      ItemsSource="{Binding ThemeOptions}"
+                                      SelectedItem="{Binding Theme, Mode=TwoWay}" />
+                            <TextBlock Grid.Row="3" Text="语言" Style="{StaticResource LabelTextStyle}" />
+                            <ComboBox Grid.Row="3" Grid.Column="1"
+                                      ItemsSource="{Binding LanguageOptions}"
+                                      SelectedItem="{Binding Language, Mode=TwoWay}" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="110" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.ColumnSpan="3" Text="Minecraft" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Grid.Row="1" Text="根目录" Style="{StaticResource LabelTextStyle}" />
+                            <TextBox Grid.Row="1" Grid.Column="1"
+                                     Text="{Binding MinecraftRootPath}"
+                                     IsReadOnly="True" />
+                            <Button Grid.Row="1" Grid.Column="2"
+                                    Margin="10,0,0,0"
+                                    Command="{Binding BrowseMinecraftRootCommand}"
+                                    Content="选择文件夹" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="2" Grid.ColumnSpan="3" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="24" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="状态" Style="{StaticResource SectionTitleStyle}" />
+                                <TextBlock Text="{Binding SettingsFilePath, StringFormat=设置文件：{0}}"
+                                           Style="{StaticResource MutedTextStyle}" />
+                                <TextBlock Text="{Binding LastRoute, StringFormat=最近页面：{0}}"
+                                           Margin="0,8,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                                <TextBlock Text="{Binding WindowSizeText, StringFormat=窗口尺寸：{0}}"
+                                           Margin="0,5,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                                <TextBlock Text="{Binding WindowPositionText, StringFormat=窗口位置：{0}}"
+                                           Margin="0,5,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" VerticalAlignment="Top">
+                                <Button Command="{Binding SaveSettingsCommand}" Content="保存设置" />
+                                <Button Command="{Binding ResetLastRouteCommand}"
+                                        Content="重置最近页面"
+                                        Margin="0,10,0,0" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsDownloadSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="14" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="14" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="下载" Style="{StaticResource SectionTitleStyle}" />
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.15*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="1.15*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="文件下载源" Style="{StaticResource LabelTextStyle}" />
+                                    <ComboBox ItemsSource="{Binding ToolDownloadSourceOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding ToolDownloadSource, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="版本列表源" Style="{StaticResource LabelTextStyle}" />
+                                    <ComboBox ItemsSource="{Binding ToolDownloadVersionOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding ToolDownloadVersion, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid Grid.Row="3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="1.15*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="1.15*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="最大线程数" Style="{StaticResource LabelTextStyle}" />
+                                    <TextBox Text="{Binding ToolDownloadThread, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="速度限制" Style="{StaticResource LabelTextStyle}" />
+                                    <TextBox Text="{Binding ToolDownloadSpeed, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+                            <CheckBox Grid.Row="5"
+                                      Content="在正版登录时验证 SSL 证书"
+                                      IsChecked="{Binding ToolDownloadCert, Mode=TwoWay}" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="14" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="社区资源" Style="{StaticResource SectionTitleStyle}" />
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="来源" Style="{StaticResource LabelTextStyle}" />
+                                    <ComboBox ItemsSource="{Binding ToolDownloadModOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding ToolDownloadMod, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="文件名格式" Style="{StaticResource LabelTextStyle}" />
+                                    <ComboBox ItemsSource="{Binding ToolDownloadTranslateOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding ToolDownloadTranslateV2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+                            <Grid Grid.Row="3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="Mod 管理样式" Style="{StaticResource LabelTextStyle}" />
+                                    <ComboBox ItemsSource="{Binding ToolModLocalNameStyleOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding ToolModLocalNameStyle, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <CheckBox Grid.Column="2"
+                                          Margin="0,25,0,0"
+                                          Content="显示 Mod 加载器时忽略 Quilt"
+                                          IsChecked="{Binding ToolDownloadIgnoreQuilt, Mode=TwoWay}" />
+                            </Grid>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLaunchSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="Java 与窗口" Style="{StaticResource SectionTitleStyle}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="全局 Java" Style="{StaticResource LabelTextStyle}" />
+                                    <TextBox Text="{Binding LaunchArgumentJavaSelect, UpdateSourceTrigger=PropertyChanged}"
+                                             IsReadOnly="True" />
+                                </StackPanel>
+                                <Button Grid.Column="2"
+                                        Margin="0,24,0,0"
+                                        Command="{Binding BrowseLaunchJavaCommand}"
+                                        Content="选择 java.exe" />
+                            </Grid>
+                            <Grid Margin="0,14,0,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="10" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="窗口宽度" Style="{StaticResource LabelTextStyle}" />
+                                    <TextBox Text="{Binding LaunchWindowWidth, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="窗口高度" Style="{StaticResource LabelTextStyle}" />
+                                    <TextBox Text="{Binding LaunchWindowHeight, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="4">
+                                    <TextBlock Text="窗口模式" Style="{StaticResource LabelTextStyle}" />
+                                    <ComboBox ItemsSource="{Binding LaunchWindowTypeOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding LaunchWindowType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="版本与进程" Style="{StaticResource SectionTitleStyle}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="12" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="默认版本隔离" Style="{StaticResource LabelTextStyle}" />
+                                    <ComboBox ItemsSource="{Binding LaunchArgumentIndieOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding LaunchArgumentIndieV2, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="进程优先级" Style="{StaticResource LabelTextStyle}" />
+                                    <ComboBox ItemsSource="{Binding LaunchArgumentPriorityOptions}"
+                                              DisplayMemberPath="DisplayName"
+                                              SelectedValuePath="Value"
+                                              SelectedValue="{Binding LaunchArgumentPriority, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock Text="默认隔离只影响新安装或首次扫描的版本；已有版本请在实例设置里单独调整。"
+                                       Margin="0,12,0,0"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="2" Grid.ColumnSpan="3" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="内存分配" Style="{StaticResource LabelTextStyle}" />
+                                <ComboBox ItemsSource="{Binding LaunchRamTypeOptions}"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding LaunchRamType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox Margin="0,8,0,0"
+                                         Text="{Binding LaunchRamCustom, UpdateSourceTrigger=PropertyChanged}" />
+                                <CheckBox Content="启动前进行内存优化"
+                                          Margin="0,8,0,0"
+                                          IsChecked="{Binding LaunchArgumentRam, Mode=TwoWay}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="GC 设置" Style="{StaticResource LabelTextStyle}" />
+                                <ComboBox ItemsSource="{Binding LaunchAdvanceGcOptions}"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding LaunchAdvanceGc, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="启动后可见性" Style="{StaticResource LabelTextStyle}" />
+                                <ComboBox ItemsSource="{Binding LaunchArgumentVisibleOptions}"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding LaunchArgumentVisible, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsAdvancedSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="启动参数" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Text="游戏窗口标题" Style="{StaticResource LabelTextStyle}" />
+                            <TextBox Text="{Binding LaunchArgumentTitle, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="自定义信息" Margin="0,12,0,6" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding LaunchArgumentInfo, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="全局 JVM 参数" Margin="0,12,0,6" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding LaunchAdvanceJvm, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="全局游戏参数" Margin="0,12,0,6" FontWeight="SemiBold" />
+                            <TextBox Text="{Binding LaunchAdvanceGame, UpdateSourceTrigger=PropertyChanged}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="启动前命令与兼容" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Text="启动前命令" Style="{StaticResource LabelTextStyle}" />
+                            <TextBox Text="{Binding LaunchAdvanceRun, UpdateSourceTrigger=PropertyChanged}" />
+                            <UniformGrid Columns="2" Margin="0,14,0,0">
+                                <CheckBox Content="等待命令结束"
+                                          Margin="0,0,12,10"
+                                          IsChecked="{Binding LaunchAdvanceRunWait, Mode=TwoWay}" />
+                                <CheckBox Content="禁用 JLW"
+                                          Margin="0,0,12,10"
+                                          IsChecked="{Binding LaunchAdvanceDisableJlw, Mode=TwoWay}" />
+                                <CheckBox Content="禁用 LUA"
+                                          Margin="0,0,12,0"
+                                          IsChecked="{Binding LaunchAdvanceDisableLua, Mode=TwoWay}" />
+                                <CheckBox Content="使用高性能显卡"
+                                          Margin="0,0,12,0"
+                                          IsChecked="{Binding LaunchAdvanceGraphicCard, Mode=TwoWay}" />
+                            </UniformGrid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Grid>
+
+        <TextBlock Grid.Row="3"
+                   Text="{Binding StatusMessage}"
+                   Margin="0,16,0,0"
+                   Foreground="{StaticResource AppAccentBrush}" />
+    </Grid>
+</UserControl>

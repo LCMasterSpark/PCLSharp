@@ -1,0 +1,36 @@
+# Build outputs
+bin/
+obj/
+publish/
+artifacts/
+
+# Visual Studio / IDE state
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.rsuser
+
+# Test and coverage outputs
+TestResults/
+*.trx
+*.coverage
+coverage/
+coverage.xml
+coverage.cobertura.xml
+
+# Local indexes and caches
+.codegraph/
+.codex/
+.agents/
+
+# Logs and temporary files
+Logs/
+*.log
+*.tmp
+*.temp
+
+# NuGet generated packages
+*.nupkg
+*.snupkg

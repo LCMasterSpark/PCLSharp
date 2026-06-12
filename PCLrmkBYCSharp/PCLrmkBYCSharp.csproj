@@ -1,0 +1,39 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\lcmcsharp\MeloongCore\Shared\MeloongCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Resources\Help.zip" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Resources\Patches\java-wrapper.jar" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Resources\Patches\lwjgl-unsafe-agent.jar" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\Images\**\*.*" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>PlainCraftLauncherSharp</AssemblyName>
+    <AssemblyTitle>Plain Craft Launcher Sharp</AssemblyTitle>
+    <Title>Plain Craft Launcher Sharp</Title>
+    <Product>Plain Craft Launcher Sharp</Product>
+    <Description>Plain Craft Launcher Sharp, also known as PCL Sharp or PCL#.</Description>
+    <Version>0.6.0-pre</Version>
+    <AssemblyVersion>0.6.0.0</AssemblyVersion>
+    <FileVersion>0.6.0.0</FileVersion>
+    <InformationalVersion>v0.6pre</InformationalVersion>
+    <ApplicationIcon>Resources\Images\icon.ico</ApplicationIcon>
+  </PropertyGroup>
+
+</Project>
