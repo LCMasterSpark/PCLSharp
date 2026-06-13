@@ -75,6 +75,7 @@ public sealed partial class DownloadPageViewModel
         OnPropertyChanged(nameof(DownloadedFileCountText));
         OnPropertyChanged(nameof(DownloadedBytesText));
         NotifySelectedDownloadTaskDetailsChanged();
+        NotifySelectedResourceDownloadStateChanged();
         NotifyDownloadInfoChanged();
         CancelSelectedDownloadTaskCommand.NotifyCanExecuteChanged();
         RetrySelectedDownloadTaskCommand.NotifyCanExecuteChanged();

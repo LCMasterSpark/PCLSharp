@@ -2357,8 +2357,10 @@ public sealed class DownloadServicesTests
         Assert.Equal("1.20.1", versionService.LastGameVersion);
         Assert.Equal("fabric", versionService.LastLoader);
         Assert.True(viewModel.DownloadSelectedResourceFileCommand.CanExecute(null));
-        Assert.Equal("下载到目标目录", viewModel.ResourceDownloadActionText);
+        Assert.Equal("下载并联动 1 个依赖", viewModel.ResourceDownloadActionText);
         Assert.Contains("1 个必需依赖", viewModel.SelectedResourceVersionSummary);
+        Assert.Contains("主文件状态：将创建下载任务", viewModel.SelectedResourceDownloadPlanText);
+        Assert.Contains("1 个必需依赖会联动下载", viewModel.SelectedResourceDownloadPlanText);
     }
 
     [Fact]
@@ -2407,6 +2409,8 @@ public sealed class DownloadServicesTests
         Assert.Contains("适用版本：1.20.1", viewModel.SelectedResourceGameVersionText);
         Assert.Contains("fabric-api", viewModel.SelectedResourceDependencyListText);
         Assert.Contains("必需依赖会联动下载", viewModel.DownloadInfoDetails);
+        Assert.Contains("下载计划：Modrinth / Mod", viewModel.DownloadInfoDetails);
+        Assert.Equal("下载并联动 1 个依赖", viewModel.ResourceDownloadActionText);
         Assert.Equal("fabric", versionService.LastLoader);
     }
 
@@ -2483,6 +2487,9 @@ public sealed class DownloadServicesTests
         viewModel.SelectedResourceProject = CreateSodiumProject();
         viewModel.SelectedResourceVersion = version;
         viewModel.SelectedResourceFile = file;
+
+        Assert.Equal("文件已存在", viewModel.ResourceDownloadActionText);
+        Assert.Contains("主文件状态：目标位置已有匹配文件", viewModel.SelectedResourceDownloadPlanText);
 
         await viewModel.DownloadSelectedResourceFileAsync();
 
@@ -2563,6 +2570,9 @@ public sealed class DownloadServicesTests
         viewModel.SelectedResourceProject = CreateSodiumProject();
         viewModel.SelectedResourceVersion = version;
         viewModel.SelectedResourceFile = file;
+
+        Assert.Equal("已在下载队列", viewModel.ResourceDownloadActionText);
+        Assert.Contains("主文件状态：相同目标文件已在下载队列中", viewModel.SelectedResourceDownloadPlanText);
 
         await viewModel.DownloadSelectedResourceFileAsync();
 

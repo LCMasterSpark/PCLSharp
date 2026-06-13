@@ -1,5 +1,6 @@
 ﻿using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.Input;
+using System.IO;
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services.Downloads;
 
@@ -384,9 +385,67 @@ public sealed partial class DownloadPageViewModel
                 return "文件缺少下载地址";
             }
 
+            var primaryState = GetSelectedResourcePrimaryFileState();
+            if (primaryState == ResourcePrimaryFileState.Existing)
+            {
+                return "文件已存在";
+            }
+
+            if (primaryState == ResourcePrimaryFileState.Queued)
+            {
+                return "已在下载队列";
+            }
+
+            var requiredDependencyCount = SelectedResourceVersion?.Dependencies.Count(item => item.IsRequired) ?? 0;
+            if (requiredDependencyCount > 0)
+            {
+                return $"下载并联动 {requiredDependencyCount} 个依赖";
+            }
+
             return SelectedResourceProject?.Type == CommunityResourceType.ModPack
                 ? "下载整合包文件"
                 : "下载到目标目录";
+        }
+    }
+
+    public string SelectedResourceDownloadPlanText
+    {
+        get
+        {
+            if (SelectedResourceProject is null)
+            {
+                return "下载计划：请选择资源。";
+            }
+
+            if (SelectedResourceVersion is null)
+            {
+                return "下载计划：版本信息会自动加载；选择版本后会显示依赖和重复检测状态。";
+            }
+
+            if (SelectedResourceFile is null)
+            {
+                return "下载计划：请选择要下载的文件。";
+            }
+
+            if (string.IsNullOrWhiteSpace(SelectedResourceFile.Url))
+            {
+                return "下载计划：所选文件缺少下载地址，无法创建任务。";
+            }
+
+            var requiredDependencyCount = SelectedResourceVersion.Dependencies.Count(item => item.IsRequired);
+            var optionalDependencyCount = SelectedResourceVersion.Dependencies.Count - requiredDependencyCount;
+            var dependencyText = requiredDependencyCount == 0 && optionalDependencyCount == 0
+                ? "依赖计划：无依赖。"
+                : $"依赖计划：{requiredDependencyCount} 个必需依赖会联动下载，{optionalDependencyCount} 个可选依赖仅提示不自动下载。";
+            var primaryStateText = GetSelectedResourcePrimaryFileState() switch
+            {
+                ResourcePrimaryFileState.Existing => "主文件状态：目标位置已有匹配文件，会跳过重复下载。",
+                ResourcePrimaryFileState.Queued => "主文件状态：相同目标文件已在下载队列中。",
+                ResourcePrimaryFileState.UnknownTarget => "主文件状态：目标目录需要在创建任务时确认。",
+                _ => "主文件状态：将创建下载任务。"
+            };
+
+            return $"下载计划：{SelectedResourceProject.PlatformName} / {GetResourceTypeText(SelectedResourceProject.Type)}\n{primaryStateText}\n{dependencyText}\n重复检测：创建任务时会再次检查主文件和必需依赖，避免重复下载。";
         }
     }
 
@@ -417,8 +476,66 @@ public sealed partial class DownloadPageViewModel
     {
         DownloadSection.Install => $"分类：{SelectedVersionCategory}\n版本类型：{SelectedVersion?.TypeText ?? "未选择"}\n安装方式：{SelectedInstallMode}\n目标实例：{InstanceVersionSafeName}\n版本数：{VersionCount}\n列表会在启动器打开后自动预热一次，手动刷新仍可重新获取。",
         DownloadSection.Manager => $"总体进度：{OverallTaskProgressText}\n文件：{DownloadedFileCountText}\n已接收：{DownloadedBytesText}\n任务列表、取消、重试和打开位置请在“下载管理”页操作。",
-        _ => $"{SelectedResourceDetail}\n{SelectedResourcePlatformText}\n{SelectedResourceGameVersionText}\n{SelectedResourceLoaderText}\n{SelectedResourceVersionSummary}\n{SelectedResourceDependencyText}\n{SelectedResourceDependencyListText}\n{SelectedResourceFileSummary}\n下载策略：必需依赖会联动下载，已存在且大小/校验匹配的文件会跳过。\n{ResourceInstallTarget}"
+        _ => $"{SelectedResourceDetail}\n{SelectedResourcePlatformText}\n{SelectedResourceGameVersionText}\n{SelectedResourceLoaderText}\n{SelectedResourceVersionSummary}\n{SelectedResourceDependencyText}\n{SelectedResourceDependencyListText}\n{SelectedResourceFileSummary}\n{SelectedResourceDownloadPlanText}\n{ResourceInstallTarget}"
     };
+
+    private ResourcePrimaryFileState GetSelectedResourcePrimaryFileState()
+    {
+        if (SelectedResourceProject is null || SelectedResourceVersion is null || SelectedResourceFile is null)
+        {
+            return ResourcePrimaryFileState.UnknownTarget;
+        }
+
+        if (string.IsNullOrWhiteSpace(MinecraftRootPath))
+        {
+            return ResourcePrimaryFileState.UnknownTarget;
+        }
+
+        try
+        {
+            var file = _communityResourceVersions.CreateDownloadFile(
+                SelectedResourceProject,
+                SelectedResourceVersion,
+                SelectedResourceFile,
+                MinecraftRootPath);
+            if (IsExistingDownloadSatisfied(file))
+            {
+                return ResourcePrimaryFileState.Existing;
+            }
+
+            if (IsDownloadAlreadyQueued(file))
+            {
+                return ResourcePrimaryFileState.Queued;
+            }
+
+            return ResourcePrimaryFileState.Pending;
+        }
+        catch
+        {
+            return ResourcePrimaryFileState.UnknownTarget;
+        }
+    }
+
+    private static string GetResourceTypeText(CommunityResourceType type)
+    {
+        return type switch
+        {
+            CommunityResourceType.Mod => "Mod",
+            CommunityResourceType.ModPack => "整合包",
+            CommunityResourceType.DataPack => "数据包",
+            CommunityResourceType.ResourcePack => "资源包",
+            CommunityResourceType.Shader => "光影包",
+            _ => "社区资源"
+        };
+    }
+
+    private enum ResourcePrimaryFileState
+    {
+        Pending,
+        Existing,
+        Queued,
+        UnknownTarget
+    }
 
 }
 

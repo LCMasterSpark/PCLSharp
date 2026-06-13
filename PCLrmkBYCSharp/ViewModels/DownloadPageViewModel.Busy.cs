@@ -170,6 +170,7 @@ public sealed partial class DownloadPageViewModel
         OnPropertyChanged(nameof(SelectedResourceDependencyListText));
         OnPropertyChanged(nameof(CanDownloadSelectedResourceFile));
         OnPropertyChanged(nameof(ResourceDownloadActionText));
+        OnPropertyChanged(nameof(SelectedResourceDownloadPlanText));
         NotifyDownloadInfoChanged();
         DownloadSelectedResourceFileCommand?.NotifyCanExecuteChanged();
     }
