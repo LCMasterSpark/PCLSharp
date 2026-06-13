@@ -111,6 +111,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private string linkProcessStatusText = "联机后端未启动。";
 
     [ObservableProperty]
+    private string linkConnectionStatusText = "联机后端未运行。";
+
+    [ObservableProperty]
     private string linkProcessLogText = "联机后端输出会显示在这里。";
 
     public bool HasUrlService => _urls is not null;
@@ -316,6 +319,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
             LinkProcessStatusText += Environment.NewLine + snapshot.CommandPreview;
         }
 
+        LinkConnectionStatusText = snapshot.ConnectionStatus;
         LinkProcessLogText = snapshot.RecentLogLines.Count == 0
             ? "暂无联机后端输出。"
             : string.Join(Environment.NewLine, snapshot.RecentLogLines);
@@ -325,6 +329,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private void ApplyProcessStatus(string message)
     {
         LinkProcessStatusText = message;
+        LinkConnectionStatusText = "联机后端未运行。";
         StatusMessage = message;
     }
 

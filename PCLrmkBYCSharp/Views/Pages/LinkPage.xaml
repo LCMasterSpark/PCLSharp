@@ -260,6 +260,17 @@
                                        LineHeight="21"
                                        Foreground="{StaticResource AppAccentBrush}"
                                        TextWrapping="Wrap" />
+                            <Border Margin="0,10,0,0"
+                                    Padding="10,8"
+                                    Background="{StaticResource AppAccentSoftBrush}"
+                                    BorderBrush="{StaticResource AppAccentBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4">
+                                <TextBlock Text="{Binding LinkConnectionStatusText}"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource AppTextBrush}"
+                                           TextWrapping="Wrap" />
+                            </Border>
                             <TextBlock Text="近期日志"
                                        Margin="0,12,0,6"
                                        Style="{StaticResource FieldLabelStyle}" />

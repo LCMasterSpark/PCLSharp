@@ -154,13 +154,20 @@ public sealed class PclLinkServiceTests
 
         service.Start(plan);
         runner.Handle.Publish("new peer connection added remote_addr=10.0.0.2");
+        Assert.Equal(1, service.Current.ConnectedPeerCount);
+        Assert.Contains("1", service.Current.ConnectionStatus, StringComparison.Ordinal);
+
         runner.Handle.Publish("--network-secret=SECRET backend warning", isError: true);
 
         Assert.Contains(snapshots, snapshot => snapshot.Message == "已建立联机节点连接。");
         Assert.Equal("联机后端输出错误日志。", service.Current.Message);
+        Assert.Equal(1, service.Current.ConnectedPeerCount);
         Assert.Contains(service.Current.RecentLogLines, line => line.Contains("[OUT] new peer connection added", StringComparison.Ordinal));
         Assert.Contains(service.Current.RecentLogLines, line => line.Contains("[ERR] --network-secret=***", StringComparison.Ordinal));
         Assert.DoesNotContain("SECRET", string.Join(Environment.NewLine, service.Current.RecentLogLines), StringComparison.Ordinal);
+
+        runner.Handle.Publish("peer connection removed remote_addr=10.0.0.2");
+        Assert.Equal(0, service.Current.ConnectedPeerCount);
     }
 
     [Theory]
@@ -188,6 +195,7 @@ public sealed class PclLinkServiceTests
 
         Assert.Equal(expectedState, service.Current.State);
         Assert.Null(service.Current.ProcessId);
+        Assert.Equal(0, service.Current.ConnectedPeerCount);
         Assert.Contains(expectedMessage, service.Current.Message, StringComparison.Ordinal);
         Assert.Contains($"退出码：{exitCode}", service.Current.Message, StringComparison.Ordinal);
         Assert.Contains(snapshots, snapshot => snapshot.State == expectedState && snapshot.Message.Contains(expectedMessage, StringComparison.Ordinal));

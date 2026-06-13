@@ -9,6 +9,7 @@ public sealed class LinkProcessService : ILinkProcessService
     private readonly IAppLoggerService _logger;
     private readonly Queue<string> _recentLogLines = new();
     private ILinkProcessHandle? _process;
+    private int _connectedPeerCount;
 
     public LinkProcessService(ILinkProcessRunner runner, IAppLoggerService logger)
     {
@@ -36,6 +37,7 @@ public sealed class LinkProcessService : ILinkProcessService
         try
         {
             _recentLogLines.Clear();
+            _connectedPeerCount = 0;
             var startInfo = LinkProcessRunner.CreateStartInfo(plan.ExecutablePath, plan.ProcessArguments);
             _process = _runner.Start(startInfo);
             _process.OutputReceived += HandleOutputReceived;
@@ -60,6 +62,7 @@ public sealed class LinkProcessService : ILinkProcessService
         if (_process is null || _process.HasExited)
         {
             _process = null;
+            _connectedPeerCount = 0;
             return Publish(LinkProcessState.Stopped, null, "联机后端未运行。", Current.CommandPreview);
         }
 
@@ -71,6 +74,7 @@ public sealed class LinkProcessService : ILinkProcessService
             process.Exited -= HandleProcessExited;
             process.Stop();
             _process = null;
+            _connectedPeerCount = 0;
             _logger.Info("联机后端已停止，PID：" + processId);
             return Publish(LinkProcessState.Stopped, null, "联机后端已停止。", Current.CommandPreview);
         }
@@ -101,6 +105,7 @@ public sealed class LinkProcessService : ILinkProcessService
         }
 
         _process = null;
+        _connectedPeerCount = 0;
         var exitCodeText = exitCode is null ? "未知" : exitCode.Value.ToString();
         var message = exitCode == 0
             ? $"联机后端已退出，退出码：{exitCodeText}。"
@@ -134,6 +139,7 @@ public sealed class LinkProcessService : ILinkProcessService
             _logger.Info("联机后端：" + line);
         }
 
+        UpdateConnectionCount(args.Line);
         var message = BuildLogMessage(args.Line, args.IsError);
         Publish(LinkProcessState.Running, _process?.Id, message, Current.CommandPreview);
     }
@@ -147,7 +153,7 @@ public sealed class LinkProcessService : ILinkProcessService
 
     private LinkProcessSnapshot CreateSnapshot(LinkProcessState state, int? processId, string message, string commandPreview)
     {
-        return new LinkProcessSnapshot(state, processId, message, commandPreview, _recentLogLines.ToArray());
+        return new LinkProcessSnapshot(state, processId, message, commandPreview, _recentLogLines.ToArray(), _connectedPeerCount, BuildConnectionStatus(state));
     }
 
     private static string BuildCommandPreview(LinkBackendLaunchPlan plan)
@@ -168,6 +174,31 @@ public sealed class LinkProcessService : ILinkProcessService
         }
 
         return isError ? "联机后端输出错误日志。" : "联机后端输出日志。";
+    }
+
+    private void UpdateConnectionCount(string line)
+    {
+        if (line.Contains("new peer connection added", StringComparison.OrdinalIgnoreCase))
+        {
+            _connectedPeerCount++;
+            return;
+        }
+
+        if (line.Contains("peer connection removed", StringComparison.OrdinalIgnoreCase))
+        {
+            _connectedPeerCount = Math.Max(0, _connectedPeerCount - 1);
+        }
+    }
+
+    private string BuildConnectionStatus(LinkProcessState state)
+    {
+        return state switch
+        {
+            LinkProcessState.Running when _connectedPeerCount > 0 => $"已连接节点：{_connectedPeerCount} 个",
+            LinkProcessState.Running => "等待联机节点连接。",
+            LinkProcessState.Failed => "联机后端异常，连接已中断。",
+            _ => "联机后端未运行。"
+        };
     }
 
     private static string MaskSecret(string arguments)
