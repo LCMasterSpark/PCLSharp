@@ -99,6 +99,26 @@ public sealed class PclLinkServiceTests
     }
 
     [Fact]
+    public void LinkBackendServiceSplitsAndDeduplicatesCustomPeers()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "terracotta.exe");
+        File.WriteAllText(executable, "");
+        var service = new LinkBackendService();
+        var invite = new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0);
+        var peers = "tcp://a.example:11010, tcp://b.example:11010\r\ntcp://a.example:11010；tcp://c.example:11010";
+
+        var plan = service.CreatePlan(LinkRoomRole.Joiner, LinkProviderKind.Terracotta, invite, LinkLatencyMode.DirectFirst, peers, executable);
+
+        Assert.Contains("custom-peer-count=3", plan.PlannedOptions);
+        Assert.Contains("custom-peer=tcp://a.example:11010", plan.PlannedOptions);
+        Assert.Contains("custom-peer=tcp://b.example:11010", plan.PlannedOptions);
+        Assert.Contains("custom-peer=tcp://c.example:11010", plan.PlannedOptions);
+        Assert.Equal(3, plan.PlannedOptions.Count(option => option.StartsWith("custom-peer=", StringComparison.Ordinal)));
+        Assert.Equal(3, CountOccurrences(plan.ProcessArguments, "-p "));
+    }
+
+    [Fact]
     public void LinkProcessServiceStartsBackendWithSafeProcessSettings()
     {
         using var temp = new TempDirectory();
@@ -267,6 +287,19 @@ public sealed class PclLinkServiceTests
         public IReadOnlyList<string> PickModFiles(string initialDirectory) => [];
 
         public string? PickSaveFile(string title, string initialDirectory, string defaultFileName, string filter) => null;
+    }
+
+    private static int CountOccurrences(string value, string token)
+    {
+        var count = 0;
+        var index = 0;
+        while ((index = value.IndexOf(token, index, StringComparison.Ordinal)) >= 0)
+        {
+            count++;
+            index += token.Length;
+        }
+
+        return count;
     }
 
     private sealed class CaptureLinkProcessRunner : ILinkProcessRunner

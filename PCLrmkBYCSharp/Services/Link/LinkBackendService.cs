@@ -63,6 +63,7 @@ public sealed class LinkBackendService : ILinkBackendService
 
     private static IReadOnlyList<string> BuildPlannedOptions(LinkRoomRole role, LinkInviteInfo invite, LinkLatencyMode latencyMode, string? customPeer)
     {
+        var peers = SplitPeers(customPeer).ToArray();
         var options = new List<string>
         {
             "role=" + (role == LinkRoomRole.Host ? "host" : "join"),
@@ -77,9 +78,10 @@ public sealed class LinkBackendService : ILinkBackendService
             options.Add("discover-node=" + invite.DiscoverNodeId);
         }
 
-        if (!string.IsNullOrWhiteSpace(customPeer))
+        if (peers.Length > 0)
         {
-            options.Add("custom-peer=" + customPeer.Trim());
+            options.Add("custom-peer-count=" + peers.Length);
+            options.AddRange(peers.Select(peer => "custom-peer=" + peer));
         }
 
         return options;
@@ -126,8 +128,9 @@ public sealed class LinkBackendService : ILinkBackendService
     private static IEnumerable<string> SplitPeers(string? customPeer)
     {
         return (customPeer ?? "")
-            .Split(['，', ',', '\r', '\n', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(peer => !string.IsNullOrWhiteSpace(peer));
+            .Split(['，', ',', '\r', '\n', ';', '；'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(peer => !string.IsNullOrWhiteSpace(peer))
+            .Distinct(StringComparer.OrdinalIgnoreCase);
     }
 
     private static string QuoteArgumentValue(string value)
