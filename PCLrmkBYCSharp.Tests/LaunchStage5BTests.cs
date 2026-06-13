@@ -1173,6 +1173,14 @@ public sealed class LaunchStage5BTests
 
         Assert.Equal(java17Path, viewModel.SelectedJava?.PathJava);
         Assert.Equal(java17Path, pipeline.LastRequest?.JavaPath);
+        Assert.Contains(viewModel.JavaEntryOptions, option =>
+            option.Entry.PathJava == java17Path
+            && option.IsCompatible
+            && option.DetailText.Contains("兼容当前版本", StringComparison.Ordinal));
+        Assert.Contains(viewModel.JavaEntryOptions, option =>
+            option.Entry.PathJava == java25Path
+            && !option.IsCompatible
+            && option.DetailText.Contains("不兼容，当前版本需要 Java 17", StringComparison.Ordinal));
         Assert.Equal(java25Path, settings.Get($"Instance.{instance.Name}.{AppSettingKeys.VersionArgumentJavaSelect}", ""));
     }
 
@@ -1207,6 +1215,9 @@ public sealed class LaunchStage5BTests
         await viewModel.InitializeAsync();
 
         Assert.Null(viewModel.SelectedJava);
+        var option = Assert.Single(viewModel.JavaEntryOptions);
+        Assert.False(option.IsCompatible);
+        Assert.Contains("不兼容，当前版本需要 Java 17", option.DetailText);
         Assert.Contains("未找到满足", viewModel.StatusMessage);
         await viewModel.GenerateProfileCommand.ExecuteAsync(null);
 

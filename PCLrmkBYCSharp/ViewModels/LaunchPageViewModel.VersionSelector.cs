@@ -47,6 +47,25 @@ public sealed partial class LaunchPageViewModel
 
     partial void OnSelectedJavaChanged(JavaEntry? value)
     {
+        if (_isSyncingJavaOptionSelection)
+        {
+            OnPropertyChanged(nameof(SelectedJavaSummary));
+            return;
+        }
+
+        if (!_isSyncingJavaOptionSelection)
+        {
+            _isSyncingJavaOptionSelection = true;
+            try
+            {
+                SelectedJavaOption = FindJavaOption(value);
+            }
+            finally
+            {
+                _isSyncingJavaOptionSelection = false;
+            }
+        }
+
         if (_isRestoringJavaSelection)
         {
             OnPropertyChanged(nameof(SelectedJavaSummary));
@@ -56,6 +75,31 @@ public sealed partial class LaunchPageViewModel
         _settings.Set(AppSettingKeys.LaunchArgumentJavaSelect, JavaEntry.ToPclSettingJson(value));
         OnPropertyChanged(nameof(SelectedJavaSummary));
         _ = SaveSettingsAsync();
+    }
+
+    partial void OnSelectedJavaOptionChanged(JavaEntryOption? value)
+    {
+        if (_isSyncingJavaOptionSelection)
+        {
+            return;
+        }
+
+        _isSyncingJavaOptionSelection = true;
+        try
+        {
+            SelectedJava = value?.Entry;
+        }
+        finally
+        {
+            _isSyncingJavaOptionSelection = false;
+        }
+
+        if (!_isRestoringJavaSelection)
+        {
+            _settings.Set(AppSettingKeys.LaunchArgumentJavaSelect, JavaEntry.ToPclSettingJson(value?.Entry));
+            OnPropertyChanged(nameof(SelectedJavaSummary));
+            _ = SaveSettingsAsync();
+        }
     }
 
     partial void OnMinecraftRootPathChanged(string value)

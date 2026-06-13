@@ -1040,11 +1040,17 @@
                     <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                         <StackPanel>
                             <TextBlock Text="Java" Style="{StaticResource SectionTitleStyle}" />
-                            <ComboBox ItemsSource="{Binding JavaEntries}"
-                                      SelectedItem="{Binding SelectedJava, Mode=TwoWay}">
+                            <ComboBox ItemsSource="{Binding JavaEntryOptions}"
+                                      SelectedItem="{Binding SelectedJavaOption, Mode=TwoWay}">
                                 <ComboBox.ItemTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding DisplayName}" />
+                                        <StackPanel>
+                                            <TextBlock Text="{Binding DisplayName}" />
+                                            <TextBlock Text="{Binding DetailText}"
+                                                       Style="{StaticResource MutedTextStyle}"
+                                                       FontSize="11"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
                                     </DataTemplate>
                                 </ComboBox.ItemTemplate>
                             </ComboBox>

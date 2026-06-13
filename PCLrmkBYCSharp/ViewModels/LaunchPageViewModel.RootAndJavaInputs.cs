@@ -22,11 +22,13 @@ public sealed partial class LaunchPageViewModel
         }
 
         var savedJava = ResolveJavaPath(SelectedInstance?.Name);
+        RefreshJavaEntryOptions(savedJava);
         var selectedJava = SelectCompatibleJavaForCurrentInstance(savedJava);
         _isRestoringJavaSelection = true;
         try
         {
             SelectedJava = selectedJava;
+            SelectedJavaOption = FindJavaOption(selectedJava);
         }
         finally
         {
@@ -35,6 +37,28 @@ public sealed partial class LaunchPageViewModel
 
         OnPropertyChanged(nameof(SelectedJavaSummary));
         StatusMessage = BuildJavaScanStatus(savedJava, selectedJava);
+    }
+
+    private void RefreshJavaEntryOptions(string savedJava)
+    {
+        JavaEntryOptions.Clear();
+        var requirement = SelectedInstance is null ? null : _javaSelector.GetRequirement(SelectedInstance);
+        foreach (var java in JavaEntries)
+        {
+            var isCompatible = SelectedInstance is null
+                || ShouldIgnoreJavaCompatibility(SelectedInstance.Name)
+                || requirement?.Allows(java) == true;
+            var isSaved = !string.IsNullOrWhiteSpace(savedJava)
+                && string.Equals(java.PathJava, savedJava, StringComparison.OrdinalIgnoreCase);
+            JavaEntryOptions.Add(new JavaEntryOption(java, isCompatible, isSaved, requirement?.DisplayText ?? "任意 Java"));
+        }
+    }
+
+    private JavaEntryOption? FindJavaOption(JavaEntry? java)
+    {
+        return java is null
+            ? null
+            : JavaEntryOptions.FirstOrDefault(option => string.Equals(option.Entry.PathJava, java.PathJava, StringComparison.OrdinalIgnoreCase));
     }
 
     private JavaEntry? SelectCompatibleJavaForCurrentInstance(string savedJava)
@@ -206,6 +230,8 @@ public sealed partial class LaunchPageViewModel
         {
             JavaEntries.Insert(0, imported);
         }
+
+        RefreshJavaEntryOptions(imported.PathJava);
 
         SelectedJava = imported;
         _settings.Set(AppSettingKeys.LaunchArgumentJavaSelect, imported.ToPclSettingJson());

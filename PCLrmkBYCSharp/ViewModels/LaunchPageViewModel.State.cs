@@ -20,6 +20,7 @@ public sealed partial class LaunchPageViewModel
         BindingOperations.EnableCollectionSynchronization(MinecraftRootFolders, _minecraftRootFoldersSync);
         BindingOperations.EnableCollectionSynchronization(VersionSelectorRows, _versionSelectorRowsSync);
         BindingOperations.EnableCollectionSynchronization(JavaEntries, _javaEntriesSync);
+        BindingOperations.EnableCollectionSynchronization(JavaEntryOptions, _javaEntryOptionsSync);
         BindingOperations.EnableCollectionSynchronization(Steps, _stepsSync);
         BindingOperations.EnableCollectionSynchronization(FileCompletionDetails, _fileCompletionDetailsSync);
         BindingOperations.EnableCollectionSynchronization(MicrosoftAccounts, _microsoftAccountsSync);
@@ -32,6 +33,8 @@ public sealed partial class LaunchPageViewModel
     public ObservableCollection<LaunchVersionListRow> VersionSelectorRows { get; } = [];
 
     public ObservableCollection<JavaEntry> JavaEntries { get; } = [];
+
+    public ObservableCollection<JavaEntryOption> JavaEntryOptions { get; } = [];
 
     public ObservableCollection<LaunchStepState> Steps { get; } = [];
 

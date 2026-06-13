@@ -47,12 +47,14 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
     private readonly object _minecraftRootFoldersSync = new();
     private readonly object _versionSelectorRowsSync = new();
     private readonly object _javaEntriesSync = new();
+    private readonly object _javaEntryOptionsSync = new();
     private readonly object _stepsSync = new();
     private readonly object _fileCompletionDetailsSync = new();
     private readonly object _microsoftAccountsSync = new();
     private readonly List<MinecraftInstance> _allInstances = [];
     private bool _isInitialized;
     private bool _isRestoringJavaSelection;
+    private bool _isSyncingJavaOptionSelection;
     private bool _isSyncingRootFolderSelection;
     private bool _isSyncingVersionSelectorRow;
     private bool _isChangingRootPathFromSelection;

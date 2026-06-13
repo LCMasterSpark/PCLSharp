@@ -21,6 +21,9 @@ public sealed partial class LaunchPageViewModel
     private JavaEntry? selectedJava;
 
     [ObservableProperty]
+    private JavaEntryOption? selectedJavaOption;
+
+    [ObservableProperty]
     private LoginType selectedLoginType;
 
     [ObservableProperty]
