@@ -1301,6 +1301,59 @@ public sealed class LaunchStage5BTests
     }
 
     [Fact]
+    public async Task LaunchPageRefreshesJavaCompatibilityWhenSelectedInstanceChanges()
+    {
+        using var temp = new TempDirectory();
+        var oldInstance = WriteVersion(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var newInstance = WriteVersion(temp.Path, "1.20.5", """
+        {
+          "id": "1.20.5",
+          "releaseTime": "2024-04-24T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var java17Path = Path.Combine(temp.Path, "java-17", "bin", "java.exe");
+        var java21Path = Path.Combine(temp.Path, "java-21", "bin", "java.exe");
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        settings.Set(AppSettingKeys.MinecraftRootPath, temp.Path);
+        settings.Set(AppSettingKeys.SelectedInstanceName, oldInstance.Name);
+        var viewModel = new LaunchPageViewModel(
+            new FakeMinecraftDiscoveryService(temp.Path, [oldInstance, newInstance]),
+            new FakeJavaDiscoveryService([
+                new JavaEntry(java17Path, new Version(1, 17, 0, 8), false, true, false, true),
+                new JavaEntry(java21Path, new Version(1, 21, 0, 2), false, true, false, true)
+            ]),
+            new CaptureLaunchPipelineService(),
+            settings,
+            new NullFileDialogService(),
+            new LegacyLoginService(),
+            new NullLoggerService());
+
+        await viewModel.InitializeAsync();
+
+        Assert.Equal(java17Path, viewModel.SelectedJava?.PathJava);
+
+        viewModel.SelectVersionCommand.Execute(newInstance);
+
+        Assert.Equal(java21Path, viewModel.SelectedJava?.PathJava);
+        Assert.Contains(viewModel.JavaEntryOptions, option =>
+            option.Entry.PathJava == java17Path
+            && !option.IsCompatible
+            && option.DetailText.Contains("不兼容，当前版本需要 Java 21", StringComparison.Ordinal));
+        Assert.Contains(viewModel.JavaEntryOptions, option =>
+            option.Entry.PathJava == java21Path
+            && option.IsCompatible
+            && option.DetailText.Contains("兼容当前版本", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task LaunchPageSavesSelectedGlobalJavaAsOldPclJson()
     {
         using var temp = new TempDirectory();

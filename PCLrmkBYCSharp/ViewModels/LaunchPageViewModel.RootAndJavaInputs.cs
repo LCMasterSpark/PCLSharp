@@ -21,6 +21,11 @@ public sealed partial class LaunchPageViewModel
             JavaEntries.Add(java);
         }
 
+        RefreshJavaSelectionForCurrentInstance(updateStatus: true);
+    }
+
+    private void RefreshJavaSelectionForCurrentInstance(bool updateStatus)
+    {
         var savedJava = ResolveJavaPath(SelectedInstance?.Name);
         RefreshJavaEntryOptions(savedJava);
         var selectedJava = SelectCompatibleJavaForCurrentInstance(savedJava);
@@ -36,7 +41,10 @@ public sealed partial class LaunchPageViewModel
         }
 
         OnPropertyChanged(nameof(SelectedJavaSummary));
-        StatusMessage = BuildJavaScanStatus(savedJava, selectedJava);
+        if (updateStatus)
+        {
+            StatusMessage = BuildJavaScanStatus(savedJava, selectedJava);
+        }
     }
 
     private void RefreshJavaEntryOptions(string savedJava)

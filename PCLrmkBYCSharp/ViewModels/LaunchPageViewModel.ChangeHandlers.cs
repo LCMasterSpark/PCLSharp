@@ -109,6 +109,11 @@ public sealed partial class LaunchPageViewModel
         _selections.WriteSelectedInstanceName(MinecraftRootPath, value?.Name ?? "");
         LoadLaunchSettings(value?.Name);
         SyncInstanceServerLoginCache(value?.Name);
+        if (JavaEntries.Count > 0)
+        {
+            RefreshJavaSelectionForCurrentInstance(updateStatus: false);
+        }
+
         OnPropertyChanged(nameof(CurrentVersionTitle));
         OnPropertyChanged(nameof(CurrentVersionSubtitle));
         OnPropertyChanged(nameof(SelectedInstanceSummary));
