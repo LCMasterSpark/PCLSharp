@@ -33,6 +33,36 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     private string language;
 
     [ObservableProperty]
+    private int uiScalePercent;
+
+    [ObservableProperty]
+    private bool uiAnimation;
+
+    [ObservableProperty]
+    private int uiBackgroundOpacity;
+
+    [ObservableProperty]
+    private bool uiCompactSidebar;
+
+    [ObservableProperty]
+    private bool uiShowPageHints;
+
+    [ObservableProperty]
+    private bool accessibilityLargeText;
+
+    [ObservableProperty]
+    private bool accessibilityReducedMotion;
+
+    [ObservableProperty]
+    private bool accessibilityHighContrast;
+
+    [ObservableProperty]
+    private bool accessibilityKeyboardFocus;
+
+    [ObservableProperty]
+    private bool accessibilityConfirmDangerousActions;
+
+    [ObservableProperty]
     private string minecraftRootPath;
 
     [ObservableProperty]
@@ -139,6 +169,16 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
 
         theme = _settings.Get(AppSettingKeys.Theme, "VS2022Dark");
         language = _settings.Get(AppSettingKeys.Language, "zh-CN");
+        uiScalePercent = _settings.Get(AppSettingKeys.UiScalePercent, 100);
+        uiAnimation = _settings.Get(AppSettingKeys.UiAnimation, true);
+        uiBackgroundOpacity = _settings.Get(AppSettingKeys.UiBackgroundOpacity, 100);
+        uiCompactSidebar = _settings.Get(AppSettingKeys.UiCompactSidebar, false);
+        uiShowPageHints = _settings.Get(AppSettingKeys.UiShowPageHints, true);
+        accessibilityLargeText = _settings.Get(AppSettingKeys.AccessibilityLargeText, false);
+        accessibilityReducedMotion = _settings.Get(AppSettingKeys.AccessibilityReducedMotion, false);
+        accessibilityHighContrast = _settings.Get(AppSettingKeys.AccessibilityHighContrast, false);
+        accessibilityKeyboardFocus = _settings.Get(AppSettingKeys.AccessibilityKeyboardFocus, true);
+        accessibilityConfirmDangerousActions = _settings.Get(AppSettingKeys.AccessibilityConfirmDangerousActions, true);
         minecraftRootPath = _settings.Get(AppSettingKeys.MinecraftRootPath, "");
         launchWindowWidth = _settings.Get(AppSettingKeys.LaunchArgumentWindowWidth, 854);
         launchWindowHeight = _settings.Get(AppSettingKeys.LaunchArgumentWindowHeight, 480);
@@ -182,18 +222,24 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     public IReadOnlyList<SetupSectionOption> SetupSections { get; } =
     [
         new(0, "常规", "界面、路径与状态"),
-        new(1, "下载", "下载源与资源管理"),
-        new(2, "启动", "Java、窗口、内存与 GC"),
-        new(3, "高级", "参数、自定义命令与兼容开关")
+        new(1, "个性化", "外观、动画与页面密度"),
+        new(2, "辅助功能", "文字、动画、焦点与确认"),
+        new(3, "下载", "下载源与资源管理"),
+        new(4, "启动", "Java、窗口、内存与 GC"),
+        new(5, "高级", "参数、自定义命令与兼容开关")
     ];
 
     public bool IsGeneralSectionSelected => SelectedSetupSection == 0;
 
-    public bool IsDownloadSectionSelected => SelectedSetupSection == 1;
+    public bool IsPersonalizationSectionSelected => SelectedSetupSection == 1;
 
-    public bool IsLaunchSectionSelected => SelectedSetupSection == 2;
+    public bool IsAccessibilitySectionSelected => SelectedSetupSection == 2;
 
-    public bool IsAdvancedSectionSelected => SelectedSetupSection == 3;
+    public bool IsDownloadSectionSelected => SelectedSetupSection == 3;
+
+    public bool IsLaunchSectionSelected => SelectedSetupSection == 4;
+
+    public bool IsAdvancedSectionSelected => SelectedSetupSection == 5;
 
     public IReadOnlyList<IntOption> LaunchWindowTypeOptions { get; } =
     [
@@ -299,6 +345,8 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     partial void OnSelectedSetupSectionChanged(int value)
     {
         OnPropertyChanged(nameof(IsGeneralSectionSelected));
+        OnPropertyChanged(nameof(IsPersonalizationSectionSelected));
+        OnPropertyChanged(nameof(IsAccessibilitySectionSelected));
         OnPropertyChanged(nameof(IsDownloadSectionSelected));
         OnPropertyChanged(nameof(IsLaunchSectionSelected));
         OnPropertyChanged(nameof(IsAdvancedSectionSelected));
@@ -308,6 +356,16 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     {
         Theme = _settings.Get(AppSettingKeys.Theme, "VS2022Dark");
         Language = _settings.Get(AppSettingKeys.Language, "zh-CN");
+        UiScalePercent = _settings.Get(AppSettingKeys.UiScalePercent, 100);
+        UiAnimation = _settings.Get(AppSettingKeys.UiAnimation, true);
+        UiBackgroundOpacity = _settings.Get(AppSettingKeys.UiBackgroundOpacity, 100);
+        UiCompactSidebar = _settings.Get(AppSettingKeys.UiCompactSidebar, false);
+        UiShowPageHints = _settings.Get(AppSettingKeys.UiShowPageHints, true);
+        AccessibilityLargeText = _settings.Get(AppSettingKeys.AccessibilityLargeText, false);
+        AccessibilityReducedMotion = _settings.Get(AppSettingKeys.AccessibilityReducedMotion, false);
+        AccessibilityHighContrast = _settings.Get(AppSettingKeys.AccessibilityHighContrast, false);
+        AccessibilityKeyboardFocus = _settings.Get(AppSettingKeys.AccessibilityKeyboardFocus, true);
+        AccessibilityConfirmDangerousActions = _settings.Get(AppSettingKeys.AccessibilityConfirmDangerousActions, true);
         MinecraftRootPath = _settings.Get(AppSettingKeys.MinecraftRootPath, "");
         LaunchArgumentJavaSelect = _settings.Get(AppSettingKeys.LaunchArgumentJavaSelect, "");
         LaunchWindowWidth = _settings.Get(AppSettingKeys.LaunchArgumentWindowWidth, 854);
@@ -373,6 +431,16 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     {
         _settings.Set(AppSettingKeys.Theme, Theme);
         _settings.Set(AppSettingKeys.Language, Language);
+        _settings.Set(AppSettingKeys.UiScalePercent, Math.Clamp(UiScalePercent, 80, 140));
+        _settings.Set(AppSettingKeys.UiAnimation, UiAnimation);
+        _settings.Set(AppSettingKeys.UiBackgroundOpacity, Math.Clamp(UiBackgroundOpacity, 40, 100));
+        _settings.Set(AppSettingKeys.UiCompactSidebar, UiCompactSidebar);
+        _settings.Set(AppSettingKeys.UiShowPageHints, UiShowPageHints);
+        _settings.Set(AppSettingKeys.AccessibilityLargeText, AccessibilityLargeText);
+        _settings.Set(AppSettingKeys.AccessibilityReducedMotion, AccessibilityReducedMotion);
+        _settings.Set(AppSettingKeys.AccessibilityHighContrast, AccessibilityHighContrast);
+        _settings.Set(AppSettingKeys.AccessibilityKeyboardFocus, AccessibilityKeyboardFocus);
+        _settings.Set(AppSettingKeys.AccessibilityConfirmDangerousActions, AccessibilityConfirmDangerousActions);
         _settings.Set(AppSettingKeys.MinecraftRootPath, MinecraftRootPath);
         _settings.Set(AppSettingKeys.LaunchArgumentJavaSelect, LaunchArgumentJavaSelect);
         _settings.Set(AppSettingKeys.LaunchArgumentWindowWidth, LaunchWindowWidth);

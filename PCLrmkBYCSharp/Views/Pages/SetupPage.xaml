@@ -255,6 +255,135 @@
                     <Grid.Style>
                         <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsPersonalizationSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="个性化" Style="{StaticResource SectionTitleStyle}" />
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="14" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock Text="界面缩放" Style="{StaticResource LabelTextStyle}" />
+                                    <Slider Minimum="80"
+                                            Maximum="140"
+                                            TickFrequency="5"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding UiScalePercent, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{Binding UiScalePercent, StringFormat={}{0}%}"
+                                               Style="{StaticResource MutedTextStyle}" />
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock Text="背景不透明度" Style="{StaticResource LabelTextStyle}" />
+                                    <Slider Minimum="40"
+                                            Maximum="100"
+                                            TickFrequency="5"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding UiBackgroundOpacity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{Binding UiBackgroundOpacity, StringFormat={}{0}%}"
+                                               Style="{StaticResource MutedTextStyle}" />
+                                </StackPanel>
+                            </Grid>
+                            <UniformGrid Columns="2" Margin="0,18,0,0">
+                                <CheckBox Content="启用界面动画"
+                                          Margin="0,0,14,10"
+                                          IsChecked="{Binding UiAnimation, Mode=TwoWay}" />
+                                <CheckBox Content="压缩侧边栏间距"
+                                          Margin="0,0,14,10"
+                                          IsChecked="{Binding UiCompactSidebar, Mode=TwoWay}" />
+                                <CheckBox Content="显示页面提示文案"
+                                          Margin="0,0,14,0"
+                                          IsChecked="{Binding UiShowPageHints, Mode=TwoWay}" />
+                            </UniformGrid>
+                            <TextBlock Text="这些选项已保存到设置文件，实际主题应用会在后续 UI 收尾阶段逐项接入。"
+                                       Margin="0,16,0,0"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="主题" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Text="主题方案" Style="{StaticResource LabelTextStyle}" />
+                            <ComboBox ItemsSource="{Binding ThemeOptions}"
+                                      SelectedItem="{Binding Theme, Mode=TwoWay}" />
+                            <TextBlock Text="语言" Margin="0,16,0,6" FontWeight="SemiBold" />
+                            <ComboBox ItemsSource="{Binding LanguageOptions}"
+                                      SelectedItem="{Binding Language, Mode=TwoWay}" />
+                            <TextBlock Text="当前保留 VS2022 黑紫主题，后续会把背景图、透明度、字体密度做成可实时预览。"
+                                       Margin="0,16,0,0"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsAccessibilitySectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="辅助功能" Style="{StaticResource SectionTitleStyle}" />
+                            <CheckBox Content="使用较大文字"
+                                      Margin="0,0,0,12"
+                                      IsChecked="{Binding AccessibilityLargeText, Mode=TwoWay}" />
+                            <CheckBox Content="减少动画和过渡"
+                                      Margin="0,0,0,12"
+                                      IsChecked="{Binding AccessibilityReducedMotion, Mode=TwoWay}" />
+                            <CheckBox Content="提高对比度"
+                                      Margin="0,0,0,12"
+                                      IsChecked="{Binding AccessibilityHighContrast, Mode=TwoWay}" />
+                            <CheckBox Content="保留明显的键盘焦点"
+                                      Margin="0,0,0,12"
+                                      IsChecked="{Binding AccessibilityKeyboardFocus, Mode=TwoWay}" />
+                            <CheckBox Content="危险操作前二次确认"
+                                      IsChecked="{Binding AccessibilityConfirmDangerousActions, Mode=TwoWay}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="交互说明" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Text="这些设置优先服务可读性和防误触。后续接删除版本、清理缓存、导入整合包等危险操作时，会直接读取这里的确认开关。"
+                                       LineHeight="21"
+                                       Style="{StaticResource MutedTextStyle}" />
+                            <TextBlock Text="减少动画会影响页面切换、列表刷新和任务进度的过渡表现；高对比度会在后续主题系统中使用更亮的边框与文字。"
+                                       Margin="0,14,0,0"
+                                       LineHeight="21"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsDownloadSectionSelected}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>

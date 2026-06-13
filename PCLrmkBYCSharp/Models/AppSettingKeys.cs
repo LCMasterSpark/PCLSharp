@@ -9,6 +9,16 @@ public static class AppSettingKeys
     public const string WindowTop = nameof(WindowTop);
     public const string Theme = nameof(Theme);
     public const string Language = nameof(Language);
+    public const string UiScalePercent = nameof(UiScalePercent);
+    public const string UiAnimation = nameof(UiAnimation);
+    public const string UiBackgroundOpacity = nameof(UiBackgroundOpacity);
+    public const string UiCompactSidebar = nameof(UiCompactSidebar);
+    public const string UiShowPageHints = nameof(UiShowPageHints);
+    public const string AccessibilityLargeText = nameof(AccessibilityLargeText);
+    public const string AccessibilityReducedMotion = nameof(AccessibilityReducedMotion);
+    public const string AccessibilityHighContrast = nameof(AccessibilityHighContrast);
+    public const string AccessibilityKeyboardFocus = nameof(AccessibilityKeyboardFocus);
+    public const string AccessibilityConfirmDangerousActions = nameof(AccessibilityConfirmDangerousActions);
     public const string MinecraftRootPath = nameof(MinecraftRootPath);
     public const string LaunchFolderSelect = nameof(LaunchFolderSelect);
     public const string LaunchFolders = nameof(LaunchFolders);
@@ -129,6 +139,16 @@ public static class AppSettingKeys
         new SettingDefinition<double>(WindowTop, double.NaN),
         new SettingDefinition<string>(Theme, "VS2022Dark"),
         new SettingDefinition<string>(Language, "zh-CN"),
+        new SettingDefinition<int>(UiScalePercent, 100),
+        new SettingDefinition<bool>(UiAnimation, true),
+        new SettingDefinition<int>(UiBackgroundOpacity, 100),
+        new SettingDefinition<bool>(UiCompactSidebar, false),
+        new SettingDefinition<bool>(UiShowPageHints, true),
+        new SettingDefinition<bool>(AccessibilityLargeText, false),
+        new SettingDefinition<bool>(AccessibilityReducedMotion, false),
+        new SettingDefinition<bool>(AccessibilityHighContrast, false),
+        new SettingDefinition<bool>(AccessibilityKeyboardFocus, true),
+        new SettingDefinition<bool>(AccessibilityConfirmDangerousActions, true),
         new SettingDefinition<string>(MinecraftRootPath, ""),
         new SettingDefinition<string>(LaunchFolderSelect, ""),
         new SettingDefinition<string>(LaunchFolders, ""),

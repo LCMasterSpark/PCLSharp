@@ -24,9 +24,13 @@ public sealed class OtherPageViewModelTests
         Assert.Contains(viewModel.Cards, card => card.Description.Contains(paths.SettingsFilePath, StringComparison.Ordinal));
         Assert.Contains(viewModel.Cards, card => card.Description.Contains(".NET", StringComparison.Ordinal));
         Assert.Contains(viewModel.Cards, card => card.Description.Contains("PCL Sharp", StringComparison.Ordinal));
-        Assert.Contains(viewModel.AboutLinks, link => link.Title == "赞助 PCL" && link.Url == "https://meloong.com/afd/a/LTCat");
-        Assert.Contains(viewModel.AboutLinks, link => link.Title == "查看源代码" && link.Url == "https://github.com/Hex-Dragon/PCL2");
+        Assert.Contains(viewModel.AboutLinks, link => link.Title == "Plain Craft Launcher Sharp" && link.Description.Contains("实验性 C# WPF 重构版", StringComparison.Ordinal));
+        Assert.Contains(viewModel.AboutLinks, link => link.Title == "原版 PCL" && link.Url == "https://github.com/Hex-Dragon/PCL2");
+        Assert.Contains(viewModel.AboutLinks, link => link.Title == "重构说明" && link.Description.Contains("功能一比一还原", StringComparison.Ordinal));
         Assert.Contains(viewModel.AboutLinks, link => link.Title == "MC 百科" && link.Url == "https://www.mcmod.cn");
+        Assert.Contains(viewModel.OtherSections, section => section.DisplayName == "百宝箱");
+        Assert.Contains(viewModel.OtherSections, section => section.DisplayName == "反馈");
+        Assert.Contains(viewModel.ToolBoxItems, item => item.Title == "日志与诊断");
         var help = Assert.Single(viewModel.HelpResults);
         Assert.Equal("marker help", help.Title);
         Assert.Contains("marker help", viewModel.SelectedHelpPreview, StringComparison.Ordinal);
@@ -76,11 +80,11 @@ public sealed class OtherPageViewModelTests
         Assert.Null(actions.LastEntry);
         Assert.Contains("已打开帮助：second help", viewModel.HelpActionStatusText, StringComparison.Ordinal);
 
-        var sourceLink = viewModel.AboutLinks.Single(link => link.Title == "查看源代码");
+        var sourceLink = viewModel.AboutLinks.Single(link => link.Title == "原版 PCL");
         await viewModel.OpenAboutLinkCommand.ExecuteAsync(sourceLink);
 
         Assert.Equal(sourceLink.Url, actions.LastEntry?.EventData);
-        Assert.Contains("opened 查看源代码", viewModel.AboutActionStatusText, StringComparison.Ordinal);
+        Assert.Contains("opened 原版 PCL", viewModel.AboutActionStatusText, StringComparison.Ordinal);
     }
 
     private sealed class FakeHelpService : IHelpService

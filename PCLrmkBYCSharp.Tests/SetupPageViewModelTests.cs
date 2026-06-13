@@ -16,22 +16,34 @@ public sealed class SetupPageViewModelTests
             new NullFileDialogService(),
             new NullLoggerService());
 
-        Assert.Equal([0, 1, 2, 3], viewModel.SetupSections.Select(section => section.Value));
+        Assert.Equal([0, 1, 2, 3, 4, 5], viewModel.SetupSections.Select(section => section.Value));
         Assert.True(viewModel.IsGeneralSectionSelected);
         Assert.False(viewModel.IsDownloadSectionSelected);
 
         viewModel.SelectedSetupSection = 1;
 
         Assert.False(viewModel.IsGeneralSectionSelected);
+        Assert.True(viewModel.IsPersonalizationSectionSelected);
+        Assert.False(viewModel.IsAccessibilitySectionSelected);
+        Assert.False(viewModel.IsDownloadSectionSelected);
+
+        viewModel.SelectedSetupSection = 2;
+
+        Assert.True(viewModel.IsAccessibilitySectionSelected);
+        Assert.False(viewModel.IsPersonalizationSectionSelected);
+        Assert.False(viewModel.IsDownloadSectionSelected);
+
+        viewModel.SelectedSetupSection = 3;
+
         Assert.True(viewModel.IsDownloadSectionSelected);
         Assert.False(viewModel.IsLaunchSectionSelected);
 
-        viewModel.SelectedSetupSection = 2;
+        viewModel.SelectedSetupSection = 4;
 
         Assert.True(viewModel.IsLaunchSectionSelected);
         Assert.False(viewModel.IsAdvancedSectionSelected);
 
-        viewModel.SelectedSetupSection = 3;
+        viewModel.SelectedSetupSection = 5;
 
         Assert.True(viewModel.IsAdvancedSectionSelected);
         Assert.False(viewModel.IsLaunchSectionSelected);
@@ -62,7 +74,12 @@ public sealed class SetupPageViewModelTests
             LaunchArgumentIndieV2 = 3,
             LaunchArgumentPriority = 2,
             LaunchAdvanceGraphicCard = false,
-            LaunchArgumentTitle = "自定义 {name}"
+            LaunchArgumentTitle = "自定义 {name}",
+            UiScalePercent = 135,
+            UiBackgroundOpacity = 55,
+            UiAnimation = false,
+            AccessibilityLargeText = true,
+            AccessibilityConfirmDangerousActions = false
         };
 
         viewModel.LaunchArgumentInfo = "PCL Sharp {version}";
@@ -88,6 +105,11 @@ public sealed class SetupPageViewModelTests
         Assert.Equal("PCL Sharp {version}", settings.Get(AppSettingKeys.LaunchArgumentInfo, ""));
         Assert.False(settings.Get(AppSettingKeys.LaunchAdvanceGraphicCard, true));
         Assert.Equal("自定义 {name}", settings.Get(AppSettingKeys.LaunchArgumentTitle, ""));
+        Assert.Equal(135, settings.Get(AppSettingKeys.UiScalePercent, 100));
+        Assert.Equal(55, settings.Get(AppSettingKeys.UiBackgroundOpacity, 100));
+        Assert.False(settings.Get(AppSettingKeys.UiAnimation, true));
+        Assert.True(settings.Get(AppSettingKeys.AccessibilityLargeText, false));
+        Assert.False(settings.Get(AppSettingKeys.AccessibilityConfirmDangerousActions, true));
     }
     [Fact]
     public void SaveSettingsPersistsOldPclDownloadSettings()

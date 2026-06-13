@@ -36,16 +36,19 @@ public sealed class XamlLayoutPolicyTests
 
     private static string GetSourceFile(params string[] relativeParts)
     {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
+        foreach (var root in GetSearchRoots())
         {
-            var candidate = Path.Combine([directory.FullName, .. relativeParts]);
-            if (File.Exists(candidate))
+            var directory = root;
+            while (directory is not null)
             {
-                return candidate;
-            }
+                var candidate = Path.Combine([directory.FullName, .. relativeParts]);
+                if (File.Exists(candidate))
+                {
+                    return candidate;
+                }
 
-            directory = directory.Parent;
+                directory = directory.Parent;
+            }
         }
 
         throw new FileNotFoundException("未找到源文件：" + Path.Combine(relativeParts));
@@ -53,19 +56,39 @@ public sealed class XamlLayoutPolicyTests
 
     private static string GetSourceDirectory(params string[] relativeParts)
     {
-        var directory = new DirectoryInfo(AppContext.BaseDirectory);
-        while (directory is not null)
+        foreach (var root in GetSearchRoots())
         {
-            var candidate = Path.Combine([directory.FullName, .. relativeParts]);
-            if (Directory.Exists(candidate))
+            var directory = root;
+            while (directory is not null)
             {
-                return candidate;
-            }
+                var candidate = Path.Combine([directory.FullName, .. relativeParts]);
+                if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, relativeParts.Last() + ".csproj")))
+                {
+                    return candidate;
+                }
 
-            directory = directory.Parent;
+                directory = directory.Parent;
+            }
         }
 
         throw new DirectoryNotFoundException("未找到源目录：" + Path.Combine(relativeParts));
+    }
+
+    private static IEnumerable<DirectoryInfo> GetSearchRoots()
+    {
+        var callerDirectory = new FileInfo(GetCallerFilePath()).Directory;
+        if (callerDirectory is not null)
+        {
+            yield return callerDirectory;
+        }
+
+        yield return new DirectoryInfo(Directory.GetCurrentDirectory());
+        yield return new DirectoryInfo(AppContext.BaseDirectory);
+    }
+
+    private static string GetCallerFilePath([System.Runtime.CompilerServices.CallerFilePath] string path = "")
+    {
+        return path;
     }
 
     private static IEnumerable<string> EnumerateSourceFiles(string projectRoot)

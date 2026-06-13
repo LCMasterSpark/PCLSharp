@@ -154,45 +154,15 @@
 
                     <Border Grid.Row="2"
                             Style="{StaticResource CardBorderStyle}">
-                        <DockPanel>
-                            <TextBlock DockPanel.Dock="Top"
-                                       Text="关于与社区"
+                        <StackPanel>
+                            <TextBlock Text="当前方向"
                                        FontSize="16"
                                        FontWeight="SemiBold"
                                        Margin="0,0,0,12" />
-                            <TextBlock DockPanel.Dock="Bottom"
-                                       Text="{Binding AboutActionStatusText}"
-                                       Margin="0,10,0,0"
-                                       Style="{StaticResource MutedTextStyle}" />
-                            <ItemsControl ItemsSource="{Binding AboutLinks}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Rows="2" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button MinWidth="150"
-                                                MinHeight="54"
-                                                Margin="0,0,8,8"
-                                                Padding="10,8"
-                                                Command="{Binding DataContext.OpenAboutLinkCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                CommandParameter="{Binding}">
-                                            <StackPanel>
-                                                <TextBlock Text="{Binding Title}"
-                                                           FontWeight="SemiBold"
-                                                           TextWrapping="Wrap" />
-                                                <TextBlock Text="{Binding Description}"
-                                                           Margin="0,3,0,0"
-                                                           FontSize="11"
-                                                           Foreground="{StaticResource AppMutedTextBrush}"
-                                                           TextWrapping="Wrap" />
-                                            </StackPanel>
-                                        </Button>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </DockPanel>
+                            <TextBlock Style="{StaticResource MutedTextStyle}"
+                                       LineHeight="21"
+                                       Text="更多页现在按原版思路拆成独立分页：帮助用于检索内置 Help，百宝箱承载维护工具，反馈用于记录差异与问题，关于与鸣谢单独说明 PCL Sharp 的实验定位和引用关系。" />
+                        </StackPanel>
                     </Border>
                 </Grid>
 
@@ -367,6 +337,170 @@
                             </DockPanel>
                         </Border>
                     </Grid>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsToolBoxSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+                                <TextBlock Text="百宝箱"
+                                           FontSize="22"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="这一页保留原版百宝箱的入口感，但工具会按 PCL Sharp 的新架构逐步接入。"
+                                           Margin="0,6,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                            <ItemsControl ItemsSource="{Binding ToolBoxItems}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <UniformGrid Columns="2" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Margin="0,0,12,12"
+                                                MinHeight="92"
+                                                Padding="16"
+                                                Background="{StaticResource AppSurfaceBrush}"
+                                                BorderBrush="{StaticResource AppBorderBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="6">
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}"
+                                                           FontSize="15"
+                                                           FontWeight="SemiBold" />
+                                                <TextBlock Text="{Binding Description}"
+                                                           Margin="0,7,0,0"
+                                                           Style="{StaticResource MutedTextStyle}" />
+                                            </StackPanel>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </DockPanel>
+                    </Border>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFeedbackSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="反馈"
+                                       FontSize="22"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="现在优先收集会影响可用性的差异：启动失败、下载链路、设置缺失、列表选择、界面显示异常。"
+                                       Margin="0,7,0,0"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                    </Border>
+                    <ItemsControl Grid.Row="2" ItemsSource="{Binding FeedbackItems}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,12,12"
+                                        MinHeight="130"
+                                        Style="{StaticResource CardBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}" FontSize="16" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Description}"
+                                                   Margin="0,10,0,0"
+                                                   Style="{StaticResource MutedTextStyle}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsAboutSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <DockPanel>
+                            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,16">
+                                <TextBlock Text="关于与鸣谢"
+                                           FontSize="22"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="PCL Sharp 是实验性重构项目，不是原版 PCL 的正式发布分支。这里列出项目定位、版权说明和参考生态。"
+                                           Margin="0,7,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                                <TextBlock Text="{Binding AboutActionStatusText}"
+                                           Margin="0,8,0,0"
+                                           Foreground="{StaticResource AppAccentBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <ItemsControl ItemsSource="{Binding AboutLinks}">
+                                    <ItemsControl.ItemsPanel>
+                                        <ItemsPanelTemplate>
+                                            <WrapPanel />
+                                        </ItemsPanelTemplate>
+                                    </ItemsControl.ItemsPanel>
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <Button Width="260"
+                                                    MinHeight="88"
+                                                    Margin="0,0,12,12"
+                                                    Padding="14,10"
+                                                    HorizontalContentAlignment="Stretch"
+                                                    Command="{Binding DataContext.OpenAboutLinkCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <StackPanel>
+                                                    <TextBlock Text="{Binding Group}"
+                                                               Foreground="{StaticResource AppAccentBrush}"
+                                                               FontSize="11" />
+                                                    <TextBlock Text="{Binding Title}"
+                                                               Margin="0,3,0,0"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               TextWrapping="Wrap" />
+                                                    <TextBlock Text="{Binding Description}"
+                                                               Margin="0,5,0,0"
+                                                               FontSize="12"
+                                                               Foreground="{StaticResource AppMutedTextBrush}"
+                                                               TextWrapping="Wrap" />
+                                                </StackPanel>
+                                            </Button>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </DockPanel>
+                    </Border>
                 </Grid>
             </Grid>
         </Grid>
