@@ -15,6 +15,8 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private readonly IAppLoggerService _logger;
     private readonly IExternalUrlService? _urls;
     private readonly IFileDialogService? _fileDialogs;
+    private readonly ILinkProcessService? _linkProcess;
+    private LinkBackendLaunchPlan? _currentPlan;
 
     public LinkPageViewModel(
         ILinkService linkService,
@@ -22,7 +24,8 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         IAppLoggerService logger,
         IExternalUrlService? urls = null,
         ILinkBackendService? linkBackend = null,
-        IFileDialogService? fileDialogs = null)
+        IFileDialogService? fileDialogs = null,
+        ILinkProcessService? linkProcess = null)
         : base(PageRoute.Link, "陶瓦联机", "Terracotta / EasyTier 联机入口")
     {
         _linkService = linkService;
@@ -31,6 +34,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         _logger = logger;
         _urls = urls;
         _fileDialogs = fileDialogs;
+        _linkProcess = linkProcess;
 
         ProviderOptions =
         [
@@ -96,6 +100,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     [ObservableProperty]
     private string backendPlanText = "生成或验证房间后会在这里显示联机启动计划。";
 
+    [ObservableProperty]
+    private string linkProcessStatusText = "联机后端未启动。";
+
     public bool HasUrlService => _urls is not null;
 
     [RelayCommand]
@@ -148,6 +155,40 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         StatusMessage = BackendPlanText.Contains("后端已就绪", StringComparison.Ordinal)
             ? "联机启动计划已生成，下一步会接入真实进程启动。"
             : "已生成联机启动计划，但后端二进制尚未配置，暂不会启动进程。";
+    }
+
+    [RelayCommand]
+    private void StartBackend()
+    {
+        if (_linkProcess is null)
+        {
+            LinkProcessStatusText = "当前环境没有联机进程服务。";
+            StatusMessage = LinkProcessStatusText;
+            return;
+        }
+
+        if (_currentPlan is null)
+        {
+            LinkProcessStatusText = "请先创建房间或验证邀请码，生成联机启动计划。";
+            StatusMessage = LinkProcessStatusText;
+            return;
+        }
+
+        var snapshot = _linkProcess.Start(_currentPlan);
+        ApplyProcessSnapshot(snapshot);
+    }
+
+    [RelayCommand]
+    private void StopBackend()
+    {
+        if (_linkProcess is null)
+        {
+            LinkProcessStatusText = "当前环境没有联机进程服务。";
+            StatusMessage = LinkProcessStatusText;
+            return;
+        }
+
+        ApplyProcessSnapshot(_linkProcess.Stop());
     }
 
     [RelayCommand]
@@ -241,10 +282,24 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private void UpdateBackendPlan(LinkRoomRole role, LinkInviteInfo invite)
     {
         var plan = _linkBackend.CreatePlan(role, SelectedProvider.Value, invite, SelectedLatencyMode.Value, CustomPeer, GetSelectedExecutablePath());
+        _currentPlan = plan;
         var options = string.Join(Environment.NewLine, plan.PlannedOptions.Select(option => "  " + option));
         BackendPlanText = plan.CanStart
             ? plan.Summary + Environment.NewLine + "后端已就绪，计划参数：" + Environment.NewLine + options
             : plan.Summary + Environment.NewLine + "暂不能启动：" + plan.BlockReason + Environment.NewLine + "计划参数：" + Environment.NewLine + options;
+    }
+
+    private void ApplyProcessSnapshot(LinkProcessSnapshot snapshot)
+    {
+        LinkProcessStatusText = snapshot.ProcessId is null
+            ? snapshot.Message
+            : snapshot.Message + " PID：" + snapshot.ProcessId;
+        if (!string.IsNullOrWhiteSpace(snapshot.CommandPreview))
+        {
+            LinkProcessStatusText += Environment.NewLine + snapshot.CommandPreview;
+        }
+
+        StatusMessage = snapshot.Message;
     }
 
     private string GetSelectedExecutablePath()

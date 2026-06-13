@@ -2,6 +2,7 @@ using PCLrmkBYCSharp.Services.Link;
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services;
 using PCLrmkBYCSharp.ViewModels;
+using System.Diagnostics;
 
 namespace PCLrmkBYCSharp.Tests;
 
@@ -91,9 +92,68 @@ public sealed class PclLinkServiceTests
 
         Assert.True(plan.CanStart);
         Assert.Contains("陶瓦联机", plan.DisplayName, StringComparison.Ordinal);
+        Assert.Contains("SECRET", plan.ProcessArguments, StringComparison.Ordinal);
         Assert.Contains("network-secret=***", plan.PlannedOptions);
         Assert.DoesNotContain("SECRET", string.Join(" ", plan.PlannedOptions), StringComparison.Ordinal);
         Assert.Contains("custom-peer=peer.example", plan.PlannedOptions);
+    }
+
+    [Fact]
+    public void LinkProcessServiceStartsBackendWithSafeProcessSettings()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "easytier.exe");
+        File.WriteAllText(executable, "");
+        var backend = new LinkBackendService();
+        var plan = backend.CreatePlan(
+            LinkRoomRole.Host,
+            LinkProviderKind.EasyTier,
+            new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0),
+            LinkLatencyMode.LatencyFirst,
+            "",
+            executable);
+        var runner = new CaptureLinkProcessRunner();
+        var service = new LinkProcessService(runner, new NullLoggerService());
+
+        var snapshot = service.Start(plan);
+
+        Assert.Equal(LinkProcessState.Running, snapshot.State);
+        Assert.Equal(1234, snapshot.ProcessId);
+        Assert.Equal(executable, runner.LastStartInfo?.FileName);
+        Assert.Contains("--network-secret=SECRET", runner.LastStartInfo?.Arguments, StringComparison.Ordinal);
+        Assert.Contains("--network-secret=***", snapshot.CommandPreview, StringComparison.Ordinal);
+        Assert.DoesNotContain("SECRET", snapshot.CommandPreview, StringComparison.Ordinal);
+        Assert.False(runner.LastStartInfo?.UseShellExecute);
+        Assert.True(runner.LastStartInfo?.RedirectStandardOutput);
+        Assert.True(runner.LastStartInfo?.RedirectStandardError);
+
+        var second = service.Start(plan);
+
+        Assert.Equal(1, runner.StartCount);
+        Assert.Equal("联机后端已在运行。", second.Message);
+    }
+
+    [Fact]
+    public void LinkProcessServiceStopsRunningBackend()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "easytier.exe");
+        File.WriteAllText(executable, "");
+        var plan = new LinkBackendService().CreatePlan(
+            LinkRoomRole.Joiner,
+            LinkProviderKind.EasyTier,
+            new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0),
+            LinkLatencyMode.DirectFirst,
+            "",
+            executable);
+        var runner = new CaptureLinkProcessRunner();
+        var service = new LinkProcessService(runner, new NullLoggerService());
+
+        service.Start(plan);
+        var snapshot = service.Stop();
+
+        Assert.Equal(LinkProcessState.Stopped, snapshot.State);
+        Assert.True(runner.Handle.Stopped);
     }
 
     [Fact]
@@ -132,5 +192,36 @@ public sealed class PclLinkServiceTests
         public IReadOnlyList<string> PickModFiles(string initialDirectory) => [];
 
         public string? PickSaveFile(string title, string initialDirectory, string defaultFileName, string filter) => null;
+    }
+
+    private sealed class CaptureLinkProcessRunner : ILinkProcessRunner
+    {
+        public CaptureLinkProcessHandle Handle { get; } = new();
+
+        public ProcessStartInfo? LastStartInfo { get; private set; }
+
+        public int StartCount { get; private set; }
+
+        public ILinkProcessHandle Start(ProcessStartInfo startInfo)
+        {
+            StartCount++;
+            LastStartInfo = startInfo;
+            return Handle;
+        }
+    }
+
+    private sealed class CaptureLinkProcessHandle : ILinkProcessHandle
+    {
+        public int Id => 1234;
+
+        public bool HasExited { get; private set; }
+
+        public bool Stopped { get; private set; }
+
+        public void Stop()
+        {
+            Stopped = true;
+            HasExited = true;
+        }
     }
 }

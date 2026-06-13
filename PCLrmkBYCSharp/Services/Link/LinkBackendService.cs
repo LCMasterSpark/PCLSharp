@@ -46,6 +46,7 @@ public sealed class LinkBackendService : ILinkBackendService
     {
         var status = GetStatus(provider, executablePath);
         var options = BuildPlannedOptions(role, invite, latencyMode, customPeer);
+        var arguments = BuildProcessArguments(role, invite, latencyMode, customPeer);
         var roleText = role == LinkRoomRole.Host ? "创建房间" : "加入房间";
         var summary = $"{status.DisplayName} / {roleText} / 端口 {invite.ServerPort} / 网络 {invite.NetworkName}";
         return new LinkBackendLaunchPlan(
@@ -55,6 +56,7 @@ public sealed class LinkBackendService : ILinkBackendService
             status.ExecutablePath,
             status.CanStart,
             status.CanStart ? "" : status.Message,
+            arguments,
             options,
             summary);
     }
@@ -81,6 +83,58 @@ public sealed class LinkBackendService : ILinkBackendService
         }
 
         return options;
+    }
+
+    private static string BuildProcessArguments(LinkRoomRole role, LinkInviteInfo invite, LinkLatencyMode latencyMode, string? customPeer)
+    {
+        var arguments = new List<string>
+        {
+            "--network-name=" + QuoteArgumentValue(invite.NetworkName),
+            "--network-secret=" + QuoteArgumentValue(invite.NetworkSecret),
+            "--private-mode",
+            "true",
+            "--tcp-whitelist=" + invite.ServerPort,
+            "--udp-whitelist=" + invite.ServerPort
+        };
+
+        if (role == LinkRoomRole.Host)
+        {
+            arguments.Add("-i");
+            arguments.Add("10.114.114.114");
+            arguments.Add("--hostname=" + QuoteArgumentValue("PCLSharp-Host"));
+        }
+        else
+        {
+            arguments.Add("-d");
+            arguments.Add("--hostname=" + QuoteArgumentValue("PCLSharp-Client"));
+        }
+
+        if (latencyMode == LinkLatencyMode.LatencyFirst)
+        {
+            arguments.Add("--latency-first");
+        }
+
+        foreach (var peer in SplitPeers(customPeer))
+        {
+            arguments.Add("-p");
+            arguments.Add(QuoteArgumentValue(peer));
+        }
+
+        return string.Join(" ", arguments);
+    }
+
+    private static IEnumerable<string> SplitPeers(string? customPeer)
+    {
+        return (customPeer ?? "")
+            .Split(['，', ',', '\r', '\n', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(peer => !string.IsNullOrWhiteSpace(peer));
+    }
+
+    private static string QuoteArgumentValue(string value)
+    {
+        return value.Any(char.IsWhiteSpace) || value.Contains('"')
+            ? "\"" + value.Replace("\"", "\\\"", StringComparison.Ordinal) + "\""
+            : value;
     }
 
     private static string GetDisplayName(LinkProviderKind provider)

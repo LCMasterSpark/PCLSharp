@@ -25,5 +25,19 @@ public sealed record LinkBackendLaunchPlan(
     string ExecutablePath,
     bool CanStart,
     string BlockReason,
+    string ProcessArguments,
     IReadOnlyList<string> PlannedOptions,
     string Summary);
+
+public enum LinkProcessState
+{
+    Stopped,
+    Running,
+    Failed
+}
+
+public sealed record LinkProcessSnapshot(
+    LinkProcessState State,
+    int? ProcessId,
+    string Message,
+    string CommandPreview);
