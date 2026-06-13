@@ -13,26 +13,37 @@ public partial class App : Application
     public App()
     {
         DispatcherUnhandledException += HandleDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException += HandleUnhandledException;
+        TaskScheduler.UnobservedTaskException += HandleUnobservedTaskException;
     }
 
     protected override async void OnStartup(StartupEventArgs e)
     {
-        base.OnStartup(e);
+        try
+        {
+            base.OnStartup(e);
 
-        _services = AppServices.Create(Dispatcher);
-        _services.Paths.EnsureCreated();
-        _services.Logger.Initialize();
-        _services.Logger.Info("应用启动");
-        await _services.Settings.LoadAsync();
+            _services = AppServices.Create(Dispatcher);
+            _services.Paths.EnsureCreated();
+            _services.Logger.Initialize();
+            _services.Logger.Info("应用启动");
+            await _services.Settings.LoadAsync();
 
-        var viewModel = new MainWindowViewModel(
-            _services.Navigation,
-            _services.Settings,
-            _services.Logger,
-            _services.ExitGuard);
+            var viewModel = new MainWindowViewModel(
+                _services.Navigation,
+                _services.Settings,
+                _services.Logger,
+                _services.ExitGuard);
 
-        MainWindow = new MainWindow(viewModel);
-        MainWindow.Show();
+            MainWindow = new MainWindow(viewModel);
+            MainWindow.Show();
+        }
+        catch (Exception ex)
+        {
+            LogFatalException(ex, "应用启动失败");
+            MessageBox.Show(ex.Message, "PCL Sharp", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(-1);
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -44,6 +55,8 @@ public partial class App : Application
         }
 
         DispatcherUnhandledException -= HandleDispatcherUnhandledException;
+        AppDomain.CurrentDomain.UnhandledException -= HandleUnhandledException;
+        TaskScheduler.UnobservedTaskException -= HandleUnobservedTaskException;
         base.OnExit(e);
     }
 
@@ -52,5 +65,30 @@ public partial class App : Application
         _services?.Logger.Error(e.Exception, "未处理的界面异常");
         MessageBox.Show(e.Exception.Message, "PCL Sharp", MessageBoxButton.OK, MessageBoxImage.Error);
         e.Handled = true;
+    }
+
+    private void HandleUnhandledException(object sender, UnhandledExceptionEventArgs e)
+    {
+        var exception = e.ExceptionObject as Exception
+            ?? new InvalidOperationException("未知未处理异常：" + e.ExceptionObject);
+        LogFatalException(exception, e.IsTerminating ? "未处理的后台异常，进程即将终止" : "未处理的后台异常");
+    }
+
+    private void HandleUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        LogFatalException(e.Exception, "未观察到的后台任务异常");
+        e.SetObserved();
+    }
+
+    private void LogFatalException(Exception exception, string message)
+    {
+        try
+        {
+            _services?.Logger.Error(exception, message);
+        }
+        catch
+        {
+            // Ignore logging failures while the process is already failing.
+        }
     }
 }
