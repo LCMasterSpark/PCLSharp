@@ -792,6 +792,8 @@ public sealed class DownloadServicesTests
         var project = Assert.Single(result.Projects);
         Assert.Equal("fabric", Assert.Single(project.Loaders));
         Assert.DoesNotContain("quilt", project.LoaderSummary, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal("下载量：1,000 / 更新：2024-01-02", project.DownloadSummary);
+        Assert.Equal("1.20.1", project.VersionSummary);
     }
 
     [Fact]

@@ -559,11 +559,15 @@
                                                        Foreground="{StaticResource AppMutedTextBrush}"
                                                        TextWrapping="Wrap"
                                                        MaxHeight="40" />
-                                             <TextBlock Text="{Binding VersionSummary}"
+                                             <TextBlock Text="{Binding VersionSummary, StringFormat=适用版本：{0}}"
                                                         Margin="0,6,0,0"
                                                         FontSize="12"
                                                         Foreground="{StaticResource AppAccentBrush}" />
                                              <TextBlock Text="{Binding LoaderSummary, StringFormat=启动平台：{0}}"
+                                                        Margin="0,4,0,0"
+                                                        FontSize="12"
+                                                        Foreground="{StaticResource AppMutedTextBrush}" />
+                                             <TextBlock Text="{Binding DownloadSummary}"
                                                         Margin="0,4,0,0"
                                                         FontSize="12"
                                                         Foreground="{StaticResource AppMutedTextBrush}" />

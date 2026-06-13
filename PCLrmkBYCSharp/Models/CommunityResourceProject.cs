@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace PCLrmkBYCSharp.Models;
 
 public sealed record CommunityResourceProject(
@@ -22,4 +24,6 @@ public sealed record CommunityResourceProject(
     public string LoaderSummary => Loaders.Count == 0 ? "未知" : string.Join(" / ", Loaders);
 
     public string VersionSummary => GameVersions.Count == 0 ? "未知版本" : string.Join(", ", GameVersions.Take(4)) + (GameVersions.Count > 4 ? "..." : "");
+
+    public string DownloadSummary => $"下载量：{DownloadCount.ToString("#,0", CultureInfo.InvariantCulture)} / 更新：{Updated:yyyy-MM-dd}";
 }
