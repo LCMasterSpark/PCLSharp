@@ -61,11 +61,13 @@ public sealed class LinkPortAllocator : ILinkPortAllocator
 
     private static bool CanBind(int port)
     {
-        TcpListener? listener = null;
+        TcpListener? tcpListener = null;
+        UdpClient? udpClient = null;
         try
         {
-            listener = new TcpListener(IPAddress.Loopback, port);
-            listener.Start();
+            tcpListener = new TcpListener(IPAddress.Loopback, port);
+            tcpListener.Start();
+            udpClient = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
             return true;
         }
         catch (SocketException)
@@ -74,7 +76,8 @@ public sealed class LinkPortAllocator : ILinkPortAllocator
         }
         finally
         {
-            listener?.Stop();
+            tcpListener?.Stop();
+            udpClient?.Dispose();
         }
     }
 }

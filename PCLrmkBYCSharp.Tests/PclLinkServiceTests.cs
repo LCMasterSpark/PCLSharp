@@ -3,6 +3,8 @@ using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services;
 using PCLrmkBYCSharp.ViewModels;
 using System.Diagnostics;
+using System.Net;
+using System.Net.Sockets;
 
 namespace PCLrmkBYCSharp.Tests;
 
@@ -148,6 +150,27 @@ public sealed class PclLinkServiceTests
         Assert.Contains("custom-peer=tcp://c.example:11010", plan.PlannedOptions);
         Assert.Equal(3, plan.PlannedOptions.Count(option => option.StartsWith("custom-peer=", StringComparison.Ordinal)));
         Assert.Equal(3, CountOccurrences(plan.ProcessArguments, "-p "));
+    }
+
+    [Fact]
+    public void LinkPortAllocatorReturnsDistinctTcpAndUdpBindablePorts()
+    {
+        var allocation = new LinkPortAllocator().Allocate(25565);
+        var ports = new[]
+        {
+            allocation.ClientForwardPort,
+            allocation.RpcPortalPort,
+            allocation.ListenersPort,
+            allocation.ListenersPort + 1,
+            allocation.ListenersPort + 2
+        };
+
+        Assert.DoesNotContain(25565, ports);
+        Assert.Equal(ports.Length, ports.Distinct().Count());
+        foreach (var port in ports)
+        {
+            Assert.True(CanBindTcpAndUdp(port), $"端口 {port} 应该仍可被 TCP 与 UDP 绑定。");
+        }
     }
 
     [Fact]
@@ -337,6 +360,28 @@ public sealed class PclLinkServiceTests
         }
 
         return count;
+    }
+
+    private static bool CanBindTcpAndUdp(int port)
+    {
+        TcpListener? tcpListener = null;
+        UdpClient? udpClient = null;
+        try
+        {
+            tcpListener = new TcpListener(IPAddress.Loopback, port);
+            tcpListener.Start();
+            udpClient = new UdpClient(new IPEndPoint(IPAddress.Loopback, port));
+            return true;
+        }
+        catch (SocketException)
+        {
+            return false;
+        }
+        finally
+        {
+            tcpListener?.Stop();
+            udpClient?.Dispose();
+        }
     }
 
     private sealed class FixedLinkPortAllocator : ILinkPortAllocator
