@@ -1,5 +1,7 @@
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services;
+using PCLrmkBYCSharp.Services.Downloads;
+using PCLrmkBYCSharp.Services.Launch;
 using PCLrmkBYCSharp.ViewModels;
 
 namespace PCLrmkBYCSharp.Tests;
@@ -30,7 +32,8 @@ public sealed class OtherPageViewModelTests
         Assert.Contains(viewModel.AboutLinks, link => link.Title == "MC 百科" && link.Url == "https://www.mcmod.cn");
         Assert.Contains(viewModel.OtherSections, section => section.DisplayName == "百宝箱");
         Assert.Contains(viewModel.OtherSections, section => section.DisplayName == "反馈");
-        Assert.Contains(viewModel.ToolBoxItems, item => item.Title == "日志与诊断");
+        Assert.Contains(viewModel.ToolBoxItems, item => item.Title == "今日人品");
+        Assert.Contains(viewModel.ToolBoxItems, item => item.Title == "下载自定义文件");
         var help = Assert.Single(viewModel.HelpResults);
         Assert.Equal("marker help", help.Title);
         Assert.Contains("marker help", viewModel.SelectedHelpPreview, StringComparison.Ordinal);
@@ -85,6 +88,58 @@ public sealed class OtherPageViewModelTests
 
         Assert.Equal(sourceLink.Url, actions.LastEntry?.EventData);
         Assert.Contains("opened 原版 PCL", viewModel.AboutActionStatusText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ToolboxCommandsProvideRealActionsAndUseDownloadQueue()
+    {
+        using var temp = new TempDirectory();
+        var paths = new TestAppPathService(temp.Path);
+        var minecraftRoot = System.IO.Path.Combine(temp.Path, ".minecraft");
+        Directory.CreateDirectory(System.IO.Path.Combine(minecraftRoot, "logs"));
+        Directory.CreateDirectory(System.IO.Path.Combine(minecraftRoot, "versions", "demo", "demo-natives"));
+        var oldLog = System.IO.Path.Combine(minecraftRoot, "logs", "old.log.gz");
+        var nativeFile = System.IO.Path.Combine(minecraftRoot, "versions", "demo", "demo-natives", "native.tmp");
+        await File.WriteAllTextAsync(oldLog, "old log");
+        await File.WriteAllTextAsync(nativeFile, "native");
+        File.SetLastWriteTimeUtc(oldLog, DateTime.UtcNow.AddDays(-2));
+
+        var settings = new FakeSettingsService();
+        settings.Set(AppSettingKeys.MinecraftRootPath, minecraftRoot);
+        var selectedFolder = System.IO.Path.Combine(temp.Path, "downloads");
+        var fileDialogs = new FolderDialogService(selectedFolder);
+        var downloads = new CaptureDownloadManager();
+        var memory = new FakeMemoryOptimizer();
+        var viewModel = new OtherPageViewModel(paths, logger: new NullLoggerService(), settings: settings, fileDialogs: fileDialogs, downloadManager: downloads, memoryOptimizer: memory);
+
+        viewModel.RollLuckCommand.Execute(null);
+
+        Assert.Contains("今日人品", viewModel.ToolboxStatusText, StringComparison.Ordinal);
+
+        await viewModel.OptimizeMemoryCommand.ExecuteAsync(null);
+
+        Assert.Equal(1, memory.CallCount);
+        Assert.Contains("已处理进程数：7", viewModel.ToolboxStatusText, StringComparison.Ordinal);
+
+        viewModel.CleanGameTrashCommand.Execute(null);
+
+        Assert.False(File.Exists(oldLog));
+        Assert.False(Directory.Exists(System.IO.Path.Combine(minecraftRoot, "versions", "demo", "demo-natives")));
+        Assert.Contains("已清理", viewModel.ToolboxStatusText, StringComparison.Ordinal);
+
+        viewModel.BrowseCustomDownloadFolderCommand.Execute(null);
+        viewModel.CustomDownloadUrl = "https://example.invalid/files/demo.zip";
+
+        Assert.Equal(selectedFolder, viewModel.CustomDownloadFolder);
+        Assert.Equal("demo.zip", viewModel.CustomDownloadFileName);
+
+        await viewModel.StartCustomDownloadCommand.ExecuteAsync(null);
+
+        Assert.Equal("自定义下载：demo.zip", downloads.LastName);
+        var file = Assert.Single(downloads.LastFiles);
+        Assert.Equal("https://example.invalid/files/demo.zip", Assert.Single(file.Sources));
+        Assert.Equal(System.IO.Path.Combine(selectedFolder, "demo.zip"), file.LocalPath);
+        Assert.Contains("下载完成", viewModel.CustomDownloadStatusText, StringComparison.Ordinal);
     }
 
     private sealed class FakeHelpService : IHelpService
@@ -145,6 +200,91 @@ public sealed class OtherPageViewModelTests
 
         public void SetEventHandler(string eventType, Func<string, CancellationToken, Task<HelpActionResult>> handler)
         {
+        }
+    }
+
+    private sealed class FakeSettingsService : IAppSettingsService
+    {
+        private readonly Dictionary<string, object?> _values = new(StringComparer.OrdinalIgnoreCase);
+
+        public event EventHandler<AppSettingChangedEventArgs>? SettingChanged;
+
+        public T Get<T>(string key) => Get<T>(key, default!);
+
+        public T Get<T>(string key, T defaultValue)
+        {
+            return _values.TryGetValue(key, out var value) && value is T typed ? typed : defaultValue;
+        }
+
+        public void Set<T>(string key, T value)
+        {
+            _values[key] = value;
+            SettingChanged?.Invoke(this, new AppSettingChangedEventArgs(key, value));
+        }
+
+        public void Reset(string key)
+        {
+            _values.Remove(key);
+        }
+
+        public bool HasSaved(string key) => _values.ContainsKey(key);
+
+        public Task LoadAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task SaveAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class FolderDialogService(string folder) : IFileDialogService
+    {
+        public string? PickFolder(string title, string initialDirectory) => folder;
+
+        public string? PickJavaExecutable(string initialDirectory) => null;
+
+        public string? PickSkinFile(string initialDirectory) => null;
+
+        public string? PickModpackFile(string initialDirectory) => null;
+
+        public IReadOnlyList<string> PickModFiles(string initialDirectory) => [];
+
+        public string? PickSaveFile(string title, string initialDirectory, string defaultFileName, string filter) => null;
+    }
+
+    private sealed class CaptureDownloadManager : IDownloadManagerService
+    {
+        public event EventHandler<DownloadTaskSnapshot>? SnapshotChanged;
+
+        public IReadOnlyList<DownloadTaskSnapshot> Tasks => [];
+
+        public string LastName { get; private set; } = "";
+
+        public IReadOnlyList<DownloadFile> LastFiles { get; private set; } = [];
+
+        public Task<DownloadTaskSnapshot> DownloadAsync(string name, IReadOnlyList<DownloadFile> files, CancellationToken cancellationToken = default)
+        {
+            LastName = name;
+            LastFiles = files;
+            var snapshot = new DownloadTaskSnapshot(name, DownloadTaskState.Succeeded, files.Count, files.Count, 10, 1, "下载完成");
+            SnapshotChanged?.Invoke(this, snapshot);
+            return Task.FromResult(snapshot);
+        }
+
+        public bool Cancel(string name) => false;
+
+        public int CancelAllRunning() => 0;
+
+        public Task<DownloadTaskSnapshot?> RetryAsync(string name, CancellationToken cancellationToken = default) => Task.FromResult<DownloadTaskSnapshot?>(null);
+
+        public int ClearFinished() => 0;
+    }
+
+    private sealed class FakeMemoryOptimizer : ILaunchMemoryOptimizer
+    {
+        public int CallCount { get; private set; }
+
+        public Task<LaunchMemoryOptimizeResult> OptimizeAsync(CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            return Task.FromResult(new LaunchMemoryOptimizeResult(7));
         }
     }
 }

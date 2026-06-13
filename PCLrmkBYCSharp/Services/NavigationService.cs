@@ -39,6 +39,7 @@ public sealed class NavigationService : INavigationService
         IHelpActionService helpActions,
         IFolderOpenService? folders = null,
         IExternalUrlService? urls = null,
+        ILaunchMemoryOptimizer? memoryOptimizer = null,
         ILoaderVersionService? loaderVersions = null,
         IFabricLoaderInstallService? fabricLoaderInstall = null,
         IQuiltLoaderInstallService? quiltLoaderInstall = null,
@@ -82,7 +83,7 @@ public sealed class NavigationService : INavigationService
             [PageRoute.Download] = new DownloadPageViewModel(minecraftClientDownload, downloadManager, communityResourceSearch, communityResourceVersions, modpackInstall, loaderProcessorRunner, settings, minecraftDiscovery, fileDialogs, logger, rootFolders, selections, prompts, gameDirectories, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, folders, urls, dispatcher),
             [PageRoute.Instance] = new InstancePageViewModel(minecraftDiscovery, instanceManagement, launchFileCompleter, launchPipeline, downloadManager, modpackExport, settings, fileDialogs, prompts, logger, gameDirectories, rootFolders, selections, localModUpdateService: localModUpdates, folders: folders, dispatcher: dispatcher),
             [PageRoute.Setup] = new SetupPageViewModel(settings, paths, fileDialogs, logger),
-            [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions)
+            [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions, settings, fileDialogs, downloadManager, memoryOptimizer)
         };
         CurrentPage = _pages[PageRoute.Launch];
     }

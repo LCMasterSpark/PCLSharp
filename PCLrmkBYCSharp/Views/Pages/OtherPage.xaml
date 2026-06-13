@@ -355,37 +355,149 @@
                                 <TextBlock Text="百宝箱"
                                            FontSize="22"
                                            FontWeight="SemiBold" />
-                                <TextBlock Text="这一页保留原版百宝箱的入口感，但工具会按 PCL Sharp 的新架构逐步接入。"
+                                <TextBlock Text="轻量工具、维护入口和自定义下载会集中放在这里。"
                                            Margin="0,6,0,0"
                                            Style="{StaticResource MutedTextStyle}" />
+                                <TextBlock Text="{Binding ToolboxStatusText}"
+                                           Margin="0,8,0,0"
+                                           Foreground="{StaticResource AppAccentBrush}"
+                                           TextWrapping="Wrap" />
                             </StackPanel>
-                            <ItemsControl ItemsSource="{Binding ToolBoxItems}">
-                                <ItemsControl.ItemsPanel>
-                                    <ItemsPanelTemplate>
-                                        <UniformGrid Columns="2" />
-                                    </ItemsPanelTemplate>
-                                </ItemsControl.ItemsPanel>
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Margin="0,0,12,12"
-                                                MinHeight="92"
-                                                Padding="16"
-                                                Background="{StaticResource AppSurfaceBrush}"
-                                                BorderBrush="{StaticResource AppBorderBrush}"
-                                                BorderThickness="1"
-                                                CornerRadius="6">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                          HorizontalScrollBarVisibility="Disabled">
+                                <StackPanel>
+                                    <Border Padding="14"
+                                            Background="{StaticResource AppSurfaceBrush}"
+                                            BorderBrush="{StaticResource AppBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6">
+                                        <StackPanel>
+                                            <TextBlock Text="百宝箱"
+                                                       FontSize="16"
+                                                       FontWeight="SemiBold" />
+                                            <UniformGrid Columns="4" Margin="0,12,0,0">
+                                                <Button Margin="0,0,10,0"
+                                                        MinHeight="34"
+                                                        Command="{Binding RollLuckCommand}"
+                                                        Content="今日人品" />
+                                                <Button Margin="0,0,10,0"
+                                                        MinHeight="34"
+                                                        Command="{Binding OptimizeMemoryCommand}"
+                                                        Content="内存优化" />
+                                                <Button Margin="0,0,10,0"
+                                                        MinHeight="34"
+                                                        Command="{Binding CleanGameTrashCommand}"
+                                                        Content="清理游戏垃圾" />
+                                                <Button MinHeight="34"
+                                                        Command="{Binding DoNotClickCommand}"
+                                                        Content="千万别点" />
+                                            </UniformGrid>
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Border Margin="0,14,0,0"
+                                            Padding="14"
+                                            Background="{StaticResource AppSurfaceBrush}"
+                                            BorderBrush="{StaticResource AppAccentSoftBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
                                             <StackPanel>
-                                                <TextBlock Text="{Binding Title}"
-                                                           FontSize="15"
+                                                <TextBlock Text="回声洞"
+                                                           Foreground="{StaticResource AppAccentBrush}"
+                                                           FontSize="16"
                                                            FontWeight="SemiBold" />
-                                                <TextBlock Text="{Binding Description}"
-                                                           Margin="0,7,0,0"
+                                                <TextBlock Text="{Binding EchoCaveText}"
+                                                           Margin="0,8,12,0"
                                                            Style="{StaticResource MutedTextStyle}" />
                                             </StackPanel>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
+                                            <Button Grid.Column="1"
+                                                    Width="118"
+                                                    MinHeight="34"
+                                                    VerticalAlignment="Center"
+                                                    Command="{Binding OpenEchoCaveCommand}"
+                                                    Content="打开" />
+                                        </Grid>
+                                    </Border>
+
+                                    <Border Margin="0,14,0,0"
+                                            Padding="14"
+                                            Background="{StaticResource AppSurfaceBrush}"
+                                            BorderBrush="{StaticResource AppBorderBrush}"
+                                            BorderThickness="1"
+                                            CornerRadius="6">
+                                        <StackPanel>
+                                            <TextBlock Text="下载自定义文件"
+                                                       FontSize="16"
+                                                       FontWeight="SemiBold" />
+                                            <TextBlock Text="使用 PCL Sharp 的下载队列下载直链文件，任务会显示在下载页右侧。"
+                                                       Margin="0,7,0,12"
+                                                       Style="{StaticResource MutedTextStyle}" />
+                                            <Grid>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="10" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="10" />
+                                                    <RowDefinition Height="Auto" />
+                                                    <RowDefinition Height="12" />
+                                                    <RowDefinition Height="Auto" />
+                                                </Grid.RowDefinitions>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="88" />
+                                                    <ColumnDefinition Width="*" />
+                                                    <ColumnDefinition Width="10" />
+                                                    <ColumnDefinition Width="96" />
+                                                </Grid.ColumnDefinitions>
+
+                                                <TextBlock Text="下载地址"
+                                                           VerticalAlignment="Center"
+                                                           FontWeight="SemiBold" />
+                                                <TextBox Grid.Column="1"
+                                                         Grid.ColumnSpan="3"
+                                                         Text="{Binding CustomDownloadUrl, UpdateSourceTrigger=PropertyChanged}" />
+
+                                                <TextBlock Grid.Row="2"
+                                                           Text="保存到"
+                                                           VerticalAlignment="Center"
+                                                           FontWeight="SemiBold" />
+                                                <TextBox Grid.Row="2"
+                                                         Grid.Column="1"
+                                                         IsReadOnly="True"
+                                                         Text="{Binding CustomDownloadFolder}" />
+                                                <Button Grid.Row="2"
+                                                        Grid.Column="3"
+                                                        Command="{Binding BrowseCustomDownloadFolderCommand}"
+                                                        Content="选择" />
+
+                                                <TextBlock Grid.Row="4"
+                                                           Text="文件名"
+                                                           VerticalAlignment="Center"
+                                                           FontWeight="SemiBold" />
+                                                <TextBox Grid.Row="4"
+                                                         Grid.Column="1"
+                                                         Grid.ColumnSpan="3"
+                                                         Text="{Binding CustomDownloadFileName, UpdateSourceTrigger=PropertyChanged}" />
+
+                                                <TextBlock Grid.Row="6"
+                                                           Grid.Column="1"
+                                                           Text="{Binding CustomDownloadStatusText}"
+                                                           Foreground="{StaticResource AppAccentBrush}"
+                                                           TextWrapping="Wrap" />
+                                                <Button Grid.Row="6"
+                                                        Grid.Column="3"
+                                                        MinHeight="34"
+                                                        Command="{Binding StartCustomDownloadCommand}"
+                                                        Content="下载" />
+                                            </Grid>
+                                        </StackPanel>
+                                    </Border>
+                                </StackPanel>
+                            </ScrollViewer>
                         </DockPanel>
                     </Border>
                 </Grid>

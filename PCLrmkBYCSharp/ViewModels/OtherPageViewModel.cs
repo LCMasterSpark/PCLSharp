@@ -1,9 +1,12 @@
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services;
+using PCLrmkBYCSharp.Services.Downloads;
+using PCLrmkBYCSharp.Services.Launch;
 
 namespace PCLrmkBYCSharp.ViewModels;
 
@@ -17,6 +20,11 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private readonly IHelpService? _help;
     private readonly IAppLoggerService? _logger;
     private readonly IHelpActionService? _helpActions;
+    private readonly IAppSettingsService? _settings;
+    private readonly IFileDialogService? _fileDialogs;
+    private readonly IDownloadManagerService? _downloadManager;
+    private readonly ILaunchMemoryOptimizer? _memoryOptimizer;
+    private int _doNotClickCount;
     private IReadOnlyList<HelpEntry> _allHelpEntries = [];
 
     [ObservableProperty]
@@ -43,12 +51,42 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     [ObservableProperty]
     private int selectedOtherSection;
 
-    public OtherPageViewModel(IAppPathService? paths = null, IHelpService? help = null, IAppLoggerService? logger = null, IHelpActionService? helpActions = null)
+    [ObservableProperty]
+    private string toolboxStatusText = "百宝箱已就绪";
+
+    [ObservableProperty]
+    private string echoCaveText = "反复点击这里可以查看 PCL Sharp 开发与重构过程中的留言。";
+
+    [ObservableProperty]
+    private string customDownloadUrl = "";
+
+    [ObservableProperty]
+    private string customDownloadFolder = "";
+
+    [ObservableProperty]
+    private string customDownloadFileName = "";
+
+    [ObservableProperty]
+    private string customDownloadStatusText = "填写下载地址后即可创建下载任务。";
+
+    public OtherPageViewModel(
+        IAppPathService? paths = null,
+        IHelpService? help = null,
+        IAppLoggerService? logger = null,
+        IHelpActionService? helpActions = null,
+        IAppSettingsService? settings = null,
+        IFileDialogService? fileDialogs = null,
+        IDownloadManagerService? downloadManager = null,
+        ILaunchMemoryOptimizer? memoryOptimizer = null)
         : base(PageRoute.Other, "更多", "帮助、关于、诊断、反馈与维护工具")
     {
         _help = help;
         _logger = logger;
         _helpActions = helpActions;
+        _settings = settings;
+        _fileDialogs = fileDialogs;
+        _downloadManager = downloadManager;
+        _memoryOptimizer = memoryOptimizer;
         RegisterHelpEventHandlers();
         var assembly = typeof(OtherPageViewModel).Assembly;
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
@@ -79,6 +117,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
             new("致谢", "Patrick", "感谢原版 PCL 图标设计带来的视觉识别基础。", null),
             new("致谢", "测试与反馈", "感谢参与 PCL Sharp 试用、截图标注和问题复现的所有人。", null)
         ];
+        CustomDownloadFolder = Path.Combine(paths?.AppDataDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "MyDownload");
     }
 
     private void RegisterHelpEventHandlers()
@@ -118,12 +157,10 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
 
     public IReadOnlyList<PageStatusCard> ToolBoxItems { get; } =
     [
-        new("日志与诊断", "打开日志目录、查看运行环境与最近一次启动诊断。"),
-        new("文件夹快捷入口", "集中跳转到 Minecraft、存档、资源包、光影包、截图与日志文件夹。"),
-        new("启动脚本工具", "后续用于导出、查看与复用最近一次启动脚本。"),
-        new("设置维护", "后续用于导入导出设置、清理缓存与重置异常状态。"),
-        new("资源索引检查", "后续用于检查 libraries、assets、natives 与版本 JSON 完整性。"),
-        new("联机与网络工具", "保留给联机、代理、镜像源连通性与下载源测速。")
+        new("今日人品", "按日期与当前用户生成稳定数值，和原版一样是轻量娱乐入口。"),
+        new("内存优化", "尽力清理当前系统进程工作集，并触发 .NET GC。"),
+        new("清理游戏垃圾", "清理临时 natives、压缩旧日志与临时下载残留，不触碰存档和版本主体。"),
+        new("下载自定义文件", "使用 PCL Sharp 下载队列下载任意直链文件。")
     ];
 
     public IReadOnlyList<PageStatusCard> FeedbackItems { get; } =
@@ -230,6 +267,304 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         OnPropertyChanged(nameof(IsToolBoxSectionSelected));
         OnPropertyChanged(nameof(IsFeedbackSectionSelected));
         OnPropertyChanged(nameof(IsAboutSectionSelected));
+    }
+
+    partial void OnCustomDownloadUrlChanged(string value)
+    {
+        if (string.IsNullOrWhiteSpace(CustomDownloadFileName))
+        {
+            CustomDownloadFileName = InferFileNameFromUrl(value);
+        }
+
+        StartCustomDownloadCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnCustomDownloadFolderChanged(string value)
+    {
+        StartCustomDownloadCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnCustomDownloadFileNameChanged(string value)
+    {
+        StartCustomDownloadCommand.NotifyCanExecuteChanged();
+    }
+
+    [RelayCommand]
+    private void RollLuck()
+    {
+        var seedText = DateTime.Today.ToString("yyyyMMdd", System.Globalization.CultureInfo.InvariantCulture)
+            + "|"
+            + Environment.UserName;
+        var hash = System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(seedText));
+        var value = BitConverter.ToUInt32(hash, 0) % 101;
+        var comment = value switch
+        {
+            >= 90 => "离谱地好，可以趁热修 Bug。",
+            >= 70 => "不错，今天适合启动整合包。",
+            <= 10 => "谨慎点，先备份再动手。",
+            <= 30 => "一般般，喝口水再继续。",
+            _ => "平稳发挥，继续推进。"
+        };
+        ToolboxStatusText = $"今日人品：{value}，{comment}";
+    }
+
+    [RelayCommand]
+    private async Task OptimizeMemoryAsync()
+    {
+        if (_memoryOptimizer is null)
+        {
+            GC.Collect(GC.MaxGeneration, GCCollectionMode.Aggressive, blocking: true, compacting: true);
+            GC.WaitForPendingFinalizers();
+            ToolboxStatusText = "已执行基础内存优化";
+            return;
+        }
+
+        try
+        {
+            ToolboxStatusText = "正在执行内存优化";
+            var result = await _memoryOptimizer.OptimizeAsync();
+            ToolboxStatusText = "内存优化完成，已处理进程数：" + result.ProcessCount;
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "百宝箱内存优化失败");
+            ToolboxStatusText = "内存优化失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void CleanGameTrash()
+    {
+        var root = GetMinecraftRootPath();
+        if (string.IsNullOrWhiteSpace(root) || !Directory.Exists(root))
+        {
+            ToolboxStatusText = "未找到 Minecraft 文件夹，请先在启动或下载页选择根目录。";
+            return;
+        }
+
+        try
+        {
+            var result = CleanGameTrash(root);
+            ToolboxStatusText = result.DeletedCount == 0
+                ? "没有发现可安全清理的游戏垃圾。"
+                : $"已清理 {result.DeletedCount} 项，释放 {FormatBytes(result.Bytes)}。";
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "清理游戏垃圾失败");
+            ToolboxStatusText = "清理游戏垃圾失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void DoNotClick()
+    {
+        _doNotClickCount++;
+        ToolboxStatusText = _doNotClickCount switch
+        {
+            1 => "都说了千万别点。好吧，已经点了一次。",
+            2 => "第二次了，PCL Sharp 正在假装严肃地记录这件事。",
+            3 => "第三次。放心，这个按钮不会删除世界，只会增加一点戏剧性。",
+            _ => $"你已经点了 {_doNotClickCount} 次。按钮本人表示情绪稳定。"
+        };
+    }
+
+    [RelayCommand]
+    private void OpenEchoCave()
+    {
+        var messages = new[]
+        {
+            "回声洞：截图里的红框基本都是下一轮 UI 优先级。",
+            "回声洞：PCL Sharp 仍是实验品，但会持续向原版行为靠齐。",
+            "回声洞：不要用滚动条偷懒，这条已经刻在待办墙上了。",
+            "回声洞：如果启动链出问题，日志和可复现路径永远第一优先。"
+        };
+        var index = Math.Abs(HashCode.Combine(DateTime.Now.Second, _doNotClickCount)) % messages.Length;
+        EchoCaveText = messages[index];
+        ToolboxStatusText = "已刷新回声洞留言";
+    }
+
+    [RelayCommand]
+    private void BrowseCustomDownloadFolder()
+    {
+        if (_fileDialogs is null)
+        {
+            CustomDownloadStatusText = "文件夹选择器未初始化";
+            return;
+        }
+
+        var selected = _fileDialogs.PickFolder("选择自定义下载保存位置", CustomDownloadFolder);
+        if (!string.IsNullOrWhiteSpace(selected))
+        {
+            CustomDownloadFolder = selected;
+            CustomDownloadStatusText = "保存位置已更新：" + selected;
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanStartCustomDownload))]
+    private async Task StartCustomDownloadAsync()
+    {
+        if (_downloadManager is null)
+        {
+            CustomDownloadStatusText = "下载管理器未初始化";
+            return;
+        }
+
+        var url = CustomDownloadUrl.Trim();
+        var fileName = SanitizeFileName(string.IsNullOrWhiteSpace(CustomDownloadFileName) ? InferFileNameFromUrl(url) : CustomDownloadFileName);
+        var folder = CustomDownloadFolder.Trim();
+        var localPath = Path.Combine(folder, fileName);
+        try
+        {
+            Directory.CreateDirectory(folder);
+            CustomDownloadFileName = fileName;
+            CustomDownloadStatusText = "已创建下载任务：" + fileName;
+            var file = new DownloadFile([url], localPath, new DownloadFileCheck(MinSize: 1, CanUseExistingFile: false), SimulateBrowserHeaders: true);
+            var snapshot = await _downloadManager.DownloadAsync("自定义下载：" + fileName, [file]);
+            CustomDownloadStatusText = snapshot.State switch
+            {
+                DownloadTaskState.Succeeded => "自定义文件下载完成：" + localPath,
+                DownloadTaskState.Canceled => "自定义文件下载已取消：" + fileName,
+                DownloadTaskState.Failed => "自定义文件下载失败：" + snapshot.Message,
+                _ => snapshot.Message
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "自定义文件下载失败");
+            CustomDownloadStatusText = "自定义文件下载失败：" + ex.Message;
+        }
+    }
+
+    private bool CanStartCustomDownload()
+    {
+        return Uri.TryCreate(CustomDownloadUrl.Trim(), UriKind.Absolute, out var uri)
+            && uri.Scheme is "http" or "https"
+            && !string.IsNullOrWhiteSpace(CustomDownloadFolder)
+            && !string.IsNullOrWhiteSpace(CustomDownloadFileName);
+    }
+
+    private string GetMinecraftRootPath()
+    {
+        var saved = _settings?.Get(AppSettingKeys.MinecraftRootPath, "") ?? "";
+        if (!string.IsNullOrWhiteSpace(saved))
+        {
+            return saved;
+        }
+
+        return Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+            ".minecraft");
+    }
+
+    private static string InferFileNameFromUrl(string url)
+    {
+        if (Uri.TryCreate(url.Trim(), UriKind.Absolute, out var uri))
+        {
+            var name = Path.GetFileName(Uri.UnescapeDataString(uri.LocalPath));
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                return SanitizeFileName(name);
+            }
+        }
+
+        return "download.file";
+    }
+
+    private static string SanitizeFileName(string fileName)
+    {
+        var invalid = Path.GetInvalidFileNameChars();
+        var cleaned = new string(fileName.Trim().Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray());
+        return string.IsNullOrWhiteSpace(cleaned) ? "download.file" : cleaned;
+    }
+
+    private static (int DeletedCount, long Bytes) CleanGameTrash(string root)
+    {
+        var candidates = new List<FileSystemInfo>();
+        var rootInfo = new DirectoryInfo(root);
+        AddFiles(candidates, Path.Combine(root, "logs"), "*.log.gz");
+        AddFiles(candidates, Path.Combine(root, "logs"), "*.log.tmp");
+        AddFiles(candidates, Path.Combine(root, "logs"), "*.tmp");
+        AddFiles(candidates, Path.Combine(root, "crash-reports"), "*.tmp");
+
+        var versions = Path.Combine(root, "versions");
+        if (Directory.Exists(versions))
+        {
+            foreach (var directory in Directory.EnumerateDirectories(versions, "*-natives", SearchOption.AllDirectories))
+            {
+                candidates.Add(new DirectoryInfo(directory));
+            }
+        }
+
+        var deleted = 0;
+        long bytes = 0;
+        foreach (var item in candidates)
+        {
+            try
+            {
+                if (!IsUnderRoot(rootInfo.FullName, item.FullName))
+                {
+                    continue;
+                }
+
+                bytes += item is FileInfo file ? file.Length : GetDirectorySize((DirectoryInfo)item);
+                if (item is DirectoryInfo directory)
+                {
+                    directory.Delete(recursive: true);
+                }
+                else
+                {
+                    item.Delete();
+                }
+
+                deleted++;
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or DirectoryNotFoundException or FileNotFoundException)
+            {
+            }
+        }
+
+        return (deleted, bytes);
+    }
+
+    private static void AddFiles(List<FileSystemInfo> candidates, string directory, string pattern)
+    {
+        if (!Directory.Exists(directory))
+        {
+            return;
+        }
+
+        candidates.AddRange(Directory.EnumerateFiles(directory, pattern, SearchOption.TopDirectoryOnly)
+            .Select(path => new FileInfo(path))
+            .Where(file => file.LastWriteTimeUtc < DateTime.UtcNow.AddDays(-1)));
+    }
+
+    private static bool IsUnderRoot(string root, string path)
+    {
+        var relative = Path.GetRelativePath(root, path);
+        return !relative.StartsWith("..", StringComparison.Ordinal)
+            && !Path.IsPathRooted(relative);
+    }
+
+    private static long GetDirectorySize(DirectoryInfo directory)
+    {
+        return directory.Exists
+            ? directory.EnumerateFiles("*", SearchOption.AllDirectories).Sum(file => file.Length)
+            : 0;
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        string[] units = ["B", "KB", "MB", "GB"];
+        var value = (double)bytes;
+        var unit = 0;
+        while (value >= 1024 && unit < units.Length - 1)
+        {
+            value /= 1024;
+            unit++;
+        }
+
+        return $"{value:0.##} {units[unit]}";
     }
 
     [RelayCommand]
