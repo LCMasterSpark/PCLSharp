@@ -29,6 +29,11 @@ public sealed record LinkBackendLaunchPlan(
     IReadOnlyList<string> PlannedOptions,
     string Summary);
 
+public sealed record LinkPortAllocation(
+    int ClientForwardPort,
+    int RpcPortalPort,
+    int ListenersPort);
+
 public enum LinkProcessState
 {
     Stopped,

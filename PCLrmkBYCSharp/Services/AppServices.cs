@@ -102,7 +102,7 @@ public sealed class AppServices
             showHint: (message, _) => prompts.Confirm("提示", message),
             settings: settings);
         var linkService = new PclLinkService();
-        var linkBackend = new LinkBackendService();
+        var linkBackend = new LinkBackendService(new LinkPortAllocator());
         var linkProcess = new LinkProcessService(new LinkProcessRunner(), logger);
         var instanceManagement = new MinecraftInstanceManagementService();
         var minecraftDiscovery = new MinecraftDiscoveryService(instanceManagement);

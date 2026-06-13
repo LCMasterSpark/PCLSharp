@@ -4,9 +4,15 @@ using PCLrmkBYCSharp.Models;
 
 namespace PCLrmkBYCSharp.Services.Link;
 
-    public sealed class LinkBackendService : ILinkBackendService
+public sealed class LinkBackendService : ILinkBackendService
 {
     private const string HostVirtualAddress = "10.114.114.114";
+    private readonly ILinkPortAllocator _portAllocator;
+
+    public LinkBackendService(ILinkPortAllocator? portAllocator = null)
+    {
+        _portAllocator = portAllocator ?? new LinkPortAllocator();
+    }
 
     public LinkBackendStatus GetStatus(LinkProviderKind provider, string? executablePath)
     {
@@ -48,8 +54,11 @@ namespace PCLrmkBYCSharp.Services.Link;
         string? executablePath)
     {
         var status = GetStatus(provider, executablePath);
-        var options = BuildPlannedOptions(role, invite, latencyMode, customPeer);
-        var arguments = BuildProcessArguments(role, invite, latencyMode, customPeer);
+        var ports = status.CanStart
+            ? _portAllocator.Allocate(invite.ServerPort)
+            : new LinkPortAllocation(invite.ServerPort, 0, 0);
+        var options = BuildPlannedOptions(role, invite, latencyMode, customPeer, ports);
+        var arguments = BuildProcessArguments(role, invite, latencyMode, customPeer, ports);
         var roleText = role == LinkRoomRole.Host ? "创建房间" : "加入房间";
         var summary = $"{status.DisplayName} / {roleText} / 端口 {invite.ServerPort} / 网络 {invite.NetworkName}";
         return new LinkBackendLaunchPlan(
@@ -64,7 +73,7 @@ namespace PCLrmkBYCSharp.Services.Link;
             summary);
     }
 
-    private static IReadOnlyList<string> BuildPlannedOptions(LinkRoomRole role, LinkInviteInfo invite, LinkLatencyMode latencyMode, string? customPeer)
+    private static IReadOnlyList<string> BuildPlannedOptions(LinkRoomRole role, LinkInviteInfo invite, LinkLatencyMode latencyMode, string? customPeer, LinkPortAllocation ports)
     {
         var peers = SplitPeers(customPeer).ToArray();
         var tcpWhitelist = role == LinkRoomRole.Host ? invite.ServerPort : 0;
@@ -77,7 +86,9 @@ namespace PCLrmkBYCSharp.Services.Link;
             "network-secret=***",
             "latency-mode=" + (latencyMode == LinkLatencyMode.DirectFirst ? "direct-first" : "latency-first"),
             "tcp-whitelist=" + tcpWhitelist,
-            "udp-whitelist=" + udpWhitelist
+            "udp-whitelist=" + udpWhitelist,
+            "listeners-port=" + ports.ListenersPort,
+            "rpc-portal-port=" + ports.RpcPortalPort
         };
 
         if (invite.DiscoverNodeId > 0)
@@ -93,19 +104,23 @@ namespace PCLrmkBYCSharp.Services.Link;
 
         if (role == LinkRoomRole.Joiner)
         {
-            options.Add("client-forward-port=" + invite.ServerPort);
-            options.AddRange(BuildPortForwardSpecs(invite.ServerPort).Select(forward => "port-forward=" + forward));
+            options.Add("client-forward-port=" + ports.ClientForwardPort);
+            options.AddRange(BuildPortForwardSpecs(invite.ServerPort, ports.ClientForwardPort).Select(forward => "port-forward=" + forward));
         }
 
         return options;
     }
 
-    private static string BuildProcessArguments(LinkRoomRole role, LinkInviteInfo invite, LinkLatencyMode latencyMode, string? customPeer)
+    private static string BuildProcessArguments(LinkRoomRole role, LinkInviteInfo invite, LinkLatencyMode latencyMode, string? customPeer, LinkPortAllocation ports)
     {
         var arguments = new List<string>
         {
             "--network-name=" + QuoteArgumentValue(invite.NetworkName),
             "--network-secret=" + QuoteArgumentValue(invite.NetworkSecret),
+            "--listeners",
+            ports.ListenersPort.ToString(),
+            "--rpc-portal",
+            ports.RpcPortalPort.ToString(),
             "--private-mode",
             "true"
         };
@@ -124,7 +139,7 @@ namespace PCLrmkBYCSharp.Services.Link;
             arguments.Add("--hostname=" + QuoteArgumentValue("PCLSharp-Client"));
             arguments.Add("--tcp-whitelist=0");
             arguments.Add("--udp-whitelist=0");
-            foreach (var forward in BuildPortForwardSpecs(invite.ServerPort))
+            foreach (var forward in BuildPortForwardSpecs(invite.ServerPort, ports.ClientForwardPort))
             {
                 arguments.Add("--port-forward");
                 arguments.Add(QuoteArgumentValue(forward));
@@ -145,16 +160,16 @@ namespace PCLrmkBYCSharp.Services.Link;
         return string.Join(" ", arguments);
     }
 
-    private static IReadOnlyList<string> BuildPortForwardSpecs(int port)
+    private static IReadOnlyList<string> BuildPortForwardSpecs(int serverPort, int clientForwardPort)
     {
         var ipv6Loopback = IPAddress.IPv6Loopback.ToString();
         var ipv4Loopback = IPAddress.Loopback.ToString();
         return
         [
-            $"tcp://[{ipv6Loopback}]:{port}/{HostVirtualAddress}:{port}",
-            $"udp://[{ipv6Loopback}]:{port}/{HostVirtualAddress}:{port}",
-            $"tcp://{ipv4Loopback}:{port}/{HostVirtualAddress}:{port}",
-            $"udp://{ipv4Loopback}:{port}/{HostVirtualAddress}:{port}"
+            $"tcp://[{ipv6Loopback}]:{clientForwardPort}/{HostVirtualAddress}:{serverPort}",
+            $"udp://[{ipv6Loopback}]:{clientForwardPort}/{HostVirtualAddress}:{serverPort}",
+            $"tcp://{ipv4Loopback}:{clientForwardPort}/{HostVirtualAddress}:{serverPort}",
+            $"udp://{ipv4Loopback}:{clientForwardPort}/{HostVirtualAddress}:{serverPort}"
         ];
     }
 

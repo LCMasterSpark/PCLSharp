@@ -70,7 +70,7 @@ public sealed class PclLinkServiceTests
     [Fact]
     public void LinkBackendServiceReportsMissingExecutable()
     {
-        var service = new LinkBackendService();
+        var service = CreateLinkBackendService();
 
         var status = service.GetStatus(LinkProviderKind.Terracotta, "");
 
@@ -85,7 +85,7 @@ public sealed class PclLinkServiceTests
         using var temp = new TempDirectory();
         var executable = Path.Combine(temp.Path, "terracotta.exe");
         File.WriteAllText(executable, "");
-        var service = new LinkBackendService();
+        var service = CreateLinkBackendService();
         var invite = new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0);
 
         var plan = service.CreatePlan(LinkRoomRole.Host, LinkProviderKind.Terracotta, invite, LinkLatencyMode.DirectFirst, "peer.example", executable);
@@ -98,6 +98,8 @@ public sealed class PclLinkServiceTests
         Assert.Contains("custom-peer=peer.example", plan.PlannedOptions);
         Assert.Contains("--tcp-whitelist=25565", plan.ProcessArguments, StringComparison.Ordinal);
         Assert.Contains("--udp-whitelist=25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--listeners 25572", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--rpc-portal 25571", plan.ProcessArguments, StringComparison.Ordinal);
         Assert.DoesNotContain("--port-forward", plan.ProcessArguments, StringComparison.Ordinal);
     }
 
@@ -107,7 +109,7 @@ public sealed class PclLinkServiceTests
         using var temp = new TempDirectory();
         var executable = Path.Combine(temp.Path, "terracotta.exe");
         File.WriteAllText(executable, "");
-        var service = new LinkBackendService();
+        var service = CreateLinkBackendService();
         var invite = new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0);
 
         var plan = service.CreatePlan(LinkRoomRole.Joiner, LinkProviderKind.Terracotta, invite, LinkLatencyMode.DirectFirst, "", executable);
@@ -115,12 +117,16 @@ public sealed class PclLinkServiceTests
         Assert.True(plan.CanStart);
         Assert.Contains("--tcp-whitelist=0", plan.ProcessArguments, StringComparison.Ordinal);
         Assert.Contains("--udp-whitelist=0", plan.ProcessArguments, StringComparison.Ordinal);
-        Assert.Contains("--port-forward tcp://[::1]:25565/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
-        Assert.Contains("--port-forward udp://[::1]:25565/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
-        Assert.Contains("--port-forward tcp://127.0.0.1:25565/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
-        Assert.Contains("--port-forward udp://127.0.0.1:25565/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--listeners 25572", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--rpc-portal 25571", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--port-forward tcp://[::1]:25570/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--port-forward udp://[::1]:25570/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--port-forward tcp://127.0.0.1:25570/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--port-forward udp://127.0.0.1:25570/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
         Assert.Equal(4, CountOccurrences(plan.ProcessArguments, "--port-forward "));
-        Assert.Contains("client-forward-port=25565", plan.PlannedOptions);
+        Assert.Contains("client-forward-port=25570", plan.PlannedOptions);
+        Assert.Contains("listeners-port=25572", plan.PlannedOptions);
+        Assert.Contains("rpc-portal-port=25571", plan.PlannedOptions);
         Assert.Equal(4, plan.PlannedOptions.Count(option => option.StartsWith("port-forward=", StringComparison.Ordinal)));
     }
 
@@ -130,7 +136,7 @@ public sealed class PclLinkServiceTests
         using var temp = new TempDirectory();
         var executable = Path.Combine(temp.Path, "terracotta.exe");
         File.WriteAllText(executable, "");
-        var service = new LinkBackendService();
+        var service = CreateLinkBackendService();
         var invite = new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0);
         var peers = "tcp://a.example:11010, tcp://b.example:11010\r\ntcp://a.example:11010；tcp://c.example:11010";
 
@@ -150,7 +156,7 @@ public sealed class PclLinkServiceTests
         using var temp = new TempDirectory();
         var executable = Path.Combine(temp.Path, "easytier.exe");
         File.WriteAllText(executable, "");
-        var backend = new LinkBackendService();
+        var backend = CreateLinkBackendService();
         var plan = backend.CreatePlan(
             LinkRoomRole.Host,
             LinkProviderKind.EasyTier,
@@ -185,7 +191,7 @@ public sealed class PclLinkServiceTests
         using var temp = new TempDirectory();
         var executable = Path.Combine(temp.Path, "easytier.exe");
         File.WriteAllText(executable, "");
-        var backend = new LinkBackendService();
+        var backend = CreateLinkBackendService();
         var plan = backend.CreatePlan(
             LinkRoomRole.Host,
             LinkProviderKind.EasyTier,
@@ -231,7 +237,7 @@ public sealed class PclLinkServiceTests
         using var temp = new TempDirectory();
         var executable = Path.Combine(temp.Path, "easytier.exe");
         File.WriteAllText(executable, "");
-        var plan = new LinkBackendService().CreatePlan(
+        var plan = CreateLinkBackendService().CreatePlan(
             LinkRoomRole.Joiner,
             LinkProviderKind.EasyTier,
             new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0),
@@ -260,7 +266,7 @@ public sealed class PclLinkServiceTests
         using var temp = new TempDirectory();
         var executable = Path.Combine(temp.Path, "easytier.exe");
         File.WriteAllText(executable, "");
-        var plan = new LinkBackendService().CreatePlan(
+        var plan = CreateLinkBackendService().CreatePlan(
             LinkRoomRole.Joiner,
             LinkProviderKind.EasyTier,
             new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0),
@@ -315,6 +321,11 @@ public sealed class PclLinkServiceTests
         public string? PickSaveFile(string title, string initialDirectory, string defaultFileName, string filter) => null;
     }
 
+    private static LinkBackendService CreateLinkBackendService()
+    {
+        return new LinkBackendService(new FixedLinkPortAllocator());
+    }
+
     private static int CountOccurrences(string value, string token)
     {
         var count = 0;
@@ -326,6 +337,14 @@ public sealed class PclLinkServiceTests
         }
 
         return count;
+    }
+
+    private sealed class FixedLinkPortAllocator : ILinkPortAllocator
+    {
+        public LinkPortAllocation Allocate(int minecraftPort)
+        {
+            return new LinkPortAllocation(25570, 25571, 25572);
+        }
     }
 
     private sealed class CaptureLinkProcessRunner : ILinkProcessRunner
