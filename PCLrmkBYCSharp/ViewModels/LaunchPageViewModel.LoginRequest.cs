@@ -151,12 +151,13 @@ public sealed partial class LaunchPageViewModel
     private string? ResolveLaunchJavaPath()
     {
         var configuredJavaPath = ResolveJavaPath(SelectedInstance?.Name);
-        if (SelectedInstance is not null
-            && SelectedJava is not null
-            && !ShouldIgnoreJavaCompatibility(SelectedInstance.Name)
-            && !string.IsNullOrWhiteSpace(configuredJavaPath)
-            && !string.Equals(SelectedJava.PathJava, configuredJavaPath, StringComparison.OrdinalIgnoreCase))
+        if (SelectedInstance is not null && !ShouldIgnoreJavaCompatibility(SelectedInstance.Name))
         {
+            if (SelectedJava is null || !_javaSelector.GetRequirement(SelectedInstance).Allows(SelectedJava))
+            {
+                return null;
+            }
+
             return SelectedJava.PathJava;
         }
 

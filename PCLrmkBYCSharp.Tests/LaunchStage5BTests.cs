@@ -1177,6 +1177,80 @@ public sealed class LaunchStage5BTests
     }
 
     [Fact]
+    public async Task LaunchPageLeavesJavaUnselectedWhenOnlyIncompatibleJavaIsAvailable()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteVersion(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var java25Path = Path.Combine(temp.Path, "java-25", "bin", "java.exe");
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        settings.Set(AppSettingKeys.MinecraftRootPath, temp.Path);
+        settings.Set(AppSettingKeys.SelectedInstanceName, instance.Name);
+        settings.Set(AppSettingKeys.LaunchArgumentJavaSelect, java25Path);
+        var pipeline = new CaptureLaunchPipelineService();
+        var viewModel = new LaunchPageViewModel(
+            new FakeMinecraftDiscoveryService(temp.Path, [instance]),
+            new FakeJavaDiscoveryService([
+                new JavaEntry(java25Path, new Version(1, 25, 0, 2), false, true, false, true)
+            ]),
+            pipeline,
+            settings,
+            new NullFileDialogService(),
+            new LegacyLoginService(),
+            new NullLoggerService());
+
+        await viewModel.InitializeAsync();
+
+        Assert.Null(viewModel.SelectedJava);
+        Assert.Contains("未找到满足", viewModel.StatusMessage);
+        await viewModel.GenerateProfileCommand.ExecuteAsync(null);
+
+        Assert.Null(pipeline.LastRequest?.JavaPath);
+    }
+
+    [Fact]
+    public async Task LaunchPageDoesNotUseManuallySelectedIncompatibleJavaWithoutOverride()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteVersion(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var java17Path = Path.Combine(temp.Path, "java-17", "bin", "java.exe");
+        var java25Path = Path.Combine(temp.Path, "java-25", "bin", "java.exe");
+        var java25 = new JavaEntry(java25Path, new Version(1, 25, 0, 2), false, true, false, true);
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        settings.Set(AppSettingKeys.MinecraftRootPath, temp.Path);
+        settings.Set(AppSettingKeys.SelectedInstanceName, instance.Name);
+        var pipeline = new CaptureLaunchPipelineService();
+        var viewModel = new LaunchPageViewModel(
+            new FakeMinecraftDiscoveryService(temp.Path, [instance]),
+            new FakeJavaDiscoveryService([
+                java25,
+                new JavaEntry(java17Path, new Version(1, 17, 0, 8), false, true, false, true)
+            ]),
+            pipeline,
+            settings,
+            new NullFileDialogService(),
+            new LegacyLoginService(),
+            new NullLoggerService());
+
+        await viewModel.InitializeAsync();
+        viewModel.SelectedJava = java25;
+        await viewModel.GenerateProfileCommand.ExecuteAsync(null);
+
+        Assert.Null(pipeline.LastRequest?.JavaPath);
+    }
+
+    [Fact]
     public async Task LaunchPageSavesSelectedGlobalJavaAsOldPclJson()
     {
         using var temp = new TempDirectory();

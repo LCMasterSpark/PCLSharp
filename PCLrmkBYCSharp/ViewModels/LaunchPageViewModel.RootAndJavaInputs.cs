@@ -51,9 +51,7 @@ public sealed partial class LaunchPageViewModel
             return savedEntry;
         }
 
-        return _javaSelector.SelectBest(SelectedInstance, JavaEntries, savedJava)
-            ?? savedEntry
-            ?? JavaEntries.FirstOrDefault();
+        return _javaSelector.SelectBest(SelectedInstance, JavaEntries, savedJava);
     }
 
     private string BuildJavaScanStatus(string savedJava, JavaEntry? selectedJava)
