@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Plain Craft Launcher Sharp": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}
