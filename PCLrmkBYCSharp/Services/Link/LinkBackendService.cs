@@ -1,10 +1,13 @@
 using System.IO;
+using System.Net;
 using PCLrmkBYCSharp.Models;
 
 namespace PCLrmkBYCSharp.Services.Link;
 
-public sealed class LinkBackendService : ILinkBackendService
+    public sealed class LinkBackendService : ILinkBackendService
 {
+    private const string HostVirtualAddress = "10.114.114.114";
+
     public LinkBackendStatus GetStatus(LinkProviderKind provider, string? executablePath)
     {
         var displayName = GetDisplayName(provider);
@@ -64,13 +67,17 @@ public sealed class LinkBackendService : ILinkBackendService
     private static IReadOnlyList<string> BuildPlannedOptions(LinkRoomRole role, LinkInviteInfo invite, LinkLatencyMode latencyMode, string? customPeer)
     {
         var peers = SplitPeers(customPeer).ToArray();
+        var tcpWhitelist = role == LinkRoomRole.Host ? invite.ServerPort : 0;
+        var udpWhitelist = role == LinkRoomRole.Host ? invite.ServerPort : 0;
         var options = new List<string>
         {
             "role=" + (role == LinkRoomRole.Host ? "host" : "join"),
             "minecraft-port=" + invite.ServerPort,
             "network-name=" + invite.NetworkName,
             "network-secret=***",
-            "latency-mode=" + (latencyMode == LinkLatencyMode.DirectFirst ? "direct-first" : "latency-first")
+            "latency-mode=" + (latencyMode == LinkLatencyMode.DirectFirst ? "direct-first" : "latency-first"),
+            "tcp-whitelist=" + tcpWhitelist,
+            "udp-whitelist=" + udpWhitelist
         };
 
         if (invite.DiscoverNodeId > 0)
@@ -84,6 +91,12 @@ public sealed class LinkBackendService : ILinkBackendService
             options.AddRange(peers.Select(peer => "custom-peer=" + peer));
         }
 
+        if (role == LinkRoomRole.Joiner)
+        {
+            options.Add("client-forward-port=" + invite.ServerPort);
+            options.AddRange(BuildPortForwardSpecs(invite.ServerPort).Select(forward => "port-forward=" + forward));
+        }
+
         return options;
     }
 
@@ -94,21 +107,28 @@ public sealed class LinkBackendService : ILinkBackendService
             "--network-name=" + QuoteArgumentValue(invite.NetworkName),
             "--network-secret=" + QuoteArgumentValue(invite.NetworkSecret),
             "--private-mode",
-            "true",
-            "--tcp-whitelist=" + invite.ServerPort,
-            "--udp-whitelist=" + invite.ServerPort
+            "true"
         };
 
         if (role == LinkRoomRole.Host)
         {
             arguments.Add("-i");
-            arguments.Add("10.114.114.114");
+            arguments.Add(HostVirtualAddress);
             arguments.Add("--hostname=" + QuoteArgumentValue("PCLSharp-Host"));
+            arguments.Add("--tcp-whitelist=" + invite.ServerPort);
+            arguments.Add("--udp-whitelist=" + invite.ServerPort);
         }
         else
         {
             arguments.Add("-d");
             arguments.Add("--hostname=" + QuoteArgumentValue("PCLSharp-Client"));
+            arguments.Add("--tcp-whitelist=0");
+            arguments.Add("--udp-whitelist=0");
+            foreach (var forward in BuildPortForwardSpecs(invite.ServerPort))
+            {
+                arguments.Add("--port-forward");
+                arguments.Add(QuoteArgumentValue(forward));
+            }
         }
 
         if (latencyMode == LinkLatencyMode.LatencyFirst)
@@ -123,6 +143,19 @@ public sealed class LinkBackendService : ILinkBackendService
         }
 
         return string.Join(" ", arguments);
+    }
+
+    private static IReadOnlyList<string> BuildPortForwardSpecs(int port)
+    {
+        var ipv6Loopback = IPAddress.IPv6Loopback.ToString();
+        var ipv4Loopback = IPAddress.Loopback.ToString();
+        return
+        [
+            $"tcp://[{ipv6Loopback}]:{port}/{HostVirtualAddress}:{port}",
+            $"udp://[{ipv6Loopback}]:{port}/{HostVirtualAddress}:{port}",
+            $"tcp://{ipv4Loopback}:{port}/{HostVirtualAddress}:{port}",
+            $"udp://{ipv4Loopback}:{port}/{HostVirtualAddress}:{port}"
+        ];
     }
 
     private static IEnumerable<string> SplitPeers(string? customPeer)

@@ -96,6 +96,32 @@ public sealed class PclLinkServiceTests
         Assert.Contains("network-secret=***", plan.PlannedOptions);
         Assert.DoesNotContain("SECRET", string.Join(" ", plan.PlannedOptions), StringComparison.Ordinal);
         Assert.Contains("custom-peer=peer.example", plan.PlannedOptions);
+        Assert.Contains("--tcp-whitelist=25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--udp-whitelist=25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.DoesNotContain("--port-forward", plan.ProcessArguments, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LinkBackendServiceBuildsJoinerPortForwardArguments()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "terracotta.exe");
+        File.WriteAllText(executable, "");
+        var service = new LinkBackendService();
+        var invite = new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0);
+
+        var plan = service.CreatePlan(LinkRoomRole.Joiner, LinkProviderKind.Terracotta, invite, LinkLatencyMode.DirectFirst, "", executable);
+
+        Assert.True(plan.CanStart);
+        Assert.Contains("--tcp-whitelist=0", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--udp-whitelist=0", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--port-forward tcp://[::1]:25565/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--port-forward udp://[::1]:25565/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--port-forward tcp://127.0.0.1:25565/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Contains("--port-forward udp://127.0.0.1:25565/10.114.114.114:25565", plan.ProcessArguments, StringComparison.Ordinal);
+        Assert.Equal(4, CountOccurrences(plan.ProcessArguments, "--port-forward "));
+        Assert.Contains("client-forward-port=25565", plan.PlannedOptions);
+        Assert.Equal(4, plan.PlannedOptions.Count(option => option.StartsWith("port-forward=", StringComparison.Ordinal)));
     }
 
     [Fact]
