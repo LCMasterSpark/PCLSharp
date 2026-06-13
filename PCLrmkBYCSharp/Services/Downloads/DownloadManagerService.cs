@@ -20,7 +20,16 @@ public sealed class DownloadManagerService(
 
     public async Task<DownloadTaskSnapshot> DownloadAsync(string name, IReadOnlyList<DownloadFile> files, CancellationToken cancellationToken = default)
     {
-        var distinctFiles = files.DistinctBy(file => file.LocalPath, StringComparer.OrdinalIgnoreCase).ToList();
+        var requestedFiles = files.DistinctBy(file => file.LocalPath, StringComparer.OrdinalIgnoreCase).ToList();
+        var distinctFiles = FilterQueuedFiles(requestedFiles);
+        if (distinctFiles.Count == 0)
+        {
+            var message = requestedFiles.Count == 0
+                ? "没有需要下载的文件"
+                : "所有文件已在下载队列中，已跳过重复下载";
+            return Publish(name, DownloadTaskState.Succeeded, 0, 0, 0, message, distinctFiles);
+        }
+
         using var taskCancellation = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         _contexts[name] = new DownloadTaskContext(distinctFiles, taskCancellation);
         var finished = 0;
@@ -265,6 +274,23 @@ public sealed class DownloadManagerService(
                 logger.Error(ex, "下载任务快照订阅者处理失败：" + snapshot.Name);
             }
         }
+    }
+
+    private List<DownloadFile> FilterQueuedFiles(IReadOnlyList<DownloadFile> files)
+    {
+        var activePaths = _tasks.Values
+            .Where(task => task.State is DownloadTaskState.Waiting or DownloadTaskState.Running)
+            .SelectMany(task => task.LocalPaths.Append(task.PrimaryLocalPath))
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (activePaths.Count == 0)
+        {
+            return files.ToList();
+        }
+
+        return files
+            .Where(file => string.IsNullOrWhiteSpace(file.LocalPath) || !activePaths.Contains(file.LocalPath))
+            .ToList();
     }
 
     private static void TryDelete(string path)

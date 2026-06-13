@@ -247,6 +247,35 @@ public sealed class DownloadServicesTests
     }
 
     [Fact]
+    public async Task DownloadManagerSkipsFilesAlreadyCoveredByRunningTasks()
+    {
+        using var temp = new TempDirectory();
+        var sharedPath = Path.Combine(temp.Path, "shared.bin");
+        var uniquePath = Path.Combine(temp.Path, "unique.bin");
+        var client = new DelayedDownloadByteClient(TimeSpan.FromSeconds(10), releaseAfterConcurrentRequests: 2);
+        client.Map("https://example.invalid/shared.bin", [1, 2, 3]);
+        client.Map("https://example.invalid/unique.bin", [4, 5, 6, 7]);
+        var manager = new DownloadManagerService(client, new FileCheckService(new NullLoggerService()), new NullLoggerService());
+
+        var firstTask = manager.DownloadAsync("first", [
+            new DownloadFile(["https://example.invalid/shared.bin"], sharedPath, new DownloadFileCheck(ActualSize: 3))
+        ]);
+        await client.WaitForFirstRequestAsync();
+        var second = await manager.DownloadAsync("second", [
+            new DownloadFile(["https://example.invalid/shared.bin"], sharedPath, new DownloadFileCheck(ActualSize: 3)),
+            new DownloadFile(["https://example.invalid/unique.bin"], uniquePath, new DownloadFileCheck(ActualSize: 4))
+        ]);
+        var first = await firstTask;
+
+        Assert.Equal(DownloadTaskState.Succeeded, first.State);
+        Assert.Equal(DownloadTaskState.Succeeded, second.State);
+        Assert.Equal(1, second.TotalFiles);
+        Assert.Equal(uniquePath, second.PrimaryLocalPath);
+        Assert.Equal([4, 5, 6, 7], await File.ReadAllBytesAsync(uniquePath));
+        Assert.Equal([1, 2, 3], await File.ReadAllBytesAsync(sharedPath));
+    }
+
+    [Fact]
     public async Task DownloadManagerTriesNextSourceAfterFailure()
     {
         using var temp = new TempDirectory();
