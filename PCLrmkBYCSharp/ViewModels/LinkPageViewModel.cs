@@ -1,6 +1,6 @@
+using System.IO;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.IO;
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services;
 using PCLrmkBYCSharp.Services.Link;
@@ -35,6 +35,10 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         _urls = urls;
         _fileDialogs = fileDialogs;
         _linkProcess = linkProcess;
+        if (_linkProcess is not null)
+        {
+            _linkProcess.SnapshotChanged += HandleProcessSnapshotChanged;
+        }
 
         ProviderOptions =
         [
@@ -92,7 +96,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private string parsedInviteSummary = "输入 PCL 邀请码后可先验证格式；真正启动联机进程会在后续阶段接入。";
 
     [ObservableProperty]
-    private string statusMessage = "已保留陶瓦联机 / EasyTier 的接入位置；当前会检测后端二进制并生成启动计划。";
+    private string statusMessage = "已保留陶瓦联机 / EasyTier 的接入位置；当前会检测后端二进制、生成启动计划并采集后端日志。";
 
     [ObservableProperty]
     private string backendStatusText = "";
@@ -102,6 +106,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
 
     [ObservableProperty]
     private string linkProcessStatusText = "联机后端未启动。";
+
+    [ObservableProperty]
+    private string linkProcessLogText = "联机后端输出会显示在这里。";
 
     public bool HasUrlService => _urls is not null;
 
@@ -153,7 +160,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         }
 
         StatusMessage = BackendPlanText.Contains("后端已就绪", StringComparison.Ordinal)
-            ? "联机启动计划已生成，下一步会接入真实进程启动。"
+            ? "联机启动计划已生成，可以尝试启动联机后端。"
             : "已生成联机启动计划，但后端二进制尚未配置，暂不会启动进程。";
     }
 
@@ -162,20 +169,17 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     {
         if (_linkProcess is null)
         {
-            LinkProcessStatusText = "当前环境没有联机进程服务。";
-            StatusMessage = LinkProcessStatusText;
+            ApplyProcessStatus("当前环境没有联机进程服务。");
             return;
         }
 
         if (_currentPlan is null)
         {
-            LinkProcessStatusText = "请先创建房间或验证邀请码，生成联机启动计划。";
-            StatusMessage = LinkProcessStatusText;
+            ApplyProcessStatus("请先创建房间或验证邀请码，生成联机启动计划。");
             return;
         }
 
-        var snapshot = _linkProcess.Start(_currentPlan);
-        ApplyProcessSnapshot(snapshot);
+        ApplyProcessSnapshot(_linkProcess.Start(_currentPlan));
     }
 
     [RelayCommand]
@@ -183,8 +187,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     {
         if (_linkProcess is null)
         {
-            LinkProcessStatusText = "当前环境没有联机进程服务。";
-            StatusMessage = LinkProcessStatusText;
+            ApplyProcessStatus("当前环境没有联机进程服务。");
             return;
         }
 
@@ -289,6 +292,11 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
             : plan.Summary + Environment.NewLine + "暂不能启动：" + plan.BlockReason + Environment.NewLine + "计划参数：" + Environment.NewLine + options;
     }
 
+    private void HandleProcessSnapshotChanged(object? sender, LinkProcessSnapshot snapshot)
+    {
+        ApplyProcessSnapshot(snapshot);
+    }
+
     private void ApplyProcessSnapshot(LinkProcessSnapshot snapshot)
     {
         LinkProcessStatusText = snapshot.ProcessId is null
@@ -299,7 +307,16 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
             LinkProcessStatusText += Environment.NewLine + snapshot.CommandPreview;
         }
 
+        LinkProcessLogText = snapshot.RecentLogLines.Count == 0
+            ? "暂无联机后端输出。"
+            : string.Join(Environment.NewLine, snapshot.RecentLogLines);
         StatusMessage = snapshot.Message;
+    }
+
+    private void ApplyProcessStatus(string message)
+    {
+        LinkProcessStatusText = message;
+        StatusMessage = message;
     }
 
     private string GetSelectedExecutablePath()

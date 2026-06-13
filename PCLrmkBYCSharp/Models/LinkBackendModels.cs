@@ -40,4 +40,5 @@ public sealed record LinkProcessSnapshot(
     LinkProcessState State,
     int? ProcessId,
     string Message,
-    string CommandPreview);
+    string CommandPreview,
+    IReadOnlyList<string> RecentLogLines);

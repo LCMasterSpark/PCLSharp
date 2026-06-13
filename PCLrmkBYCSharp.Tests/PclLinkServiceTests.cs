@@ -134,6 +134,36 @@ public sealed class PclLinkServiceTests
     }
 
     [Fact]
+    public void LinkProcessServiceCapturesRecentOutputAndMasksSecrets()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "easytier.exe");
+        File.WriteAllText(executable, "");
+        var backend = new LinkBackendService();
+        var plan = backend.CreatePlan(
+            LinkRoomRole.Host,
+            LinkProviderKind.EasyTier,
+            new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0),
+            LinkLatencyMode.DirectFirst,
+            "",
+            executable);
+        var runner = new CaptureLinkProcessRunner();
+        var service = new LinkProcessService(runner, new NullLoggerService());
+        var snapshots = new List<LinkProcessSnapshot>();
+        service.SnapshotChanged += (_, snapshot) => snapshots.Add(snapshot);
+
+        service.Start(plan);
+        runner.Handle.Publish("new peer connection added remote_addr=10.0.0.2");
+        runner.Handle.Publish("--network-secret=SECRET backend warning", isError: true);
+
+        Assert.Contains(snapshots, snapshot => snapshot.Message == "已建立联机节点连接。");
+        Assert.Equal("联机后端输出错误日志。", service.Current.Message);
+        Assert.Contains(service.Current.RecentLogLines, line => line.Contains("[OUT] new peer connection added", StringComparison.Ordinal));
+        Assert.Contains(service.Current.RecentLogLines, line => line.Contains("[ERR] --network-secret=***", StringComparison.Ordinal));
+        Assert.DoesNotContain("SECRET", string.Join(Environment.NewLine, service.Current.RecentLogLines), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void LinkProcessServiceStopsRunningBackend()
     {
         using var temp = new TempDirectory();
@@ -212,11 +242,18 @@ public sealed class PclLinkServiceTests
 
     private sealed class CaptureLinkProcessHandle : ILinkProcessHandle
     {
+        public event EventHandler<LinkProcessOutputEventArgs>? OutputReceived;
+
         public int Id => 1234;
 
         public bool HasExited { get; private set; }
 
         public bool Stopped { get; private set; }
+
+        public void Publish(string line, bool isError = false)
+        {
+            OutputReceived?.Invoke(this, new LinkProcessOutputEventArgs(line, isError));
+        }
 
         public void Stop()
         {

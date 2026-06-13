@@ -8,8 +8,24 @@ public sealed class LinkProcessRunner : ILinkProcessRunner
 {
     public ILinkProcessHandle Start(ProcessStartInfo startInfo)
     {
-        var process = Process.Start(startInfo) ?? throw new InvalidOperationException("启动联机后端进程失败。");
-        return new LinkProcessHandle(process);
+        var process = new Process
+        {
+            StartInfo = startInfo,
+            EnableRaisingEvents = true
+        };
+        var handle = new LinkProcessHandle(process);
+        process.OutputDataReceived += (_, args) => handle.PublishOutput(args.Data, isError: false);
+        process.ErrorDataReceived += (_, args) => handle.PublishOutput(args.Data, isError: true);
+
+        if (!process.Start())
+        {
+            process.Dispose();
+            throw new InvalidOperationException("启动联机后端进程失败。");
+        }
+
+        process.BeginOutputReadLine();
+        process.BeginErrorReadLine();
+        return handle;
     }
 
     public static ProcessStartInfo CreateStartInfo(string executablePath, string arguments)
@@ -30,6 +46,8 @@ public sealed class LinkProcessRunner : ILinkProcessRunner
 
     private sealed class LinkProcessHandle(Process process) : ILinkProcessHandle
     {
+        public event EventHandler<LinkProcessOutputEventArgs>? OutputReceived;
+
         public int Id => process.Id;
 
         public bool HasExited
@@ -44,6 +62,14 @@ public sealed class LinkProcessRunner : ILinkProcessRunner
                 {
                     return true;
                 }
+            }
+        }
+
+        public void PublishOutput(string? line, bool isError)
+        {
+            if (!string.IsNullOrWhiteSpace(line))
+            {
+                OutputReceived?.Invoke(this, new LinkProcessOutputEventArgs(line, isError));
             }
         }
 
