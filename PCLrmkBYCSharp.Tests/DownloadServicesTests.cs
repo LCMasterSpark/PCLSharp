@@ -2006,6 +2006,86 @@ public sealed class DownloadServicesTests
     }
 
     [Fact]
+    public async Task DownloadPageViewModelSkipsExistingLoaderInstallFiles()
+    {
+        using var temp = new TempDirectory();
+        var versionFolder = Path.Combine(temp.Path, "versions", "1.20.1");
+        Directory.CreateDirectory(versionFolder);
+        WriteSmallFile(Path.Combine(versionFolder, "1.20.1.json"));
+        WriteSmallFile(Path.Combine(versionFolder, "1.20.1.jar"));
+        WriteSmallFile(Path.Combine(temp.Path, "libraries", "net", "fabricmc", "fabric-loader", "0.15.11", "fabric-loader-0.15.11.jar"));
+        var download = new FakeMinecraftClientDownloadService
+        {
+            Versions =
+            [
+                new MinecraftRemoteVersion("1.20.1", "release", DateTimeOffset.Parse("2023-06-12T12:00:00+00:00"), "https://example/1.20.1.json", "test")
+            ],
+            UseDefaultPlanFiles = true
+        };
+        var manager = new FakeDownloadManagerService();
+        var fabric = new FakeFabricLoaderInstallService();
+        var viewModel = CreateDownloadPageViewModel(
+            temp.Path,
+            download,
+            manager,
+            fabricLoaderInstall: fabric);
+
+        await viewModel.RefreshVersionsAsync();
+        viewModel.SelectedInstallMode = "加载器安装";
+        viewModel.SelectedLoaderKind = "Fabric";
+        viewModel.LoaderVersion = "0.15.11";
+        await viewModel.InstallSelectedLoaderAsync();
+
+        Assert.Empty(manager.LastFiles);
+        Assert.Contains("加载器安装文件已存在", viewModel.StatusMessage);
+        Assert.Contains("已安装 Fabric 0.15.11", viewModel.StatusMessage);
+        Assert.Contains("当前版本", viewModel.StatusMessage);
+        Assert.Contains("Version:1.20.1-Fabric-0.15.11", File.ReadAllText(Path.Combine(temp.Path, "PCL.ini")));
+    }
+
+    [Fact]
+    public async Task DownloadPageViewModelDefersLoaderProcessorsWhenDependenciesAreQueued()
+    {
+        using var temp = new TempDirectory();
+        var queuedJarPath = Path.Combine(temp.Path, "versions", "1.20.1", "1.20.1.jar");
+        var download = new FakeMinecraftClientDownloadService
+        {
+            Versions =
+            [
+                new MinecraftRemoteVersion("1.20.1", "release", DateTimeOffset.Parse("2023-06-12T12:00:00+00:00"), "https://example/1.20.1.json", "test")
+            ],
+            UseDefaultPlanFiles = true
+        };
+        var manager = new FakeDownloadManagerService();
+        manager.AddSnapshot(new DownloadTaskSnapshot("Minecraft 1.20.1 下载", DownloadTaskState.Running, 1, 0, 0, 0, "下载中")
+        {
+            CanCancel = true,
+            PrimaryLocalPath = queuedJarPath
+        });
+        var processorRunner = new FakeLoaderProcessorRunner();
+        var forge = new FakeForgeLoaderInstallService();
+        var viewModel = CreateDownloadPageViewModel(
+            temp.Path,
+            download,
+            manager,
+            processorRunner: processorRunner,
+            forgeLoaderInstall: forge,
+            launchJavaPath: Path.Combine(temp.Path, "java.exe"));
+
+        WriteSmallFile(Path.Combine(temp.Path, "java.exe"));
+        await viewModel.RefreshVersionsAsync();
+        viewModel.SelectedInstallMode = "加载器安装";
+        viewModel.SelectedLoaderKind = "Forge";
+        viewModel.LoaderVersion = "47.2.0";
+        await viewModel.InstallSelectedLoaderAsync();
+
+        Assert.Equal(0, processorRunner.RunCount);
+        Assert.Contains("processors 等待队列中依赖完成", viewModel.StatusMessage);
+        Assert.Contains("队列中任务", viewModel.StatusMessage);
+        Assert.DoesNotContain(manager.LastFiles, file => string.Equals(file.LocalPath, queuedJarPath, StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
     public async Task DownloadPageViewModelRefreshesLoaderVersionsAndUsesSelection()
     {
         using var temp = new TempDirectory();
@@ -3430,6 +3510,30 @@ public sealed class DownloadServicesTests
                         new DownloadFileCheck(MinSize: 1))
                 ],
                 []));
+        }
+    }
+
+    private sealed class FakeForgeLoaderInstallService : IForgeLoaderInstallService
+    {
+        public Task<LoaderInstallPlan> CreateInstallPlanAsync(
+            string minecraftRootPath,
+            string instanceName,
+            string instancePath,
+            string minecraftVersion,
+            string loaderVersion,
+            CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new LoaderInstallPlan(
+                "forge",
+                loaderVersion,
+                Path.Combine(instancePath, instanceName + ".json"),
+                [
+                    new(
+                        ["https://maven.minecraftforge.net/net/minecraftforge/forge/" + loaderVersion + "/forge-" + loaderVersion + ".jar"],
+                        Path.Combine(minecraftRootPath, "libraries", "net", "minecraftforge", "forge", loaderVersion, "forge-" + loaderVersion + ".jar"),
+                        new DownloadFileCheck(MinSize: 1))
+                ],
+                [new LoaderProcessorStep("net.minecraftforge:installertools:1.2.10", [], [], new Dictionary<string, string>(), true)]));
         }
     }
 

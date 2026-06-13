@@ -240,13 +240,52 @@ public sealed partial class DownloadPageViewModel
                 .Concat(loaderPlan.Files)
                 .DistinctBy(file => file.LocalPath, StringComparer.OrdinalIgnoreCase)
                 .ToList();
+            var existingSkippedCount = 0;
+            var queuedSkippedCount = 0;
+            files = files
+                .Where(file =>
+                {
+                    if (IsExistingDownloadSatisfied(file))
+                    {
+                        existingSkippedCount++;
+                        return false;
+                    }
+
+                    if (IsDownloadAlreadyQueued(file))
+                    {
+                        queuedSkippedCount++;
+                        return false;
+                    }
+
+                    return true;
+                })
+                .ToList();
+            if (files.Count == 0)
+            {
+                var noDownloadProcessorMessage = queuedSkippedCount == 0
+                    ? await RunLoaderProcessorsIfPossibleAsync(loaderPlan)
+                    : "，processors 等待队列中依赖完成";
+                MarkInstalledInstanceSelected(instanceName);
+                RefreshTaskSnapshots();
+                StatusMessage = queuedSkippedCount > 0
+                    ? $"加载器安装文件已存在或正在下载，已跳过重复任务，已安装 {SelectedLoaderKind} {LoaderVersion.Trim()} 并设为当前版本{noDownloadProcessorMessage}"
+                    : $"加载器安装文件已存在，已安装 {SelectedLoaderKind} {LoaderVersion.Trim()} 并设为当前版本{noDownloadProcessorMessage}";
+                return;
+            }
+
             var snapshot = await _downloadManager.DownloadAsync(
                 $"{SelectedLoaderKind} {LoaderVersion.Trim()} for Minecraft {SelectedVersion.Id}",
                 files);
-            var processorMessage = await RunLoaderProcessorsIfPossibleAsync(loaderPlan);
+            var postDownloadProcessorMessage = queuedSkippedCount == 0
+                ? await RunLoaderProcessorsIfPossibleAsync(loaderPlan)
+                : "，processors 等待队列中依赖完成";
             MarkInstalledInstanceSelected(instanceName);
             RefreshTaskSnapshots();
-            StatusMessage = $"{snapshot.Message}，已安装 {SelectedLoaderKind} {LoaderVersion.Trim()}，已设为当前版本{processorMessage}";
+            var skippedCount = existingSkippedCount + queuedSkippedCount;
+            var skippedText = skippedCount == 0
+                ? ""
+                : $"，已跳过 {existingSkippedCount} 个已存在文件、{queuedSkippedCount} 个队列中任务";
+            StatusMessage = $"{snapshot.Message}{skippedText}，已安装 {SelectedLoaderKind} {LoaderVersion.Trim()}，已设为当前版本{postDownloadProcessorMessage}";
         });
     }
 
