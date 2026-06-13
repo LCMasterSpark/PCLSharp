@@ -2849,6 +2849,87 @@ public sealed class DownloadServicesTests
     }
 
     [Fact]
+    public async Task DownloadPageViewModelSkipsExistingLocalModpackFiles()
+    {
+        using var temp = new TempDirectory();
+        var modPath = Path.Combine(temp.Path, "versions", "Test Pack", "mods", "mod.jar");
+        WriteSmallFile(modPath);
+        var manager = new FakeDownloadManagerService();
+        var modpackInstall = new FakeModpackInstallService
+        {
+            Plan = new ModpackInstallPlan(
+                "Test Pack",
+                "Test Pack",
+                "1.20.1",
+                "fabric-loader",
+                "0.15.11",
+                Path.Combine(temp.Path, "versions", "Test Pack"),
+                [new DownloadFile(["https://example/mod.jar"], modPath, new DownloadFileCheck())],
+                [],
+                [],
+                1)
+        };
+        var viewModel = CreateDownloadPageViewModel(
+            temp.Path,
+            new FakeMinecraftClientDownloadService(),
+            manager,
+            modpackInstall: modpackInstall,
+            fileDialogs: new FakeFileDialogService(Path.Combine(temp.Path, "test.mrpack")));
+
+        await viewModel.InstallLocalModpackAsync();
+
+        Assert.Empty(manager.LastFiles);
+        Assert.Contains("整合包安装文件已存在", viewModel.StatusMessage);
+        Assert.Contains("已安装 Test Pack", viewModel.StatusMessage);
+        Assert.Contains("Version:Test Pack", File.ReadAllText(Path.Combine(temp.Path, "PCL.ini")));
+    }
+
+    [Fact]
+    public async Task DownloadPageViewModelDefersModpackProcessorsWhenDependenciesAreQueued()
+    {
+        using var temp = new TempDirectory();
+        var javaPath = Path.Combine(temp.Path, "java", "bin", "java.exe");
+        WriteSmallFile(javaPath);
+        var modPath = Path.Combine(temp.Path, "versions", "Forge Pack", "mods", "mod.jar");
+        var manager = new FakeDownloadManagerService();
+        manager.AddSnapshot(new DownloadTaskSnapshot("整合包 Forge Pack 安装", DownloadTaskState.Running, 1, 0, 0, 0, "下载中")
+        {
+            CanCancel = true,
+            PrimaryLocalPath = modPath
+        });
+        var processorRunner = new FakeLoaderProcessorRunner();
+        var modpackInstall = new FakeModpackInstallService
+        {
+            Plan = new ModpackInstallPlan(
+                "Forge Pack",
+                "Forge Pack",
+                "1.20.1",
+                "forge",
+                "47.2.0",
+                Path.Combine(temp.Path, "versions", "Forge Pack"),
+                [new DownloadFile(["https://example/mod.jar"], modPath, new DownloadFileCheck())],
+                [],
+                [new LoaderProcessorStep("net.minecraftforge:installertools:1.2.10", [], [], new Dictionary<string, string>(), true)],
+                0)
+        };
+        var viewModel = CreateDownloadPageViewModel(
+            temp.Path,
+            new FakeMinecraftClientDownloadService(),
+            manager,
+            modpackInstall: modpackInstall,
+            processorRunner: processorRunner,
+            fileDialogs: new FakeFileDialogService(Path.Combine(temp.Path, "forge.mrpack")),
+            launchJavaPath: javaPath);
+
+        await viewModel.InstallLocalModpackAsync();
+
+        Assert.Equal(0, processorRunner.RunCount);
+        Assert.Empty(manager.LastFiles);
+        Assert.Contains("processors 等待队列中依赖完成", viewModel.StatusMessage);
+        Assert.Contains("队列中任务", viewModel.StatusMessage);
+    }
+
+    [Fact]
     public async Task DownloadPageViewModelKeepsProcessorsPendingWhenJavaPathIsMissing()
     {
         using var temp = new TempDirectory();

@@ -24,12 +24,51 @@ public sealed partial class DownloadPageViewModel
         {
             _settings.Set(AppSettingKeys.MinecraftRootPath, MinecraftRootPath);
             var plan = await _modpackInstall.CreateModrinthInstallPlanAsync(selected, MinecraftRootPath);
-            var snapshot = await _downloadManager.DownloadAsync("\u6574\u5408\u5305 " + plan.InstanceName + " \u5b89\u88c5", plan.Files);
-            var processorMessage = await RunLoaderProcessorsIfPossibleAsync(plan);
+            var existingSkippedCount = 0;
+            var queuedSkippedCount = 0;
+            var files = plan.Files
+                .DistinctBy(file => file.LocalPath, StringComparer.OrdinalIgnoreCase)
+                .Where(file =>
+                {
+                    if (IsExistingDownloadSatisfied(file))
+                    {
+                        existingSkippedCount++;
+                        return false;
+                    }
+
+                    if (IsDownloadAlreadyQueued(file))
+                    {
+                        queuedSkippedCount++;
+                        return false;
+                    }
+
+                    return true;
+                })
+                .ToList();
+            var downloadMessage = "\u6ca1\u6709\u9700\u8981\u4e0b\u8f7d\u7684\u6587\u4ef6";
+            if (files.Count > 0)
+            {
+                var snapshot = await _downloadManager.DownloadAsync("\u6574\u5408\u5305 " + plan.InstanceName + " \u5b89\u88c5", files);
+                downloadMessage = snapshot.Message;
+            }
+            else if (plan.Files.Count > 0)
+            {
+                downloadMessage = queuedSkippedCount > 0
+                    ? "\u6574\u5408\u5305\u5b89\u88c5\u6587\u4ef6\u5df2\u5b58\u5728\u6216\u6b63\u5728\u4e0b\u8f7d\uff0c\u5df2\u8df3\u8fc7\u91cd\u590d\u4efb\u52a1"
+                    : "\u6574\u5408\u5305\u5b89\u88c5\u6587\u4ef6\u5df2\u5b58\u5728";
+            }
+
+            var processorMessage = queuedSkippedCount == 0
+                ? await RunLoaderProcessorsIfPossibleAsync(plan)
+                : "\uff0cprocessors \u7b49\u5f85\u961f\u5217\u4e2d\u4f9d\u8d56\u5b8c\u6210";
             MarkInstalledInstanceSelected(plan.InstanceName);
             RefreshTaskSnapshots();
             var warning = plan.Warnings.Count == 0 ? "" : "\uff0c" + string.Join("\uff1b", plan.Warnings);
-            StatusMessage = $"{snapshot.Message}\uff0c\u5df2\u5b89\u88c5 {plan.Name}\uff0c\u5df2\u8bbe\u4e3a\u5f53\u524d\u7248\u672c\uff0c\u8986\u76d6\u6587\u4ef6 {plan.OverrideFileCount} \u4e2a{processorMessage}{warning}";
+            var skippedCount = existingSkippedCount + queuedSkippedCount;
+            var skippedText = skippedCount == 0
+                ? ""
+                : $"\uff0c\u5df2\u8df3\u8fc7 {existingSkippedCount} \u4e2a\u5df2\u5b58\u5728\u6587\u4ef6\u3001{queuedSkippedCount} \u4e2a\u961f\u5217\u4e2d\u4efb\u52a1";
+            StatusMessage = $"{downloadMessage}{skippedText}\uff0c\u5df2\u5b89\u88c5 {plan.Name}\uff0c\u5df2\u8bbe\u4e3a\u5f53\u524d\u7248\u672c\uff0c\u8986\u76d6\u6587\u4ef6 {plan.OverrideFileCount} \u4e2a{processorMessage}{warning}";
         });
     }
 
