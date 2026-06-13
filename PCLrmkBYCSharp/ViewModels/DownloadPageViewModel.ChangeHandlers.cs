@@ -15,7 +15,13 @@ public sealed partial class DownloadPageViewModel
         }
 
         OnPropertyChanged(nameof(LoaderInstancePreview));
+        OnPropertyChanged(nameof(InstallPlanPreviewText));
         NotifyDownloadInfoChanged();
+    }
+
+    partial void OnInstanceNameChanged(string value)
+    {
+        OnPropertyChanged(nameof(InstallPlanPreviewText));
     }
 
     partial void OnSelectedVersionCategoryChanged(string value)
@@ -31,11 +37,13 @@ public sealed partial class DownloadPageViewModel
         SelectedLoaderVersion = null;
         OnPropertyChanged(nameof(LoaderVersionCount));
         OnPropertyChanged(nameof(LoaderInstancePreview));
+        OnPropertyChanged(nameof(InstallPlanPreviewText));
     }
 
     partial void OnLoaderVersionChanged(string value)
     {
         OnPropertyChanged(nameof(LoaderInstancePreview));
+        OnPropertyChanged(nameof(InstallPlanPreviewText));
     }
 
     partial void OnSelectedLoaderVersionChanged(LoaderVersionOption? value)
@@ -71,6 +79,7 @@ public sealed partial class DownloadPageViewModel
     {
         OnPropertyChanged(nameof(IsVanillaInstallMode));
         OnPropertyChanged(nameof(IsLoaderInstallMode));
+        OnPropertyChanged(nameof(InstallPlanPreviewText));
         StatusMessage = "安装子页：" + value;
         NotifyDownloadInfoChanged();
     }
@@ -150,6 +159,7 @@ public sealed partial class DownloadPageViewModel
             _settings.Set(AppSettingKeys.LaunchFolderSelect, value);
             RefreshMinecraftRootFolders();
             UpdateResourceInstallTargetLabel();
+            OnPropertyChanged(nameof(InstallPlanPreviewText));
             NotifySelectedResourceDownloadStateChanged();
         }
     }

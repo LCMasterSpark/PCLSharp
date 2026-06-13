@@ -274,6 +274,31 @@ public sealed partial class DownloadPageViewModel
         ? "请选择原版版本并填写加载器版本"
         : GetLoaderInstanceName();
 
+    public string InstallPlanPreviewText
+    {
+        get
+        {
+            if (SelectedVersion is null)
+            {
+                return "安装计划：请先选择一个 Minecraft 版本。";
+            }
+
+            if (IsLoaderInstallMode)
+            {
+                if (string.IsNullOrWhiteSpace(LoaderVersion))
+                {
+                    return $"安装计划：{SelectedLoaderKind} 加载器实例，等待选择或填写加载器版本。\n目标 Minecraft 文件夹：{MinecraftRootPath}";
+                }
+
+                var loaderInstanceName = GetLoaderInstanceName();
+                return $"安装计划：{SelectedLoaderKind} {LoaderVersion.Trim()} for Minecraft {SelectedVersion.Id}\n实例名称：{loaderInstanceName}\n目标目录：{Path.Combine(MinecraftRootPath, "versions", loaderInstanceName)}\n将同时补齐原版依赖；Forge/NeoForge processors 会在 Java 路径可用时执行。";
+            }
+
+            var instanceName = InstanceVersionSafeName;
+            return $"安装计划：Minecraft {SelectedVersion.Id} 原版\n实例名称：{instanceName}\n目标目录：{Path.Combine(MinecraftRootPath, "versions", instanceName)}\n创建任务时会跳过已存在或正在下载的文件，安装完成后设为当前版本。";
+        }
+    }
+
     public string ResourcePanelTitle => SelectedSection.Section switch
     {
         DownloadSection.Mod => "Mod 搜索",

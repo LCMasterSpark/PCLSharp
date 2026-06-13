@@ -1755,6 +1755,9 @@ public sealed class DownloadServicesTests
         Assert.Equal(1, viewModel.VersionCount);
         Assert.Equal("1.20.1", viewModel.SelectedVersion?.Id);
         Assert.Equal("1.20.1", viewModel.InstanceName);
+        Assert.Contains("Minecraft 1.20.1 原版", viewModel.InstallPlanPreviewText);
+        Assert.Contains(Path.Combine(temp.Path, "versions", "1.20.1"), viewModel.InstallPlanPreviewText);
+        Assert.Contains("跳过已存在或正在下载的文件", viewModel.InstallPlanPreviewText);
     }
 
     [Fact]
@@ -2037,6 +2040,10 @@ public sealed class DownloadServicesTests
         Assert.Equal(2, viewModel.LoaderVersionCount);
         Assert.Equal("0.15.10", viewModel.LoaderVersion);
         Assert.Contains("0.15.10", viewModel.LoaderInstancePreview);
+        viewModel.SelectedInstallMode = "加载器安装";
+        Assert.Contains("Fabric 0.15.10 for Minecraft 1.20.1", viewModel.InstallPlanPreviewText);
+        Assert.Contains(Path.Combine(temp.Path, "versions", "1.20.1-Fabric-0.15.10"), viewModel.InstallPlanPreviewText);
+        Assert.Contains("processors", viewModel.InstallPlanPreviewText, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]

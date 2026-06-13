@@ -390,6 +390,11 @@
                                     <TextBlock Text="实例名称" FontWeight="SemiBold" />
                                     <TextBox Text="{Binding InstanceName, UpdateSourceTrigger=PropertyChanged}"
                                              Margin="0,6,0,0" />
+                                    <TextBlock Text="{Binding InstallPlanPreviewText}"
+                                               Margin="0,10,0,0"
+                                               TextWrapping="Wrap"
+                                               LineHeight="19"
+                                               Foreground="{StaticResource AppMutedTextBrush}" />
                                     <Button Content="下载原版"
                                             Margin="0,14,0,0"
                                             MinHeight="34"
@@ -438,6 +443,11 @@
                                                Margin="0,8,0,0"
                                                TextWrapping="Wrap"
                                                Foreground="{StaticResource AppAccentBrush}" />
+                                    <TextBlock Text="{Binding InstallPlanPreviewText}"
+                                               Margin="0,10,0,0"
+                                               TextWrapping="Wrap"
+                                               LineHeight="19"
+                                               Foreground="{StaticResource AppMutedTextBrush}" />
                                     <Button Content="下载并安装加载器"
                                             Margin="0,14,0,0"
                                             MinHeight="34"
