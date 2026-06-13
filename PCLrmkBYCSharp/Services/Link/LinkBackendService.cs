@@ -54,11 +54,28 @@ public sealed class LinkBackendService : ILinkBackendService
         string? executablePath)
     {
         var status = GetStatus(provider, executablePath);
-        var ports = status.CanStart
-            ? _portAllocator.Allocate(invite.ServerPort)
-            : new LinkPortAllocation(invite.ServerPort, 0, 0);
+        var portError = "";
+        var ports = new LinkPortAllocation(0, 0, 0);
+        if (status.CanStart)
+        {
+            try
+            {
+                ports = _portAllocator.Allocate(invite.ServerPort);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException)
+            {
+                portError = "联机端口分配失败：" + ex.Message;
+            }
+        }
+
+        var canStart = status.CanStart && string.IsNullOrWhiteSpace(portError);
         var options = BuildPlannedOptions(role, invite, latencyMode, customPeer, ports);
-        var arguments = BuildProcessArguments(role, invite, latencyMode, customPeer, ports);
+        if (!string.IsNullOrWhiteSpace(portError))
+        {
+            options = [.. options, "port-allocation=failed", "port-error=" + portError];
+        }
+
+        var arguments = canStart ? BuildProcessArguments(role, invite, latencyMode, customPeer, ports) : "";
         var roleText = role == LinkRoomRole.Host ? "创建房间" : "加入房间";
         var summary = $"{status.DisplayName} / {roleText} / 端口 {invite.ServerPort} / 网络 {invite.NetworkName}";
         return new LinkBackendLaunchPlan(
@@ -66,8 +83,8 @@ public sealed class LinkBackendService : ILinkBackendService
             provider,
             status.DisplayName,
             status.ExecutablePath,
-            status.CanStart,
-            status.CanStart ? "" : status.Message,
+            canStart,
+            canStart ? "" : string.IsNullOrWhiteSpace(portError) ? status.Message : portError,
             arguments,
             options,
             summary);
@@ -86,10 +103,18 @@ public sealed class LinkBackendService : ILinkBackendService
             "network-secret=***",
             "latency-mode=" + (latencyMode == LinkLatencyMode.DirectFirst ? "direct-first" : "latency-first"),
             "tcp-whitelist=" + tcpWhitelist,
-            "udp-whitelist=" + udpWhitelist,
-            "listeners-port=" + ports.ListenersPort,
-            "rpc-portal-port=" + ports.RpcPortalPort
+            "udp-whitelist=" + udpWhitelist
         };
+
+        if (ports.ListenersPort > 0)
+        {
+            options.Add("listeners-port=" + ports.ListenersPort);
+        }
+
+        if (ports.RpcPortalPort > 0)
+        {
+            options.Add("rpc-portal-port=" + ports.RpcPortalPort);
+        }
 
         if (invite.DiscoverNodeId > 0)
         {
@@ -102,7 +127,7 @@ public sealed class LinkBackendService : ILinkBackendService
             options.AddRange(peers.Select(peer => "custom-peer=" + peer));
         }
 
-        if (role == LinkRoomRole.Joiner)
+        if (role == LinkRoomRole.Joiner && ports.ClientForwardPort > 0)
         {
             options.Add("client-forward-port=" + ports.ClientForwardPort);
             options.AddRange(BuildPortForwardSpecs(invite.ServerPort, ports.ClientForwardPort).Select(forward => "port-forward=" + forward));

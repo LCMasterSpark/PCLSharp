@@ -133,6 +133,25 @@ public sealed class PclLinkServiceTests
     }
 
     [Fact]
+    public void LinkBackendServiceTurnsPortAllocationFailureIntoBlockedPlan()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "terracotta.exe");
+        File.WriteAllText(executable, "");
+        var service = new LinkBackendService(new FailingLinkPortAllocator());
+        var invite = new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0);
+
+        var plan = service.CreatePlan(LinkRoomRole.Joiner, LinkProviderKind.Terracotta, invite, LinkLatencyMode.DirectFirst, "", executable);
+
+        Assert.False(plan.CanStart);
+        Assert.Contains("联机端口分配失败", plan.BlockReason, StringComparison.Ordinal);
+        Assert.Equal("", plan.ProcessArguments);
+        Assert.Contains("port-allocation=failed", plan.PlannedOptions);
+        Assert.Contains(plan.PlannedOptions, option => option.StartsWith("port-error=", StringComparison.Ordinal));
+        Assert.DoesNotContain(plan.PlannedOptions, option => option.StartsWith("port-forward=", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public void LinkBackendServiceSplitsAndDeduplicatesCustomPeers()
     {
         using var temp = new TempDirectory();
@@ -389,6 +408,14 @@ public sealed class PclLinkServiceTests
         public LinkPortAllocation Allocate(int minecraftPort)
         {
             return new LinkPortAllocation(25570, 25571, 25572);
+        }
+    }
+
+    private sealed class FailingLinkPortAllocator : ILinkPortAllocator
+    {
+        public LinkPortAllocation Allocate(int minecraftPort)
+        {
+            throw new InvalidOperationException("测试端口已耗尽。");
         }
     }
 
