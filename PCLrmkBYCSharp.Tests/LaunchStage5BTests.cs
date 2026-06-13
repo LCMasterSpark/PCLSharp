@@ -1262,6 +1262,45 @@ public sealed class LaunchStage5BTests
     }
 
     [Fact]
+    public async Task LaunchPageRejectsIncompatibleJavaSelectedFromDropdown()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteVersion(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var java17Path = Path.Combine(temp.Path, "java-17", "bin", "java.exe");
+        var java25Path = Path.Combine(temp.Path, "java-25", "bin", "java.exe");
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        settings.Set(AppSettingKeys.MinecraftRootPath, temp.Path);
+        settings.Set(AppSettingKeys.SelectedInstanceName, instance.Name);
+        var viewModel = new LaunchPageViewModel(
+            new FakeMinecraftDiscoveryService(temp.Path, [instance]),
+            new FakeJavaDiscoveryService([
+                new JavaEntry(java25Path, new Version(1, 25, 0, 2), false, true, false, true),
+                new JavaEntry(java17Path, new Version(1, 17, 0, 8), false, true, false, true)
+            ]),
+            new CaptureLaunchPipelineService(),
+            settings,
+            new NullFileDialogService(),
+            new LegacyLoginService(),
+            new NullLoggerService());
+
+        await viewModel.InitializeAsync();
+        var incompatible = Assert.Single(viewModel.JavaEntryOptions, option => option.Entry.PathJava == java25Path);
+
+        viewModel.SelectedJavaOption = incompatible;
+
+        Assert.Equal(java17Path, viewModel.SelectedJava?.PathJava);
+        Assert.Equal(java17Path, viewModel.SelectedJavaOption?.Entry.PathJava);
+        Assert.Contains("不能为当前版本选择", viewModel.StatusMessage);
+        Assert.Equal("", settings.Get(AppSettingKeys.LaunchArgumentJavaSelect, ""));
+    }
+
+    [Fact]
     public async Task LaunchPageSavesSelectedGlobalJavaAsOldPclJson()
     {
         using var temp = new TempDirectory();

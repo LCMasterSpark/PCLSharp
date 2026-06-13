@@ -84,6 +84,22 @@ public sealed partial class LaunchPageViewModel
             return;
         }
 
+        if (value is not null && !value.IsCompatible)
+        {
+            StatusMessage = $"不能为当前版本选择 {value.DisplayName}：需要 {value.RequirementText}";
+            _isSyncingJavaOptionSelection = true;
+            try
+            {
+                SelectedJavaOption = FindJavaOption(SelectedJava);
+            }
+            finally
+            {
+                _isSyncingJavaOptionSelection = false;
+            }
+
+            return;
+        }
+
         _isSyncingJavaOptionSelection = true;
         try
         {
