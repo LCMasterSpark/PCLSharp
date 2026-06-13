@@ -30,6 +30,20 @@ public sealed class FileDialogService : IFileDialogService
         return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 
+    public string? PickExecutable(string title, string initialDirectory, string filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*")
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = title,
+            Filter = string.IsNullOrWhiteSpace(filter) ? "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*" : filter,
+            InitialDirectory = string.IsNullOrWhiteSpace(initialDirectory) ? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles) : initialDirectory,
+            CheckFileExists = true,
+            Multiselect = false
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FileName : null;
+    }
+
     public string? PickSkinFile(string initialDirectory)
     {
         var dialog = new OpenFileDialog

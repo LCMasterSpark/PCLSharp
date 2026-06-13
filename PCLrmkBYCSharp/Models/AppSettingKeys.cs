@@ -158,6 +158,8 @@ public static class AppSettingKeys
     public const string LinkCustomPeer = nameof(LinkCustomPeer);
     public const string LinkLastInviteCode = nameof(LinkLastInviteCode);
     public const string LinkServerPort = nameof(LinkServerPort);
+    public const string LinkTerracottaExecutablePath = nameof(LinkTerracottaExecutablePath);
+    public const string LinkEasyTierExecutablePath = nameof(LinkEasyTierExecutablePath);
 
     public static IReadOnlyList<ISettingDefinition> Definitions { get; } =
     [
@@ -315,6 +317,8 @@ public static class AppSettingKeys
         new SettingDefinition<Models.LinkLatencyMode>(LinkLatencyMode, Models.LinkLatencyMode.DirectFirst),
         new SettingDefinition<string>(LinkCustomPeer, ""),
         new SettingDefinition<string>(LinkLastInviteCode, ""),
-        new SettingDefinition<int>(LinkServerPort, 25565)
+        new SettingDefinition<int>(LinkServerPort, 25565),
+        new SettingDefinition<string>(LinkTerracottaExecutablePath, ""),
+        new SettingDefinition<string>(LinkEasyTierExecutablePath, "")
     ];
 }

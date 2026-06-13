@@ -1,4 +1,7 @@
 using PCLrmkBYCSharp.Services.Link;
+using PCLrmkBYCSharp.Models;
+using PCLrmkBYCSharp.Services;
+using PCLrmkBYCSharp.ViewModels;
 
 namespace PCLrmkBYCSharp.Tests;
 
@@ -61,5 +64,73 @@ public sealed class PclLinkServiceTests
         var service = new PclLinkService();
 
         Assert.Throws<ArgumentOutOfRangeException>(() => service.CreateHostInvite(80));
+    }
+
+    [Fact]
+    public void LinkBackendServiceReportsMissingExecutable()
+    {
+        var service = new LinkBackendService();
+
+        var status = service.GetStatus(LinkProviderKind.Terracotta, "");
+
+        Assert.False(status.CanStart);
+        Assert.Equal(LinkBackendReadiness.MissingExecutable, status.Readiness);
+        Assert.Contains("尚未配置", status.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LinkBackendServiceBuildsReadyPlanWithMaskedSecret()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "terracotta.exe");
+        File.WriteAllText(executable, "");
+        var service = new LinkBackendService();
+        var invite = new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0);
+
+        var plan = service.CreatePlan(LinkRoomRole.Host, LinkProviderKind.Terracotta, invite, LinkLatencyMode.DirectFirst, "peer.example", executable);
+
+        Assert.True(plan.CanStart);
+        Assert.Contains("陶瓦联机", plan.DisplayName, StringComparison.Ordinal);
+        Assert.Contains("network-secret=***", plan.PlannedOptions);
+        Assert.DoesNotContain("SECRET", string.Join(" ", plan.PlannedOptions), StringComparison.Ordinal);
+        Assert.Contains("custom-peer=peer.example", plan.PlannedOptions);
+    }
+
+    [Fact]
+    public async Task LinkPageViewModelPicksBackendExecutableAndPersistsPath()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "terracotta.exe");
+        File.WriteAllText(executable, "");
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        var viewModel = new LinkPageViewModel(
+            new PclLinkService(),
+            settings,
+            new NullLoggerService(),
+            linkBackend: new LinkBackendService(),
+            fileDialogs: new ExecutableFileDialogService(executable));
+
+        await viewModel.PickSelectedBackendExecutableCommand.ExecuteAsync(null);
+
+        Assert.Equal(executable, viewModel.TerracottaExecutablePath);
+        Assert.Equal(executable, settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, ""));
+        Assert.Contains("已就绪", viewModel.BackendStatusText, StringComparison.Ordinal);
+    }
+
+    private sealed class ExecutableFileDialogService(string executablePath) : IFileDialogService
+    {
+        public string? PickFolder(string title, string initialDirectory) => null;
+
+        public string? PickJavaExecutable(string initialDirectory) => null;
+
+        public string? PickExecutable(string title, string initialDirectory, string filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*") => executablePath;
+
+        public string? PickSkinFile(string initialDirectory) => null;
+
+        public string? PickModpackFile(string initialDirectory) => null;
+
+        public IReadOnlyList<string> PickModFiles(string initialDirectory) => [];
+
+        public string? PickSaveFile(string title, string initialDirectory, string defaultFileName, string filter) => null;
     }
 }

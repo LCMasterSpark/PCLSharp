@@ -6,6 +6,11 @@ public interface IFileDialogService
 
     string? PickJavaExecutable(string initialDirectory);
 
+    string? PickExecutable(string title, string initialDirectory, string filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*")
+    {
+        return null;
+    }
+
     string? PickSkinFile(string initialDirectory);
 
     string? PickModpackFile(string initialDirectory);
