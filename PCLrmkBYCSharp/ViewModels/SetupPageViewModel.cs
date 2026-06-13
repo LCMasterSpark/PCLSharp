@@ -48,6 +48,45 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     private bool uiShowPageHints;
 
     [ObservableProperty]
+    private int uiBackgroundSuit;
+
+    [ObservableProperty]
+    private int uiBackgroundBlur;
+
+    [ObservableProperty]
+    private bool uiBackgroundColorful;
+
+    [ObservableProperty]
+    private int uiMusicVolume;
+
+    [ObservableProperty]
+    private bool uiMusicRandom;
+
+    [ObservableProperty]
+    private bool uiMusicAuto;
+
+    [ObservableProperty]
+    private bool uiMusicStart;
+
+    [ObservableProperty]
+    private bool uiMusicStop;
+
+    [ObservableProperty]
+    private int uiLogoType;
+
+    [ObservableProperty]
+    private bool uiLogoLeft;
+
+    [ObservableProperty]
+    private string uiLogoText;
+
+    [ObservableProperty]
+    private int uiCustomType;
+
+    [ObservableProperty]
+    private string uiCustomNet;
+
+    [ObservableProperty]
     private bool accessibilityLargeText;
 
     [ObservableProperty]
@@ -61,6 +100,39 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
 
     [ObservableProperty]
     private bool accessibilityConfirmDangerousActions;
+
+    [ObservableProperty]
+    private bool toolUpdateRelease;
+
+    [ObservableProperty]
+    private bool toolUpdateSnapshot;
+
+    [ObservableProperty]
+    private bool toolHelpChinese;
+
+    [ObservableProperty]
+    private int systemSystemUpdate;
+
+    [ObservableProperty]
+    private int systemSystemActivity;
+
+    [ObservableProperty]
+    private string systemSystemCache;
+
+    [ObservableProperty]
+    private bool systemSystemTelemetry;
+
+    [ObservableProperty]
+    private bool systemDebugMode;
+
+    [ObservableProperty]
+    private int systemDebugAnim;
+
+    [ObservableProperty]
+    private bool systemDebugSkipCopy;
+
+    [ObservableProperty]
+    private bool systemDebugDelay;
 
     [ObservableProperty]
     private string minecraftRootPath;
@@ -126,6 +198,15 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     private int launchArgumentVisible;
 
     [ObservableProperty]
+    private int launchSkinType;
+
+    [ObservableProperty]
+    private string launchSkinId;
+
+    [ObservableProperty]
+    private bool launchSkinSlim;
+
+    [ObservableProperty]
     private int toolDownloadSource;
 
     [ObservableProperty]
@@ -174,11 +255,35 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         uiBackgroundOpacity = _settings.Get(AppSettingKeys.UiBackgroundOpacity, 100);
         uiCompactSidebar = _settings.Get(AppSettingKeys.UiCompactSidebar, false);
         uiShowPageHints = _settings.Get(AppSettingKeys.UiShowPageHints, true);
+        uiBackgroundSuit = _settings.Get(AppSettingKeys.UiBackgroundSuit, 0);
+        uiBackgroundBlur = _settings.Get(AppSettingKeys.UiBackgroundBlur, 0);
+        uiBackgroundColorful = _settings.Get(AppSettingKeys.UiBackgroundColorful, false);
+        uiMusicVolume = _settings.Get(AppSettingKeys.UiMusicVolume, 50);
+        uiMusicRandom = _settings.Get(AppSettingKeys.UiMusicRandom, true);
+        uiMusicAuto = _settings.Get(AppSettingKeys.UiMusicAuto, false);
+        uiMusicStart = _settings.Get(AppSettingKeys.UiMusicStart, false);
+        uiMusicStop = _settings.Get(AppSettingKeys.UiMusicStop, false);
+        uiLogoType = _settings.Get(AppSettingKeys.UiLogoType, 1);
+        uiLogoLeft = _settings.Get(AppSettingKeys.UiLogoLeft, true);
+        uiLogoText = _settings.Get(AppSettingKeys.UiLogoText, "PCL Sharp");
+        uiCustomType = _settings.Get(AppSettingKeys.UiCustomType, 0);
+        uiCustomNet = _settings.Get(AppSettingKeys.UiCustomNet, "");
         accessibilityLargeText = _settings.Get(AppSettingKeys.AccessibilityLargeText, false);
         accessibilityReducedMotion = _settings.Get(AppSettingKeys.AccessibilityReducedMotion, false);
         accessibilityHighContrast = _settings.Get(AppSettingKeys.AccessibilityHighContrast, false);
         accessibilityKeyboardFocus = _settings.Get(AppSettingKeys.AccessibilityKeyboardFocus, true);
         accessibilityConfirmDangerousActions = _settings.Get(AppSettingKeys.AccessibilityConfirmDangerousActions, true);
+        toolUpdateRelease = _settings.Get(AppSettingKeys.ToolUpdateRelease, true);
+        toolUpdateSnapshot = _settings.Get(AppSettingKeys.ToolUpdateSnapshot, false);
+        toolHelpChinese = _settings.Get(AppSettingKeys.ToolHelpChinese, true);
+        systemSystemUpdate = _settings.Get(AppSettingKeys.SystemSystemUpdate, 1);
+        systemSystemActivity = _settings.Get(AppSettingKeys.SystemSystemActivity, 1);
+        systemSystemCache = _settings.Get(AppSettingKeys.SystemSystemCache, "");
+        systemSystemTelemetry = _settings.Get(AppSettingKeys.SystemSystemTelemetry, false);
+        systemDebugMode = _settings.Get(AppSettingKeys.SystemDebugMode, false);
+        systemDebugAnim = _settings.Get(AppSettingKeys.SystemDebugAnim, 15);
+        systemDebugSkipCopy = _settings.Get(AppSettingKeys.SystemDebugSkipCopy, false);
+        systemDebugDelay = _settings.Get(AppSettingKeys.SystemDebugDelay, false);
         minecraftRootPath = _settings.Get(AppSettingKeys.MinecraftRootPath, "");
         launchWindowWidth = _settings.Get(AppSettingKeys.LaunchArgumentWindowWidth, 854);
         launchWindowHeight = _settings.Get(AppSettingKeys.LaunchArgumentWindowHeight, 480);
@@ -200,6 +305,9 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         launchAdvanceDisableLua = _settings.Get(AppSettingKeys.LaunchAdvanceDisableLUA, false);
         launchAdvanceGraphicCard = _settings.Get(AppSettingKeys.LaunchAdvanceGraphicCard, true);
         launchArgumentVisible = _settings.Get(AppSettingKeys.LaunchArgumentVisible, 5);
+        launchSkinType = _settings.Get(AppSettingKeys.LaunchSkinType, 0);
+        launchSkinId = _settings.Get(AppSettingKeys.LaunchSkinID, "");
+        launchSkinSlim = _settings.Get(AppSettingKeys.LaunchSkinSlim, false);
         toolDownloadSource = _settings.Get(AppSettingKeys.ToolDownloadSource, 1);
         toolDownloadVersion = _settings.Get(AppSettingKeys.ToolDownloadVersion, 1);
         toolDownloadThread = _settings.Get(AppSettingKeys.ToolDownloadThread, 63);
@@ -218,6 +326,57 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     public IReadOnlyList<string> ThemeOptions { get; } = ["VS2022Dark"];
 
     public IReadOnlyList<string> LanguageOptions { get; } = ["zh-CN"];
+
+    public IReadOnlyList<IntOption> UiBackgroundSuitOptions { get; } =
+    [
+        new(0, "自动"),
+        new(4, "平铺"),
+        new(1, "居中"),
+        new(3, "拉伸"),
+        new(2, "居中（保持长宽比）"),
+        new(5, "左上（保持长宽比）"),
+        new(8, "右下（保持长宽比）")
+    ];
+
+    public IReadOnlyList<IntOption> UiLogoTypeOptions { get; } =
+    [
+        new(0, "无"),
+        new(1, "默认"),
+        new(2, "文本"),
+        new(3, "图片")
+    ];
+
+    public IReadOnlyList<IntOption> UiCustomTypeOptions { get; } =
+    [
+        new(0, "空白"),
+        new(3, "预设"),
+        new(1, "读取本地文件"),
+        new(2, "联网更新")
+    ];
+
+    public IReadOnlyList<IntOption> SystemUpdateOptions { get; } =
+    [
+        new(0, "有新版本时自动下载"),
+        new(1, "有新版本时显示提示"),
+        new(2, "仅重大漏洞更新时提示"),
+        new(3, "关闭更新提示")
+    ];
+
+    public IReadOnlyList<IntOption> SystemActivityOptions { get; } =
+    [
+        new(0, "显示所有公告"),
+        new(1, "仅显示重要通知"),
+        new(2, "关闭所有公告")
+    ];
+
+    public IReadOnlyList<IntOption> LaunchSkinTypeOptions { get; } =
+    [
+        new(0, "随机"),
+        new(1, "Steve"),
+        new(2, "Alex"),
+        new(3, "正版皮肤"),
+        new(4, "自定义")
+    ];
 
     public IReadOnlyList<SetupSectionOption> SetupSections { get; } =
     [
@@ -361,11 +520,35 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         UiBackgroundOpacity = _settings.Get(AppSettingKeys.UiBackgroundOpacity, 100);
         UiCompactSidebar = _settings.Get(AppSettingKeys.UiCompactSidebar, false);
         UiShowPageHints = _settings.Get(AppSettingKeys.UiShowPageHints, true);
+        UiBackgroundSuit = _settings.Get(AppSettingKeys.UiBackgroundSuit, 0);
+        UiBackgroundBlur = _settings.Get(AppSettingKeys.UiBackgroundBlur, 0);
+        UiBackgroundColorful = _settings.Get(AppSettingKeys.UiBackgroundColorful, false);
+        UiMusicVolume = _settings.Get(AppSettingKeys.UiMusicVolume, 50);
+        UiMusicRandom = _settings.Get(AppSettingKeys.UiMusicRandom, true);
+        UiMusicAuto = _settings.Get(AppSettingKeys.UiMusicAuto, false);
+        UiMusicStart = _settings.Get(AppSettingKeys.UiMusicStart, false);
+        UiMusicStop = _settings.Get(AppSettingKeys.UiMusicStop, false);
+        UiLogoType = _settings.Get(AppSettingKeys.UiLogoType, 1);
+        UiLogoLeft = _settings.Get(AppSettingKeys.UiLogoLeft, true);
+        UiLogoText = _settings.Get(AppSettingKeys.UiLogoText, "PCL Sharp");
+        UiCustomType = _settings.Get(AppSettingKeys.UiCustomType, 0);
+        UiCustomNet = _settings.Get(AppSettingKeys.UiCustomNet, "");
         AccessibilityLargeText = _settings.Get(AppSettingKeys.AccessibilityLargeText, false);
         AccessibilityReducedMotion = _settings.Get(AppSettingKeys.AccessibilityReducedMotion, false);
         AccessibilityHighContrast = _settings.Get(AppSettingKeys.AccessibilityHighContrast, false);
         AccessibilityKeyboardFocus = _settings.Get(AppSettingKeys.AccessibilityKeyboardFocus, true);
         AccessibilityConfirmDangerousActions = _settings.Get(AppSettingKeys.AccessibilityConfirmDangerousActions, true);
+        ToolUpdateRelease = _settings.Get(AppSettingKeys.ToolUpdateRelease, true);
+        ToolUpdateSnapshot = _settings.Get(AppSettingKeys.ToolUpdateSnapshot, false);
+        ToolHelpChinese = _settings.Get(AppSettingKeys.ToolHelpChinese, true);
+        SystemSystemUpdate = _settings.Get(AppSettingKeys.SystemSystemUpdate, 1);
+        SystemSystemActivity = _settings.Get(AppSettingKeys.SystemSystemActivity, 1);
+        SystemSystemCache = _settings.Get(AppSettingKeys.SystemSystemCache, "");
+        SystemSystemTelemetry = _settings.Get(AppSettingKeys.SystemSystemTelemetry, false);
+        SystemDebugMode = _settings.Get(AppSettingKeys.SystemDebugMode, false);
+        SystemDebugAnim = _settings.Get(AppSettingKeys.SystemDebugAnim, 15);
+        SystemDebugSkipCopy = _settings.Get(AppSettingKeys.SystemDebugSkipCopy, false);
+        SystemDebugDelay = _settings.Get(AppSettingKeys.SystemDebugDelay, false);
         MinecraftRootPath = _settings.Get(AppSettingKeys.MinecraftRootPath, "");
         LaunchArgumentJavaSelect = _settings.Get(AppSettingKeys.LaunchArgumentJavaSelect, "");
         LaunchWindowWidth = _settings.Get(AppSettingKeys.LaunchArgumentWindowWidth, 854);
@@ -387,6 +570,9 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         LaunchAdvanceDisableLua = _settings.Get(AppSettingKeys.LaunchAdvanceDisableLUA, false);
         LaunchAdvanceGraphicCard = _settings.Get(AppSettingKeys.LaunchAdvanceGraphicCard, true);
         LaunchArgumentVisible = _settings.Get(AppSettingKeys.LaunchArgumentVisible, 5);
+        LaunchSkinType = _settings.Get(AppSettingKeys.LaunchSkinType, 0);
+        LaunchSkinId = _settings.Get(AppSettingKeys.LaunchSkinID, "");
+        LaunchSkinSlim = _settings.Get(AppSettingKeys.LaunchSkinSlim, false);
         ToolDownloadSource = _settings.Get(AppSettingKeys.ToolDownloadSource, 1);
         ToolDownloadVersion = _settings.Get(AppSettingKeys.ToolDownloadVersion, 1);
         ToolDownloadThread = _settings.Get(AppSettingKeys.ToolDownloadThread, 63);
@@ -436,11 +622,35 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         _settings.Set(AppSettingKeys.UiBackgroundOpacity, Math.Clamp(UiBackgroundOpacity, 40, 100));
         _settings.Set(AppSettingKeys.UiCompactSidebar, UiCompactSidebar);
         _settings.Set(AppSettingKeys.UiShowPageHints, UiShowPageHints);
+        _settings.Set(AppSettingKeys.UiBackgroundSuit, UiBackgroundSuit);
+        _settings.Set(AppSettingKeys.UiBackgroundBlur, Math.Clamp(UiBackgroundBlur, 0, 40));
+        _settings.Set(AppSettingKeys.UiBackgroundColorful, UiBackgroundColorful);
+        _settings.Set(AppSettingKeys.UiMusicVolume, Math.Clamp(UiMusicVolume, 0, 100));
+        _settings.Set(AppSettingKeys.UiMusicRandom, UiMusicRandom);
+        _settings.Set(AppSettingKeys.UiMusicAuto, UiMusicAuto);
+        _settings.Set(AppSettingKeys.UiMusicStart, UiMusicStart);
+        _settings.Set(AppSettingKeys.UiMusicStop, UiMusicStop);
+        _settings.Set(AppSettingKeys.UiLogoType, UiLogoType);
+        _settings.Set(AppSettingKeys.UiLogoLeft, UiLogoLeft);
+        _settings.Set(AppSettingKeys.UiLogoText, UiLogoText);
+        _settings.Set(AppSettingKeys.UiCustomType, UiCustomType);
+        _settings.Set(AppSettingKeys.UiCustomNet, UiCustomNet);
         _settings.Set(AppSettingKeys.AccessibilityLargeText, AccessibilityLargeText);
         _settings.Set(AppSettingKeys.AccessibilityReducedMotion, AccessibilityReducedMotion);
         _settings.Set(AppSettingKeys.AccessibilityHighContrast, AccessibilityHighContrast);
         _settings.Set(AppSettingKeys.AccessibilityKeyboardFocus, AccessibilityKeyboardFocus);
         _settings.Set(AppSettingKeys.AccessibilityConfirmDangerousActions, AccessibilityConfirmDangerousActions);
+        _settings.Set(AppSettingKeys.ToolUpdateRelease, ToolUpdateRelease);
+        _settings.Set(AppSettingKeys.ToolUpdateSnapshot, ToolUpdateSnapshot);
+        _settings.Set(AppSettingKeys.ToolHelpChinese, ToolHelpChinese);
+        _settings.Set(AppSettingKeys.SystemSystemUpdate, SystemSystemUpdate);
+        _settings.Set(AppSettingKeys.SystemSystemActivity, SystemSystemActivity);
+        _settings.Set(AppSettingKeys.SystemSystemCache, SystemSystemCache);
+        _settings.Set(AppSettingKeys.SystemSystemTelemetry, SystemSystemTelemetry);
+        _settings.Set(AppSettingKeys.SystemDebugMode, SystemDebugMode);
+        _settings.Set(AppSettingKeys.SystemDebugAnim, Math.Clamp(SystemDebugAnim, 0, 30));
+        _settings.Set(AppSettingKeys.SystemDebugSkipCopy, SystemDebugSkipCopy);
+        _settings.Set(AppSettingKeys.SystemDebugDelay, SystemDebugDelay);
         _settings.Set(AppSettingKeys.MinecraftRootPath, MinecraftRootPath);
         _settings.Set(AppSettingKeys.LaunchArgumentJavaSelect, LaunchArgumentJavaSelect);
         _settings.Set(AppSettingKeys.LaunchArgumentWindowWidth, LaunchWindowWidth);
@@ -462,6 +672,9 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         _settings.Set(AppSettingKeys.LaunchAdvanceDisableLUA, LaunchAdvanceDisableLua);
         _settings.Set(AppSettingKeys.LaunchAdvanceGraphicCard, LaunchAdvanceGraphicCard);
         _settings.Set(AppSettingKeys.LaunchArgumentVisible, LaunchArgumentVisible);
+        _settings.Set(AppSettingKeys.LaunchSkinType, LaunchSkinType);
+        _settings.Set(AppSettingKeys.LaunchSkinID, LaunchSkinId);
+        _settings.Set(AppSettingKeys.LaunchSkinSlim, LaunchSkinSlim);
         _settings.Set(AppSettingKeys.ToolDownloadSource, ToolDownloadSource);
         _settings.Set(AppSettingKeys.ToolDownloadVersion, ToolDownloadVersion);
         _settings.Set(AppSettingKeys.ToolDownloadThread, Math.Clamp(ToolDownloadThread, 1, 255));

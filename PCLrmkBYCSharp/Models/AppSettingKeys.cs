@@ -14,11 +14,35 @@ public static class AppSettingKeys
     public const string UiBackgroundOpacity = nameof(UiBackgroundOpacity);
     public const string UiCompactSidebar = nameof(UiCompactSidebar);
     public const string UiShowPageHints = nameof(UiShowPageHints);
+    public const string UiBackgroundSuit = nameof(UiBackgroundSuit);
+    public const string UiBackgroundBlur = nameof(UiBackgroundBlur);
+    public const string UiBackgroundColorful = nameof(UiBackgroundColorful);
+    public const string UiMusicVolume = nameof(UiMusicVolume);
+    public const string UiMusicRandom = nameof(UiMusicRandom);
+    public const string UiMusicAuto = nameof(UiMusicAuto);
+    public const string UiMusicStart = nameof(UiMusicStart);
+    public const string UiMusicStop = nameof(UiMusicStop);
+    public const string UiLogoType = nameof(UiLogoType);
+    public const string UiLogoLeft = nameof(UiLogoLeft);
+    public const string UiLogoText = nameof(UiLogoText);
+    public const string UiCustomType = nameof(UiCustomType);
+    public const string UiCustomNet = nameof(UiCustomNet);
     public const string AccessibilityLargeText = nameof(AccessibilityLargeText);
     public const string AccessibilityReducedMotion = nameof(AccessibilityReducedMotion);
     public const string AccessibilityHighContrast = nameof(AccessibilityHighContrast);
     public const string AccessibilityKeyboardFocus = nameof(AccessibilityKeyboardFocus);
     public const string AccessibilityConfirmDangerousActions = nameof(AccessibilityConfirmDangerousActions);
+    public const string ToolUpdateRelease = nameof(ToolUpdateRelease);
+    public const string ToolUpdateSnapshot = nameof(ToolUpdateSnapshot);
+    public const string ToolHelpChinese = nameof(ToolHelpChinese);
+    public const string SystemSystemUpdate = nameof(SystemSystemUpdate);
+    public const string SystemSystemActivity = nameof(SystemSystemActivity);
+    public const string SystemSystemCache = nameof(SystemSystemCache);
+    public const string SystemSystemTelemetry = nameof(SystemSystemTelemetry);
+    public const string SystemDebugMode = nameof(SystemDebugMode);
+    public const string SystemDebugAnim = nameof(SystemDebugAnim);
+    public const string SystemDebugSkipCopy = nameof(SystemDebugSkipCopy);
+    public const string SystemDebugDelay = nameof(SystemDebugDelay);
     public const string MinecraftRootPath = nameof(MinecraftRootPath);
     public const string LaunchFolderSelect = nameof(LaunchFolderSelect);
     public const string LaunchFolders = nameof(LaunchFolders);
@@ -144,11 +168,35 @@ public static class AppSettingKeys
         new SettingDefinition<int>(UiBackgroundOpacity, 100),
         new SettingDefinition<bool>(UiCompactSidebar, false),
         new SettingDefinition<bool>(UiShowPageHints, true),
+        new SettingDefinition<int>(UiBackgroundSuit, 0),
+        new SettingDefinition<int>(UiBackgroundBlur, 0),
+        new SettingDefinition<bool>(UiBackgroundColorful, false),
+        new SettingDefinition<int>(UiMusicVolume, 50),
+        new SettingDefinition<bool>(UiMusicRandom, true),
+        new SettingDefinition<bool>(UiMusicAuto, false),
+        new SettingDefinition<bool>(UiMusicStart, false),
+        new SettingDefinition<bool>(UiMusicStop, false),
+        new SettingDefinition<int>(UiLogoType, 1),
+        new SettingDefinition<bool>(UiLogoLeft, true),
+        new SettingDefinition<string>(UiLogoText, "PCL Sharp"),
+        new SettingDefinition<int>(UiCustomType, 0),
+        new SettingDefinition<string>(UiCustomNet, ""),
         new SettingDefinition<bool>(AccessibilityLargeText, false),
         new SettingDefinition<bool>(AccessibilityReducedMotion, false),
         new SettingDefinition<bool>(AccessibilityHighContrast, false),
         new SettingDefinition<bool>(AccessibilityKeyboardFocus, true),
         new SettingDefinition<bool>(AccessibilityConfirmDangerousActions, true),
+        new SettingDefinition<bool>(ToolUpdateRelease, true),
+        new SettingDefinition<bool>(ToolUpdateSnapshot, false),
+        new SettingDefinition<bool>(ToolHelpChinese, true),
+        new SettingDefinition<int>(SystemSystemUpdate, 1),
+        new SettingDefinition<int>(SystemSystemActivity, 1),
+        new SettingDefinition<string>(SystemSystemCache, ""),
+        new SettingDefinition<bool>(SystemSystemTelemetry, false),
+        new SettingDefinition<bool>(SystemDebugMode, false),
+        new SettingDefinition<int>(SystemDebugAnim, 15),
+        new SettingDefinition<bool>(SystemDebugSkipCopy, false),
+        new SettingDefinition<bool>(SystemDebugDelay, false),
         new SettingDefinition<string>(MinecraftRootPath, ""),
         new SettingDefinition<string>(LaunchFolderSelect, ""),
         new SettingDefinition<string>(LaunchFolders, ""),

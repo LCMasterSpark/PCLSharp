@@ -249,6 +249,41 @@
                             </StackPanel>
                         </Grid>
                     </Border>
+
+                    <Border Grid.Row="4" Grid.ColumnSpan="3" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="离线皮肤" Style="{StaticResource LabelTextStyle}" />
+                                <ComboBox ItemsSource="{Binding LaunchSkinTypeOptions}"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding LaunchSkinType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="离线登录时使用的默认皮肤模型。"
+                                           Margin="0,8,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="正版玩家名或皮肤标识" Style="{StaticResource LabelTextStyle}" />
+                                <TextBox Text="{Binding LaunchSkinId, UpdateSourceTrigger=PropertyChanged}" />
+                                <CheckBox Content="使用 Slim 模型"
+                                          Margin="0,10,0,0"
+                                          IsChecked="{Binding LaunchSkinSlim, Mode=TwoWay}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="4">
+                                <TextBlock Text="说明" Style="{StaticResource LabelTextStyle}" />
+                                <TextBlock Text="目前先保存原版同语义设置；自定义皮肤文件选择、缓存刷新和资源包生成会在启动预处理阶段接入。"
+                                           LineHeight="20"
+                                           Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </Grid>
 
                 <Grid>
@@ -266,6 +301,11 @@
                         <ColumnDefinition Width="16" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
 
                     <Border Style="{StaticResource CardBorderStyle}">
                         <StackPanel>
@@ -328,6 +368,74 @@
                                        Style="{StaticResource MutedTextStyle}" />
                         </StackPanel>
                     </Border>
+
+                    <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="背景图片" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Text="自适应方式" Style="{StaticResource LabelTextStyle}" />
+                            <ComboBox ItemsSource="{Binding UiBackgroundSuitOptions}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Value"
+                                      SelectedValue="{Binding UiBackgroundSuit, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="背景模糊" Margin="0,14,0,6" FontWeight="SemiBold" />
+                            <Slider Minimum="0"
+                                    Maximum="40"
+                                    TickFrequency="2"
+                                    IsSnapToTickEnabled="True"
+                                    Value="{Binding UiBackgroundBlur, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="{Binding UiBackgroundBlur, StringFormat={}{0}}"
+                                       Style="{StaticResource MutedTextStyle}" />
+                            <CheckBox Content="叠加彩色背景"
+                                      Margin="0,12,0,0"
+                                      IsChecked="{Binding UiBackgroundColorful, Mode=TwoWay}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="14" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="背景音乐" Style="{StaticResource SectionTitleStyle}" />
+                                <TextBlock Text="音量" Style="{StaticResource LabelTextStyle}" />
+                                <Slider Minimum="0"
+                                        Maximum="100"
+                                        TickFrequency="5"
+                                        IsSnapToTickEnabled="True"
+                                        Value="{Binding UiMusicVolume, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="{Binding UiMusicVolume, StringFormat={}{0}%}"
+                                           Style="{StaticResource MutedTextStyle}" />
+                                <CheckBox Content="随机播放"
+                                          Margin="0,12,0,8"
+                                          IsChecked="{Binding UiMusicRandom, Mode=TwoWay}" />
+                                <CheckBox Content="打开启动器自动播放"
+                                          IsChecked="{Binding UiMusicAuto, Mode=TwoWay}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="标题栏与主页" Style="{StaticResource SectionTitleStyle}" />
+                                <TextBlock Text="标题栏" Style="{StaticResource LabelTextStyle}" />
+                                <ComboBox ItemsSource="{Binding UiLogoTypeOptions}"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding UiLogoType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox Margin="0,8,0,0"
+                                         Text="{Binding UiLogoText, UpdateSourceTrigger=PropertyChanged}" />
+                                <CheckBox Content="标题栏居左"
+                                          Margin="0,8,0,12"
+                                          IsChecked="{Binding UiLogoLeft, Mode=TwoWay}" />
+                                <TextBlock Text="主页" Style="{StaticResource LabelTextStyle}" />
+                                <ComboBox ItemsSource="{Binding UiCustomTypeOptions}"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding UiCustomType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBox Margin="0,8,0,0"
+                                         Text="{Binding UiCustomNet, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </Grid>
 
                 <Grid>
@@ -377,6 +485,70 @@
                                        LineHeight="21"
                                        Style="{StaticResource MutedTextStyle}" />
                         </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="游戏辅助" Style="{StaticResource SectionTitleStyle}" />
+                            <CheckBox Content="正式版更新时提示"
+                                      Margin="0,0,0,12"
+                                      IsChecked="{Binding ToolUpdateRelease, Mode=TwoWay}" />
+                            <CheckBox Content="测试版更新时提示"
+                                      Margin="0,0,0,12"
+                                      IsChecked="{Binding ToolUpdateSnapshot, Mode=TwoWay}" />
+                            <CheckBox Content="自动设置游戏语言为中文"
+                                      IsChecked="{Binding ToolHelpChinese, Mode=TwoWay}" />
+                            <TextBlock Text="这些选项对应原版“其他”设置中的游戏更新提示和语言辅助。"
+                                       Margin="0,14,0,0"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="14" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="启动器" Style="{StaticResource SectionTitleStyle}" />
+                                <TextBlock Text="启动器更新" Style="{StaticResource LabelTextStyle}" />
+                                <ComboBox ItemsSource="{Binding SystemUpdateOptions}"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding SystemSystemUpdate, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="启动器公告" Margin="0,14,0,6" FontWeight="SemiBold" />
+                                <ComboBox ItemsSource="{Binding SystemActivityOptions}"
+                                          DisplayMemberPath="DisplayName"
+                                          SelectedValuePath="Value"
+                                          SelectedValue="{Binding SystemSystemActivity, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="缓存文件夹" Margin="0,14,0,6" FontWeight="SemiBold" />
+                                <TextBox Text="{Binding SystemSystemCache, UpdateSourceTrigger=PropertyChanged}" />
+                                <CheckBox Content="匿名数据收集"
+                                          Margin="0,10,0,0"
+                                          IsChecked="{Binding SystemSystemTelemetry, Mode=TwoWay}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="调试选项" Style="{StaticResource SectionTitleStyle}" />
+                                <TextBlock Text="动画速度" Style="{StaticResource LabelTextStyle}" />
+                                <Slider Minimum="0"
+                                        Maximum="30"
+                                        TickFrequency="1"
+                                        IsSnapToTickEnabled="True"
+                                        Value="{Binding SystemDebugAnim, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="{Binding SystemDebugAnim}"
+                                           Style="{StaticResource MutedTextStyle}" />
+                                <CheckBox Content="调试模式"
+                                          Margin="0,12,0,8"
+                                          IsChecked="{Binding SystemDebugMode, Mode=TwoWay}" />
+                                <CheckBox Content="禁止下载时从其他文件夹复制"
+                                          Margin="0,0,0,8"
+                                          IsChecked="{Binding SystemDebugSkipCopy, Mode=TwoWay}" />
+                                <CheckBox Content="添加测试延迟"
+                                          IsChecked="{Binding SystemDebugDelay, Mode=TwoWay}" />
+                            </StackPanel>
+                        </Grid>
                     </Border>
                 </Grid>
 

@@ -111,6 +111,81 @@ public sealed class SetupPageViewModelTests
         Assert.True(settings.Get(AppSettingKeys.AccessibilityLargeText, false));
         Assert.False(settings.Get(AppSettingKeys.AccessibilityConfirmDangerousActions, true));
     }
+
+    [Fact]
+    public void SaveSettingsPersistsPersonalizationAccessibilityAndSkinSettings()
+    {
+        using var temp = new TempDirectory();
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        var viewModel = new SetupPageViewModel(
+            settings,
+            new TestAppPathService(temp.Path),
+            new NullFileDialogService(),
+            new NullLoggerService())
+        {
+            UiBackgroundSuit = 2,
+            UiBackgroundBlur = 99,
+            UiBackgroundColorful = true,
+            UiMusicVolume = -8,
+            UiMusicRandom = false,
+            UiMusicAuto = true,
+            UiLogoType = 2,
+            UiLogoLeft = false,
+            UiLogoText = "PCL# Preview",
+            UiCustomType = 2,
+            UiCustomNet = "https://example.invalid/home.xaml",
+            ToolUpdateRelease = false,
+            ToolUpdateSnapshot = true,
+            ToolHelpChinese = false,
+            SystemSystemUpdate = 3,
+            SystemSystemActivity = 2,
+            SystemSystemCache = "D:\\Cache",
+            SystemSystemTelemetry = true,
+            SystemDebugMode = true,
+            SystemDebugAnim = 99,
+            SystemDebugSkipCopy = true,
+            SystemDebugDelay = true,
+            LaunchSkinType = 3,
+            LaunchSkinId = "Steve",
+            LaunchSkinSlim = true
+        };
+
+        Assert.Contains(viewModel.UiBackgroundSuitOptions, option => option.DisplayName.Contains("保持长宽比", StringComparison.Ordinal));
+        Assert.Equal([0, 1, 2, 3], viewModel.UiLogoTypeOptions.Select(option => option.Value));
+        Assert.Equal([0, 3, 1, 2], viewModel.UiCustomTypeOptions.Select(option => option.Value));
+        Assert.Equal([0, 1, 2, 3], viewModel.SystemUpdateOptions.Select(option => option.Value));
+        Assert.Equal([0, 1, 2], viewModel.SystemActivityOptions.Select(option => option.Value));
+        Assert.Equal([0, 1, 2, 3, 4], viewModel.LaunchSkinTypeOptions.Select(option => option.Value));
+
+        viewModel.SaveSettingsCommand.Execute(null);
+
+        Assert.Equal(2, settings.Get(AppSettingKeys.UiBackgroundSuit, 0));
+        Assert.Equal(40, settings.Get(AppSettingKeys.UiBackgroundBlur, 0));
+        Assert.True(settings.Get(AppSettingKeys.UiBackgroundColorful, false));
+        Assert.Equal(0, settings.Get(AppSettingKeys.UiMusicVolume, 50));
+        Assert.False(settings.Get(AppSettingKeys.UiMusicRandom, true));
+        Assert.True(settings.Get(AppSettingKeys.UiMusicAuto, false));
+        Assert.Equal(2, settings.Get(AppSettingKeys.UiLogoType, 1));
+        Assert.False(settings.Get(AppSettingKeys.UiLogoLeft, true));
+        Assert.Equal("PCL# Preview", settings.Get(AppSettingKeys.UiLogoText, ""));
+        Assert.Equal(2, settings.Get(AppSettingKeys.UiCustomType, 0));
+        Assert.Equal("https://example.invalid/home.xaml", settings.Get(AppSettingKeys.UiCustomNet, ""));
+        Assert.False(settings.Get(AppSettingKeys.ToolUpdateRelease, true));
+        Assert.True(settings.Get(AppSettingKeys.ToolUpdateSnapshot, false));
+        Assert.False(settings.Get(AppSettingKeys.ToolHelpChinese, true));
+        Assert.Equal(3, settings.Get(AppSettingKeys.SystemSystemUpdate, 1));
+        Assert.Equal(2, settings.Get(AppSettingKeys.SystemSystemActivity, 1));
+        Assert.Equal("D:\\Cache", settings.Get(AppSettingKeys.SystemSystemCache, ""));
+        Assert.True(settings.Get(AppSettingKeys.SystemSystemTelemetry, false));
+        Assert.True(settings.Get(AppSettingKeys.SystemDebugMode, false));
+        Assert.Equal(30, settings.Get(AppSettingKeys.SystemDebugAnim, 15));
+        Assert.True(settings.Get(AppSettingKeys.SystemDebugSkipCopy, false));
+        Assert.True(settings.Get(AppSettingKeys.SystemDebugDelay, false));
+        Assert.Equal(3, settings.Get(AppSettingKeys.LaunchSkinType, 0));
+        Assert.Equal("Steve", settings.Get(AppSettingKeys.LaunchSkinID, ""));
+        Assert.True(settings.Get(AppSettingKeys.LaunchSkinSlim, false));
+    }
+
     [Fact]
     public void SaveSettingsPersistsOldPclDownloadSettings()
     {
