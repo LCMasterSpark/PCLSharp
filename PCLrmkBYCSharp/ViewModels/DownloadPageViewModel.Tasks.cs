@@ -18,6 +18,11 @@ public sealed partial class DownloadPageViewModel
             return;
         }
 
+        ApplyTaskSnapshots();
+    }
+
+    private void ApplyTaskSnapshots()
+    {
         var selectedName = SelectedDownloadTask?.Name;
         var snapshots = _downloadManager.Tasks.ToArray();
         DownloadTaskSnapshot? nextSelected;
@@ -82,7 +87,7 @@ public sealed partial class DownloadPageViewModel
     {
         if (IsOnUiThread())
         {
-            TryRefreshTaskSnapshots();
+            TryApplyTaskSnapshots();
             return;
         }
 
@@ -95,24 +100,24 @@ public sealed partial class DownloadPageViewModel
         var appDispatcher = System.Windows.Application.Current?.Dispatcher;
         if (appDispatcher is not null && !appDispatcher.CheckAccess())
         {
-            _ = appDispatcher.InvokeAsync(TryRefreshTaskSnapshots);
+            _ = appDispatcher.InvokeAsync(TryApplyTaskSnapshots);
             return;
         }
 
         if (_uiContext is not null && SynchronizationContext.Current != _uiContext)
         {
-            _uiContext.Post(_ => TryRefreshTaskSnapshots(), null);
+            _uiContext.Post(_ => TryApplyTaskSnapshots(), null);
             return;
         }
 
-        TryRefreshTaskSnapshots();
+        TryApplyTaskSnapshots();
     }
 
     private async Task DispatchTaskSnapshotsAsync()
     {
         try
         {
-            await _dispatcher!.InvokeAsync(TryRefreshTaskSnapshots);
+            await _dispatcher!.InvokeAsync(TryApplyTaskSnapshots);
         }
         catch (Exception ex)
         {
@@ -120,11 +125,11 @@ public sealed partial class DownloadPageViewModel
         }
     }
 
-    private void TryRefreshTaskSnapshots()
+    private void TryApplyTaskSnapshots()
     {
         try
         {
-            RefreshTaskSnapshots();
+            ApplyTaskSnapshots();
         }
         catch (Exception ex)
         {

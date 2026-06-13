@@ -2210,6 +2210,39 @@ public sealed class DownloadServicesTests
     }
 
     [Fact]
+    public void DownloadPageViewModelDoesNotReenterRefreshWhenDispatcherAlreadyHasAccess()
+    {
+        using var temp = new TempDirectory();
+        var manager = new FakeDownloadManagerService();
+        var dispatcher = new QueueingUiDispatcherService(checkAccess: true);
+        var originalContext = SynchronizationContext.Current;
+        var capturedContext = new SynchronizationContext();
+        SynchronizationContext.SetSynchronizationContext(capturedContext);
+        DownloadPageViewModel viewModel;
+        try
+        {
+            viewModel = CreateDownloadPageViewModel(
+                temp.Path,
+                new FakeMinecraftClientDownloadService(),
+                manager,
+                dispatcher: dispatcher);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(originalContext);
+        }
+
+        manager.AddSnapshot(new DownloadTaskSnapshot("foreground", DownloadTaskState.Running, 1, 0, 256, 0, "foreground")
+        {
+            CanCancel = true
+        });
+
+        Assert.Single(viewModel.DownloadTasks);
+        Assert.Equal("foreground", viewModel.SelectedDownloadTask?.Name);
+        Assert.Equal(0, dispatcher.QueuedCount);
+    }
+
+    [Fact]
     public void DownloadPageViewModelDoesNotPropagateDispatcherFailuresFromSnapshotEvents()
     {
         using var temp = new TempDirectory();
