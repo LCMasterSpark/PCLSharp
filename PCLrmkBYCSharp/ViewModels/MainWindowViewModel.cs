@@ -6,7 +6,7 @@ using PCLrmkBYCSharp.Services.Loading;
 
 namespace PCLrmkBYCSharp.ViewModels;
 
-public sealed partial class MainWindowViewModel : ObservableObject
+public sealed partial class MainWindowViewModel : ObservableObject, IWindowCloseGuard
 {
     private readonly INavigationService _navigation;
     private readonly IAppSettingsService _settings;

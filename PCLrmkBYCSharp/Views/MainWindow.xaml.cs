@@ -32,7 +32,7 @@ public partial class MainWindow : Window
 
     private void HandleClosing(object? sender, CancelEventArgs e)
     {
-        if (!_viewModel.CanClose())
+        if (_viewModel is IWindowCloseGuard closeGuard && !closeGuard.CanClose())
         {
             e.Cancel = true;
             return;
