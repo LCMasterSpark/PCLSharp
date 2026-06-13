@@ -64,7 +64,7 @@ public sealed partial class LaunchPageViewModel
         var requirement = _javaSelector.GetRequirement(SelectedInstance);
         if (selectedJava is null)
         {
-            return $"Java 扫描完成：未找到满足 {FormatJavaVersion(requirement.MinVersion)} - {FormatJavaVersion(requirement.MaxVersion)} 的 Java";
+            return $"Java 扫描完成：未找到满足 {requirement.DisplayText} 的 Java";
         }
 
         if (!string.IsNullOrWhiteSpace(savedJava)
@@ -81,11 +81,6 @@ public sealed partial class LaunchPageViewModel
     {
         return !string.IsNullOrWhiteSpace(instanceName)
             && _settings.Get(GetInstanceSettingKey(instanceName, AppSettingKeys.VersionAdvanceJava), false);
-    }
-
-    private static string FormatJavaVersion(Version version)
-    {
-        return version.Major == 1 ? version.Minor.ToString() : version.ToString();
     }
 
     private void BrowseMinecraftRoot()

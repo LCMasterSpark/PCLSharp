@@ -111,7 +111,7 @@ public sealed class LaunchPipelineService
         if (java is null)
         {
             var requirement = _javaSelector.GetRequirement(instance);
-            var issue = new LaunchValidationIssue("JavaNotFound", $"未找到满足 {requirement.MinVersion} - {requirement.MaxVersion} 的 Java");
+            var issue = new LaunchValidationIssue("JavaNotFound", $"未找到满足 {requirement.DisplayText} 的 Java");
             SetStep("获取 Java", LaunchStepStatus.Failed, issue.Message);
             return LaunchResult.Failed(issue);
         }

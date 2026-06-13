@@ -43,6 +43,20 @@ public sealed class LaunchServicesTests
         Assert.Equal(expectedMajor, requirement.MinVersion.Minor);
     }
 
+    [Theory]
+    [InlineData("1.20.5", "Java 21")]
+    [InlineData("1.20.1", "Java 17")]
+    [InlineData("1.12.2", "Java 8")]
+    public void JavaRequirementDisplaysUserFriendlyVersionRange(string minecraftVersion, string expectedText)
+    {
+        var selector = new JavaSelectorService();
+        var instance = CreateInstance(minecraftVersion);
+
+        var requirement = selector.GetRequirement(instance);
+
+        Assert.Equal(expectedText, requirement.DisplayText);
+    }
+
     [Fact]
     public void JavaSelectorIgnoresPreferredJavaAboveCompatibleRange()
     {
@@ -1151,6 +1165,28 @@ public sealed class LaunchServicesTests
         Assert.NotNull(result.Profile);
         Assert.Empty(result.Profile.MissingFiles);
         Assert.Contains("--username Steve", result.Profile.Arguments);
+    }
+
+    [Fact]
+    public async Task LaunchPipelineReportsUserFriendlyJavaRequirementWhenJavaIsMissing()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var pipeline = CreatePipeline(new FakeJavaDiscoveryService([]), new FakeProcessLauncher());
+
+        var result = await pipeline.GenerateProfileAsync(CreateRequest(instance, temp.Path));
+
+        var issue = Assert.Single(result.Issues, issue => issue.Code == "JavaNotFound");
+        Assert.False(result.Success);
+        Assert.Equal("未找到满足 Java 17 的 Java", issue.Message);
+        Assert.Contains(pipeline.Steps, step => step.Name == "获取 Java" && step.Message == issue.Message);
     }
 
     [Fact]
