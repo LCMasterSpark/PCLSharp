@@ -118,7 +118,7 @@ public sealed partial class LaunchPageViewModel
 
     private LaunchRequest CreateRequest(bool startProcess, string saveBatchPath = "")
     {
-        var configuredJavaPath = ResolveJavaPath(SelectedInstance?.Name);
+        var effectiveJavaPath = ResolveLaunchJavaPath();
         SyncInstanceServerLoginCache(SelectedInstance?.Name);
         var effectiveLoginType = ResolveEffectiveLoginType(SelectedInstance?.Name);
         var effectiveLoginUserName = ResolveEffectiveLoginUserName(effectiveLoginType);
@@ -127,7 +127,7 @@ public sealed partial class LaunchPageViewModel
         return new LaunchRequest(
             SelectedInstance,
             MinecraftRootPath,
-            string.IsNullOrWhiteSpace(configuredJavaPath) ? SelectedJava?.PathJava : configuredJavaPath,
+            effectiveJavaPath,
             LegacyName,
             MinMemoryMb,
             MaxMemoryMb,
@@ -146,6 +146,21 @@ public sealed partial class LaunchPageViewModel
             effectiveLoginServer,
             RememberLogin,
             SelectedInstance is null ? "" : _gameDirectories.Resolve(SelectedInstance).Path);
+    }
+
+    private string? ResolveLaunchJavaPath()
+    {
+        var configuredJavaPath = ResolveJavaPath(SelectedInstance?.Name);
+        if (SelectedInstance is not null
+            && SelectedJava is not null
+            && !ShouldIgnoreJavaCompatibility(SelectedInstance.Name)
+            && !string.IsNullOrWhiteSpace(configuredJavaPath)
+            && !string.Equals(SelectedJava.PathJava, configuredJavaPath, StringComparison.OrdinalIgnoreCase))
+        {
+            return SelectedJava.PathJava;
+        }
+
+        return string.IsNullOrWhiteSpace(configuredJavaPath) ? SelectedJava?.PathJava : configuredJavaPath;
     }
 
     private LoginType ResolveEffectiveLoginType(string? instanceName)

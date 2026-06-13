@@ -1116,13 +1116,14 @@ public sealed class LaunchStage5BTests
         settings.Set(AppSettingKeys.MinecraftRootPath, temp.Path);
         settings.Set(AppSettingKeys.SelectedInstanceName, instance.Name);
         settings.Set(AppSettingKeys.LaunchArgumentJavaSelect, java25Path);
+        var pipeline = new CaptureLaunchPipelineService();
         var viewModel = new LaunchPageViewModel(
             new FakeMinecraftDiscoveryService(temp.Path, [instance]),
             new FakeJavaDiscoveryService([
                 new JavaEntry(java25Path, new Version(1, 25, 0, 2), false, true, false, true),
                 new JavaEntry(java17Path, new Version(1, 17, 0, 8), false, true, false, true)
             ]),
-            new CaptureLaunchPipelineService(),
+            pipeline,
             settings,
             new NullFileDialogService(),
             new LegacyLoginService(),
@@ -1132,6 +1133,47 @@ public sealed class LaunchStage5BTests
 
         Assert.Equal(java17Path, viewModel.SelectedJava?.PathJava);
         Assert.Contains("自动切换到兼容 Java", viewModel.StatusMessage);
+        await viewModel.GenerateProfileCommand.ExecuteAsync(null);
+
+        Assert.Equal(java17Path, pipeline.LastRequest?.JavaPath);
+    }
+
+    [Fact]
+    public async Task LaunchPageUsesCompatibleJavaWhenInstanceJavaOverrideIsTooNew()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteVersion(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var java17Path = Path.Combine(temp.Path, "java-17", "bin", "java.exe");
+        var java25Path = Path.Combine(temp.Path, "java-25", "bin", "java.exe");
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        settings.Set(AppSettingKeys.MinecraftRootPath, temp.Path);
+        settings.Set(AppSettingKeys.SelectedInstanceName, instance.Name);
+        settings.Set($"Instance.{instance.Name}.{AppSettingKeys.VersionArgumentJavaSelect}", java25Path);
+        var pipeline = new CaptureLaunchPipelineService();
+        var viewModel = new LaunchPageViewModel(
+            new FakeMinecraftDiscoveryService(temp.Path, [instance]),
+            new FakeJavaDiscoveryService([
+                new JavaEntry(java25Path, new Version(1, 25, 0, 2), false, true, false, true),
+                new JavaEntry(java17Path, new Version(1, 17, 0, 8), false, true, false, true)
+            ]),
+            pipeline,
+            settings,
+            new NullFileDialogService(),
+            new LegacyLoginService(),
+            new NullLoggerService());
+
+        await viewModel.InitializeAsync();
+        await viewModel.GenerateProfileCommand.ExecuteAsync(null);
+
+        Assert.Equal(java17Path, viewModel.SelectedJava?.PathJava);
+        Assert.Equal(java17Path, pipeline.LastRequest?.JavaPath);
+        Assert.Equal(java25Path, settings.Get($"Instance.{instance.Name}.{AppSettingKeys.VersionArgumentJavaSelect}", ""));
     }
 
     [Fact]
