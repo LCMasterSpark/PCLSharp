@@ -114,6 +114,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private string linkConnectionStatusText = "联机后端未运行。";
 
     [ObservableProperty]
+    private string linkConnectedPeersText = "暂无已连接节点。";
+
+    [ObservableProperty]
     private string linkProcessLogText = "联机后端输出会显示在这里。";
 
     public bool HasUrlService => _urls is not null;
@@ -320,6 +323,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         }
 
         LinkConnectionStatusText = snapshot.ConnectionStatus;
+        LinkConnectedPeersText = snapshot.ConnectedPeers.Count == 0
+            ? "暂无已连接节点。"
+            : "节点地址：" + string.Join(Environment.NewLine, snapshot.ConnectedPeers);
         LinkProcessLogText = snapshot.RecentLogLines.Count == 0
             ? "暂无联机后端输出。"
             : string.Join(Environment.NewLine, snapshot.RecentLogLines);
@@ -330,6 +336,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     {
         LinkProcessStatusText = message;
         LinkConnectionStatusText = "联机后端未运行。";
+        LinkConnectedPeersText = "暂无已连接节点。";
         StatusMessage = message;
     }
 

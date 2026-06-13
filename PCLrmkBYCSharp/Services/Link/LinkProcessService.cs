@@ -8,6 +8,7 @@ public sealed class LinkProcessService : ILinkProcessService
     private readonly ILinkProcessRunner _runner;
     private readonly IAppLoggerService _logger;
     private readonly Queue<string> _recentLogLines = new();
+    private readonly List<string> _connectedPeers = new();
     private ILinkProcessHandle? _process;
     private int _connectedPeerCount;
 
@@ -37,7 +38,7 @@ public sealed class LinkProcessService : ILinkProcessService
         try
         {
             _recentLogLines.Clear();
-            _connectedPeerCount = 0;
+            ResetConnections();
             var startInfo = LinkProcessRunner.CreateStartInfo(plan.ExecutablePath, plan.ProcessArguments);
             _process = _runner.Start(startInfo);
             _process.OutputReceived += HandleOutputReceived;
@@ -62,7 +63,7 @@ public sealed class LinkProcessService : ILinkProcessService
         if (_process is null || _process.HasExited)
         {
             _process = null;
-            _connectedPeerCount = 0;
+            ResetConnections();
             return Publish(LinkProcessState.Stopped, null, "联机后端未运行。", Current.CommandPreview);
         }
 
@@ -74,7 +75,7 @@ public sealed class LinkProcessService : ILinkProcessService
             process.Exited -= HandleProcessExited;
             process.Stop();
             _process = null;
-            _connectedPeerCount = 0;
+            ResetConnections();
             _logger.Info("联机后端已停止，PID：" + processId);
             return Publish(LinkProcessState.Stopped, null, "联机后端已停止。", Current.CommandPreview);
         }
@@ -105,7 +106,7 @@ public sealed class LinkProcessService : ILinkProcessService
         }
 
         _process = null;
-        _connectedPeerCount = 0;
+        ResetConnections();
         var exitCodeText = exitCode is null ? "未知" : exitCode.Value.ToString();
         var message = exitCode == 0
             ? $"联机后端已退出，退出码：{exitCodeText}。"
@@ -153,7 +154,15 @@ public sealed class LinkProcessService : ILinkProcessService
 
     private LinkProcessSnapshot CreateSnapshot(LinkProcessState state, int? processId, string message, string commandPreview)
     {
-        return new LinkProcessSnapshot(state, processId, message, commandPreview, _recentLogLines.ToArray(), _connectedPeerCount, BuildConnectionStatus(state));
+        return new LinkProcessSnapshot(
+            state,
+            processId,
+            message,
+            commandPreview,
+            _recentLogLines.ToArray(),
+            _connectedPeerCount,
+            _connectedPeers.ToArray(),
+            BuildConnectionStatus(state));
     }
 
     private static string BuildCommandPreview(LinkBackendLaunchPlan plan)
@@ -180,13 +189,30 @@ public sealed class LinkProcessService : ILinkProcessService
     {
         if (line.Contains("new peer connection added", StringComparison.OrdinalIgnoreCase))
         {
-            _connectedPeerCount++;
+            var remoteAddress = TryExtractRemoteAddress(line);
+            var isNewPeer = remoteAddress is null || !_connectedPeers.Any(peer => string.Equals(peer, remoteAddress, StringComparison.OrdinalIgnoreCase));
+            if (isNewPeer)
+            {
+                _connectedPeerCount++;
+            }
+
+            if (remoteAddress is not null && isNewPeer)
+            {
+                _connectedPeers.Add(remoteAddress);
+            }
+
             return;
         }
 
         if (line.Contains("peer connection removed", StringComparison.OrdinalIgnoreCase))
         {
-            _connectedPeerCount = Math.Max(0, _connectedPeerCount - 1);
+            var remoteAddress = TryExtractRemoteAddress(line);
+            if (remoteAddress is not null)
+            {
+                _connectedPeers.RemoveAll(peer => string.Equals(peer, remoteAddress, StringComparison.OrdinalIgnoreCase));
+            }
+
+            _connectedPeerCount = Math.Max(_connectedPeers.Count, _connectedPeerCount - 1);
         }
     }
 
@@ -194,11 +220,58 @@ public sealed class LinkProcessService : ILinkProcessService
     {
         return state switch
         {
-            LinkProcessState.Running when _connectedPeerCount > 0 => $"已连接节点：{_connectedPeerCount} 个",
+            LinkProcessState.Running when _connectedPeerCount > 0 => $"已连接节点：{_connectedPeerCount} 个{BuildPeerSummary()}",
             LinkProcessState.Running => "等待联机节点连接。",
             LinkProcessState.Failed => "联机后端异常，连接已中断。",
             _ => "联机后端未运行。"
         };
+    }
+
+    private void ResetConnections()
+    {
+        _connectedPeerCount = 0;
+        _connectedPeers.Clear();
+    }
+
+    private string BuildPeerSummary()
+    {
+        if (_connectedPeers.Count == 0)
+        {
+            return "";
+        }
+
+        var visiblePeers = _connectedPeers.Take(3).ToArray();
+        var suffix = _connectedPeers.Count > visiblePeers.Length ? $" 等 {_connectedPeers.Count} 个地址" : "";
+        return "（" + string.Join(", ", visiblePeers) + suffix + "）";
+    }
+
+    private static string? TryExtractRemoteAddress(string line)
+    {
+        var markerIndex = line.IndexOf("remote_addr", StringComparison.OrdinalIgnoreCase);
+        if (markerIndex < 0)
+        {
+            return null;
+        }
+
+        var valueStart = line.IndexOfAny(['=', ':'], markerIndex);
+        if (valueStart < 0)
+        {
+            return null;
+        }
+
+        valueStart++;
+        while (valueStart < line.Length && (char.IsWhiteSpace(line[valueStart]) || line[valueStart] is '"' or '\'' or '{'))
+        {
+            valueStart++;
+        }
+
+        var valueEnd = valueStart;
+        while (valueEnd < line.Length && !char.IsWhiteSpace(line[valueEnd]) && line[valueEnd] is not '"' and not '\'' and not ',' and not '}' and not ']')
+        {
+            valueEnd++;
+        }
+
+        return valueEnd > valueStart ? line[valueStart..valueEnd] : null;
     }
 
     private static string MaskSecret(string arguments)

@@ -271,6 +271,12 @@
                                            Foreground="{StaticResource AppTextBrush}"
                                            TextWrapping="Wrap" />
                             </Border>
+                            <TextBlock Text="{Binding LinkConnectedPeersText}"
+                                       Margin="0,7,0,0"
+                                       FontFamily="Consolas"
+                                       FontSize="12"
+                                       LineHeight="18"
+                                       Style="{StaticResource MutedTextStyle}" />
                             <TextBlock Text="近期日志"
                                        Margin="0,12,0,6"
                                        Style="{StaticResource FieldLabelStyle}" />

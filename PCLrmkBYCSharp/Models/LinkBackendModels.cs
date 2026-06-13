@@ -43,4 +43,5 @@ public sealed record LinkProcessSnapshot(
     string CommandPreview,
     IReadOnlyList<string> RecentLogLines,
     int ConnectedPeerCount,
+    IReadOnlyList<string> ConnectedPeers,
     string ConnectionStatus);

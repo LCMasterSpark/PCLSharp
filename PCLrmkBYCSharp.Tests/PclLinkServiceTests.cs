@@ -155,7 +155,13 @@ public sealed class PclLinkServiceTests
         service.Start(plan);
         runner.Handle.Publish("new peer connection added remote_addr=10.0.0.2");
         Assert.Equal(1, service.Current.ConnectedPeerCount);
+        Assert.Equal("10.0.0.2", Assert.Single(service.Current.ConnectedPeers));
         Assert.Contains("1", service.Current.ConnectionStatus, StringComparison.Ordinal);
+        Assert.Contains("10.0.0.2", service.Current.ConnectionStatus, StringComparison.Ordinal);
+
+        runner.Handle.Publish("new peer connection added remote_addr=10.0.0.2");
+        Assert.Equal(1, service.Current.ConnectedPeerCount);
+        Assert.Single(service.Current.ConnectedPeers);
 
         runner.Handle.Publish("--network-secret=SECRET backend warning", isError: true);
 
@@ -168,6 +174,7 @@ public sealed class PclLinkServiceTests
 
         runner.Handle.Publish("peer connection removed remote_addr=10.0.0.2");
         Assert.Equal(0, service.Current.ConnectedPeerCount);
+        Assert.Empty(service.Current.ConnectedPeers);
     }
 
     [Theory]
