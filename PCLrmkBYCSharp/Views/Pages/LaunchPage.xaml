@@ -153,7 +153,7 @@
                                         CommandParameter="{Binding SelectedInstance}"
                                         Content="版本设置">
                                     <Button.Style>
-                                        <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                        <Style TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
                                             <Setter Property="Visibility" Value="Visible" />
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding HasSelectedInstance}" Value="False">
@@ -1213,7 +1213,7 @@
                                             CommandParameter="{Binding SelectedInstance}"
                                             Content="前往实例页补全文件">
                                         <Button.Style>
-                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                            <Style TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
                                                 <Setter Property="Visibility" Value="Collapsed" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding HasLaunchFileCompletionAction}" Value="True">
@@ -1229,7 +1229,7 @@
                                             Command="{Binding DataContext.OpenDownloadManagementCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                             Content="查看下载任务">
                                         <Button.Style>
-                                            <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                            <Style TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
                                                 <Setter Property="Visibility" Value="Collapsed" />
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding HasLaunchFileCompletionAction}" Value="True">

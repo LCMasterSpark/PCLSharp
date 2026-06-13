@@ -335,7 +335,7 @@
             </Setter>
         </Style>
 
-        <Style TargetType="{x:Type Button}">
+        <Style x:Key="BaseButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Background" Value="{StaticResource AppAccentSoftBrush}" />
             <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
             <Setter Property="BorderBrush" Value="{StaticResource AppAccentBrush}" />
@@ -347,9 +347,13 @@
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         </Style>
 
-        <Style TargetType="{x:Type ListBoxItem}">
+        <Style TargetType="{x:Type Button}" BasedOn="{StaticResource BaseButtonStyle}" />
+
+        <Style x:Key="BaseListBoxItemStyle" TargetType="{x:Type ListBoxItem}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
         </Style>
+
+        <Style TargetType="{x:Type ListBoxItem}" BasedOn="{StaticResource BaseListBoxItemStyle}" />
 
         <Style TargetType="{x:Type TextBox}">
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
