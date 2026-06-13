@@ -30,6 +30,7 @@ public sealed class LaunchPipelineService
     private readonly IMinecraftGameDirectoryService? _gameDirectories;
     private readonly IAppSettingsService? _settings;
     private readonly IAppLoggerService _logger;
+    private readonly object _stepsSync = new();
     private readonly List<LaunchStepState> _steps = [];
 
     public LaunchPipelineService(
@@ -80,7 +81,16 @@ public sealed class LaunchPipelineService
 
     public event EventHandler<IReadOnlyList<LaunchStepState>>? StepsChanged;
 
-    public IReadOnlyList<LaunchStepState> Steps => _steps;
+    public IReadOnlyList<LaunchStepState> Steps
+    {
+        get
+        {
+            lock (_stepsSync)
+            {
+                return _steps.ToArray();
+            }
+        }
+    }
 
     public async Task<LaunchResult> GenerateProfileAsync(LaunchRequest request, CancellationToken cancellationToken = default)
     {
@@ -604,39 +614,54 @@ public sealed class LaunchPipelineService
 
     private void ResetSteps()
     {
-        _steps.Clear();
-        _steps.AddRange([
-            new LaunchStepState("预检测", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("获取 Java", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("登录", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState(StepFileCompletion, LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("本地缺失检查", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("获取启动参数", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("内存优化", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("解压文件", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("预启动处理", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("准备补丁文件", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("执行自定义命令", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("启动进程", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("等待游戏窗口", LaunchStepStatus.Waiting, ""),
-            new LaunchStepState("结束处理", LaunchStepStatus.Waiting, "")
-        ]);
+        lock (_stepsSync)
+        {
+            _steps.Clear();
+            _steps.AddRange([
+                new LaunchStepState("预检测", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("获取 Java", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("登录", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepFileCompletion, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("本地缺失检查", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("获取启动参数", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("内存优化", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("解压文件", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("预启动处理", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("准备补丁文件", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("执行自定义命令", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("启动进程", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("等待游戏窗口", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState("结束处理", LaunchStepStatus.Waiting, "")
+            ]);
+        }
+
         NotifyStepsChanged();
     }
 
     private void SetStep(string name, LaunchStepStatus status, string message)
     {
-        var index = _steps.FindIndex(step => step.Name == name);
-        if (index >= 0)
+        lock (_stepsSync)
         {
+            var index = _steps.FindIndex(step => step.Name == name);
+            if (index < 0)
+            {
+                return;
+            }
+
             _steps[index] = new LaunchStepState(name, status, message);
-            NotifyStepsChanged();
         }
+
+        NotifyStepsChanged();
     }
 
     private void NotifyStepsChanged()
     {
-        var snapshot = _steps.ToArray();
+        LaunchStepState[] snapshot;
+        lock (_stepsSync)
+        {
+            snapshot = _steps.ToArray();
+        }
+
         var handlers = StepsChanged;
         if (handlers is null)
         {

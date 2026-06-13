@@ -1138,6 +1138,41 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public async Task LaunchPipelineStepsExposeStableSnapshots()
+    {
+        using var temp = new TempDirectory();
+        var pipeline = CreatePipeline(new FakeJavaDiscoveryService([]), new FakeProcessLauncher());
+
+        await pipeline.GenerateProfileAsync(new LaunchRequest(
+            null,
+            temp.Path,
+            null,
+            "Steve",
+            512,
+            2048,
+            854,
+            480,
+            "",
+            "",
+            false));
+        var firstSnapshot = pipeline.Steps;
+        Assert.Equal(LaunchStepStatus.Failed, firstSnapshot[0].Status);
+
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        await pipeline.GenerateProfileAsync(CreateRequest(instance, temp.Path));
+
+        Assert.Equal(LaunchStepStatus.Failed, firstSnapshot[0].Status);
+        Assert.Equal(LaunchStepStatus.Succeeded, pipeline.Steps[0].Status);
+    }
+
+    [Fact]
     public async Task LaunchPipelineReturnsMissingFilesBeforeStartingProcess()
     {
         using var temp = new TempDirectory();
