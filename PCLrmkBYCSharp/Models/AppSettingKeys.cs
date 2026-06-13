@@ -153,6 +153,11 @@ public static class AppSettingKeys
     public const string DownloadPresetSearchText = nameof(DownloadPresetSearchText);
     public const string DownloadPresetGameVersion = nameof(DownloadPresetGameVersion);
     public const string DownloadPresetLoader = nameof(DownloadPresetLoader);
+    public const string LinkProvider = nameof(LinkProvider);
+    public const string LinkLatencyMode = nameof(LinkLatencyMode);
+    public const string LinkCustomPeer = nameof(LinkCustomPeer);
+    public const string LinkLastInviteCode = nameof(LinkLastInviteCode);
+    public const string LinkServerPort = nameof(LinkServerPort);
 
     public static IReadOnlyList<ISettingDefinition> Definitions { get; } =
     [
@@ -305,6 +310,11 @@ public static class AppSettingKeys
         new SettingDefinition<int>(DownloadPresetResourceSection, -1),
         new SettingDefinition<string>(DownloadPresetSearchText, ""),
         new SettingDefinition<string>(DownloadPresetGameVersion, ""),
-        new SettingDefinition<string>(DownloadPresetLoader, "")
+        new SettingDefinition<string>(DownloadPresetLoader, ""),
+        new SettingDefinition<LinkProviderKind>(LinkProvider, LinkProviderKind.Terracotta),
+        new SettingDefinition<Models.LinkLatencyMode>(LinkLatencyMode, Models.LinkLatencyMode.DirectFirst),
+        new SettingDefinition<string>(LinkCustomPeer, ""),
+        new SettingDefinition<string>(LinkLastInviteCode, ""),
+        new SettingDefinition<int>(LinkServerPort, 25565)
     ];
 }

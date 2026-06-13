@@ -4,6 +4,7 @@ public enum PageRoute
 {
     Launch,
     Download,
+    Link,
     Instance,
     Setup,
     Other

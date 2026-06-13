@@ -1,6 +1,7 @@
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services.Downloads;
 using PCLrmkBYCSharp.Services.Launch;
+using PCLrmkBYCSharp.Services.Link;
 using PCLrmkBYCSharp.ViewModels;
 
 namespace PCLrmkBYCSharp.Services;
@@ -37,6 +38,7 @@ public sealed class NavigationService : INavigationService
         IAppLoggerService logger,
         IHelpService help,
         IHelpActionService helpActions,
+        ILinkService linkService,
         IFolderOpenService? folders = null,
         IExternalUrlService? urls = null,
         ILaunchMemoryOptimizer? memoryOptimizer = null,
@@ -52,6 +54,7 @@ public sealed class NavigationService : INavigationService
         [
             new(PageRoute.Launch, "启动", "账号、版本与启动链路"),
             new(PageRoute.Download, "下载", "游戏、组件与社区资源"),
+            new(PageRoute.Link, "联机", "陶瓦联机与 EasyTier"),
             new(PageRoute.Instance, "实例", "本地版本与 Mod 管理"),
             new(PageRoute.Setup, "设置", "启动器全局设置"),
             new(PageRoute.Other, "更多", "帮助、关于与工具")
@@ -81,6 +84,7 @@ public sealed class NavigationService : INavigationService
         {
             [PageRoute.Launch] = launchPage,
             [PageRoute.Download] = new DownloadPageViewModel(minecraftClientDownload, downloadManager, communityResourceSearch, communityResourceVersions, modpackInstall, loaderProcessorRunner, settings, minecraftDiscovery, fileDialogs, logger, rootFolders, selections, prompts, gameDirectories, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, folders, urls, dispatcher),
+            [PageRoute.Link] = new LinkPageViewModel(linkService, settings, logger, urls),
             [PageRoute.Instance] = new InstancePageViewModel(minecraftDiscovery, instanceManagement, launchFileCompleter, launchPipeline, downloadManager, modpackExport, settings, fileDialogs, prompts, logger, gameDirectories, rootFolders, selections, localModUpdateService: localModUpdates, folders: folders, dispatcher: dispatcher),
             [PageRoute.Setup] = new SetupPageViewModel(settings, paths, fileDialogs, logger),
             [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions, settings, fileDialogs, downloadManager, memoryOptimizer, prompts)

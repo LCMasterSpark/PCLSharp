@@ -262,6 +262,8 @@ public sealed class HelpActionServiceTests
     [InlineData("Launch", PageRoute.Launch)]
     [InlineData("Download|DownloadMod", PageRoute.Download)]
     [InlineData("6", PageRoute.Download)]
+    [InlineData("Link", PageRoute.Link)]
+    [InlineData("2", PageRoute.Link)]
     [InlineData("InstanceSelect", PageRoute.Instance)]
     [InlineData("7", PageRoute.Instance)]
     [InlineData("Setup", PageRoute.Setup)]
@@ -280,17 +282,6 @@ public sealed class HelpActionServiceTests
         Assert.True(result.Success);
         Assert.Equal(expectedRoute, navigated);
         Assert.Contains("已切换页面", result.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public async Task HelpActionServiceReportsMissingMigratedPageForOldPclLinkPage()
-    {
-        var service = new HelpActionService(switchPage: (_, _) => throw new InvalidOperationException("Should not navigate."));
-
-        var result = await service.ExecuteAsync(CreateEvent("切换页面", "Link"));
-
-        Assert.False(result.Success);
-        Assert.Contains("联机页面尚未迁移", result.Message, StringComparison.Ordinal);
     }
 
     [Fact]

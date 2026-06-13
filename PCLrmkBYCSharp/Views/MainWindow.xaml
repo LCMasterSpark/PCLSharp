@@ -110,6 +110,9 @@
         <DataTemplate DataType="{x:Type vm:DownloadPageViewModel}">
             <pages:DownloadPage />
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:LinkPageViewModel}">
+            <pages:LinkPage />
+        </DataTemplate>
         <DataTemplate DataType="{x:Type vm:InstancePageViewModel}">
             <pages:InstancePage />
         </DataTemplate>

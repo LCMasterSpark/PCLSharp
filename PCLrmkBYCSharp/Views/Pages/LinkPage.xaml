@@ -1,0 +1,241 @@
+<UserControl x:Class="PCLrmkBYCSharp.Views.Pages.LinkPage"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource AppBackgroundBrush}"
+             Foreground="{StaticResource AppTextBrush}">
+    <UserControl.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Background" Value="{StaticResource AppPanelBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="9,6" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="Button">
+            <Setter Property="Background" Value="{StaticResource AppAccentSoftBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppAccentBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="12,7" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template" Value="{StaticResource DarkButtonTemplate}" />
+        </Style>
+        <Style TargetType="ComboBox" BasedOn="{StaticResource DarkComboBoxStyle}">
+            <Setter Property="Background" Value="{StaticResource AppPanelBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        </Style>
+        <Style TargetType="ComboBoxItem" BasedOn="{StaticResource DarkComboBoxItemStyle}">
+            <Setter Property="Background" Value="{StaticResource AppPanelBrush}" />
+            <Setter Property="Foreground" Value="{StaticResource AppTextBrush}" />
+            <Setter Property="Padding" Value="8,5" />
+        </Style>
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource AppCardBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource AppBorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="16" />
+        </Style>
+        <Style x:Key="MutedTextStyle" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{StaticResource AppMutedTextBrush}" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+        </Style>
+        <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,0,0,6" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="30">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="{Binding Title}" FontSize="30" FontWeight="SemiBold" />
+        <TextBlock Grid.Row="1"
+                   Text="{Binding Subtitle}"
+                   Margin="0,8,0,22"
+                   Foreground="{StaticResource AppMutedTextBrush}"
+                   FontSize="14" />
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="1.1*" MinWidth="430" />
+                <ColumnDefinition Width="18" />
+                <ColumnDefinition Width="1.4*" MinWidth="520" />
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="18" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+
+            <Border Style="{StaticResource CardBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="创建房间" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="先按旧 PCL 的邀请码规则生成房间信息；真正启动陶瓦联机或 EasyTier 进程会在后续阶段接入。"
+                               Margin="0,6,0,14"
+                               Style="{StaticResource MutedTextStyle}" />
+
+                    <TextBlock Text="本地游戏端口" Style="{StaticResource FieldLabelStyle}" />
+                    <TextBox Text="{Binding ServerPort, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <Button Content="生成房间邀请码"
+                            Margin="0,14,0,0"
+                            Command="{Binding CreateRoomCommand}" />
+
+                    <TextBlock Text="邀请码"
+                               Margin="0,16,0,6"
+                               Style="{StaticResource FieldLabelStyle}" />
+                    <TextBox Text="{Binding GeneratedInviteCode}"
+                             IsReadOnly="True" />
+
+                    <TextBlock Text="{Binding ShareText}"
+                               Margin="0,10,0,0"
+                               LineHeight="20"
+                               Style="{StaticResource MutedTextStyle}" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="2"
+                    Style="{StaticResource CardBorderStyle}">
+                <StackPanel>
+                    <TextBlock Text="加入房间" FontSize="18" FontWeight="SemiBold" />
+                    <TextBlock Text="支持识别旧 PCL 的联机邀请码格式。Terracotta / EasyTier 的实际启动、节点发现和端口转发仍是占位。"
+                               Margin="0,6,0,14"
+                               Style="{StaticResource MutedTextStyle}" />
+
+                    <TextBlock Text="房间邀请码" Style="{StaticResource FieldLabelStyle}" />
+                    <TextBox Text="{Binding InviteCodeInput, UpdateSourceTrigger=PropertyChanged}" />
+
+                    <UniformGrid Columns="2" Margin="0,14,0,0">
+                        <Button Content="验证邀请码"
+                                Margin="0,0,6,0"
+                                Command="{Binding ValidateInviteCommand}" />
+                        <Button Content="加入房间（占位）"
+                                Margin="6,0,0,0"
+                                Command="{Binding JoinRoomCommand}" />
+                    </UniformGrid>
+
+                    <TextBlock Text="{Binding ParsedInviteSummary}"
+                               Margin="0,12,0,0"
+                               LineHeight="20"
+                               Style="{StaticResource MutedTextStyle}" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2"
+                    Grid.RowSpan="3"
+                    Style="{StaticResource CardBorderStyle}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <StackPanel>
+                        <TextBlock Text="联机方案" FontSize="18" FontWeight="SemiBold" />
+                        <TextBlock Text="优先预留陶瓦联机：它基于 EasyTier，并专门面向 Minecraft Java 联机；EasyTier 作为底层 VPN / 高级模式保留。"
+                                   Margin="0,6,0,16"
+                                   Style="{StaticResource MutedTextStyle}" />
+                    </StackPanel>
+
+                    <Grid Grid.Row="1">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="18" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel>
+                            <TextBlock Text="默认方案" Style="{StaticResource FieldLabelStyle}" />
+                            <ComboBox ItemsSource="{Binding ProviderOptions}"
+                                      SelectedItem="{Binding SelectedProvider, Mode=TwoWay}"
+                                      DisplayMemberPath="DisplayName" />
+                            <TextBlock Text="{Binding SelectedProvider.Description}"
+                                       Margin="0,7,0,0"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="2">
+                            <TextBlock Text="连接偏好" Style="{StaticResource FieldLabelStyle}" />
+                            <ComboBox ItemsSource="{Binding LatencyOptions}"
+                                      SelectedItem="{Binding SelectedLatencyMode, Mode=TwoWay}"
+                                      DisplayMemberPath="DisplayName" />
+                            <TextBlock Text="{Binding SelectedLatencyMode.Description}"
+                                       Margin="0,7,0,0"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <StackPanel Grid.Row="2"
+                                Margin="0,18,0,0">
+                        <TextBlock Text="自定义节点 / Peer" Style="{StaticResource FieldLabelStyle}" />
+                        <TextBox Text="{Binding CustomPeer, UpdateSourceTrigger=PropertyChanged}"
+                                 MinHeight="70"
+                                 AcceptsReturn="True"
+                                 TextWrapping="Wrap" />
+                        <TextBlock Text="保留旧 PCL 的自定义节点入口；下一阶段会映射到 Terracotta / EasyTier 的实际启动参数。"
+                                   Margin="0,8,0,0"
+                                   Style="{StaticResource MutedTextStyle}" />
+                    </StackPanel>
+
+                    <Border Grid.Row="3"
+                            Margin="0,18,0,0"
+                            Padding="14"
+                            Background="{StaticResource AppPanelBrush}"
+                            BorderBrush="{StaticResource AppBorderBrush}"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                        <StackPanel>
+                            <TextBlock Text="接入说明" FontWeight="SemiBold" />
+                            <TextBlock Margin="0,8,0,0"
+                                       LineHeight="21"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       Text="旧 PCL 中已有 EasyTier 房间、邀请码和端口转发思路，但旧入口曾被隐藏并标记待复活。本页先保留可测试的协议位置，后续再接入二进制下载、进程启动、日志、窗口提示和异常恢复。" />
+                            <TextBlock Margin="0,10,0,0"
+                                       LineHeight="21"
+                                       Style="{StaticResource MutedTextStyle}"
+                                       Text="许可证提醒：Terracotta 当前声明为 AGPL 并提供未修改二进制分发/IPC 调用例外；EasyTier 为独立项目，正式打包前需要单独确认分发方式。" />
+                        </StackPanel>
+                    </Border>
+
+                    <StackPanel Grid.Row="4">
+                        <TextBlock Text="{Binding StatusMessage}"
+                                   Margin="0,12,0,12"
+                                   Foreground="{StaticResource AppAccentBrush}"
+                                   TextWrapping="Wrap" />
+                        <UniformGrid Columns="3">
+                            <Button Content="保存设置"
+                                    Margin="0,0,6,0"
+                                    Command="{Binding SaveLinkSettingsCommand}" />
+                            <Button Content="Terracotta"
+                                    Margin="6,0"
+                                    Command="{Binding OpenTerracottaCommand}" />
+                            <Button Content="EasyTier"
+                                    Margin="6,0,0,0"
+                                    Command="{Binding OpenEasyTierCommand}" />
+                        </UniformGrid>
+                    </StackPanel>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <TextBlock Grid.Row="3"
+                   Text="联机模块占位已就绪"
+                   Margin="0,14,0,0"
+                   Foreground="{StaticResource AppAccentBrush}" />
+    </Grid>
+</UserControl>

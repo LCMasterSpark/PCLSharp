@@ -296,9 +296,9 @@ public sealed class HelpActionService : IHelpActionService
             "launch" or "启动" or "home" or "main" => Succeed(PageRoute.Launch, out route, out message),
             "download" or "downloadinstall" or "downloadmod" or "downloadpack" or "downloaddatapack" or "downloadresourcepack" or "downloadshader" or "downloadmanager" or "下载" or "下载管理" or "资源" or "社区资源" => Succeed(PageRoute.Download, out route, out message),
             "setup" or "setting" or "settings" or "设置" => Succeed(PageRoute.Setup, out route, out message),
+            "link" or "linkmain" or "联机" or "陶瓦联机" or "easytier" or "terracotta" => Succeed(PageRoute.Link, out route, out message),
             "other" or "help" or "about" or "test" or "helpdetail" or "更多" or "帮助" or "关于" => Succeed(PageRoute.Other, out route, out message),
             "instanceselect" or "instancesetup" or "instance" or "version" or "versionselect" or "版本选择" or "版本设置" or "实例" or "版本" => Succeed(PageRoute.Instance, out route, out message),
-            "link" or "linkmain" or "联机" => Fail("联机页面尚未迁移，暂无法响应该切换页面事件。", out route, out message),
             _ => Fail("未知页面类型：" + pageType, out route, out message)
         };
     }
@@ -321,7 +321,7 @@ public sealed class HelpActionService : IHelpActionService
             3 => Succeed(PageRoute.Setup, out route, out message),
             4 or 9 => Succeed(PageRoute.Other, out route, out message),
             5 or 7 => Succeed(PageRoute.Instance, out route, out message),
-            2 => Fail("联机页面尚未迁移，暂无法响应该切换页面事件。", out route, out message),
+            2 => Succeed(PageRoute.Link, out route, out message),
             _ => Fail("未知页面类型：" + pageType, out route, out message)
         };
     }
@@ -346,6 +346,7 @@ public sealed class HelpActionService : IHelpActionService
         {
             PageRoute.Launch => "启动",
             PageRoute.Download => "下载",
+            PageRoute.Link => "联机",
             PageRoute.Instance => "实例",
             PageRoute.Setup => "设置",
             PageRoute.Other => "更多",

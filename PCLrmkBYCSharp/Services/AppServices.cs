@@ -3,6 +3,7 @@ using System.Windows.Threading;
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services.Downloads;
 using PCLrmkBYCSharp.Services.Launch;
+using PCLrmkBYCSharp.Services.Link;
 
 namespace PCLrmkBYCSharp.Services;
 
@@ -92,6 +93,7 @@ public sealed class AppServices
             Path.Combine(paths.AppDataDirectory, "Help")
         ]);
         var helpActions = new HelpActionService(settings: settings);
+        var linkService = new PclLinkService();
         var instanceManagement = new MinecraftInstanceManagementService();
         var minecraftDiscovery = new MinecraftDiscoveryService(instanceManagement);
         var gameDirectories = new MinecraftGameDirectoryService(settings);
@@ -160,7 +162,7 @@ public sealed class AppServices
             gameDirectories,
             settings,
             memoryOptimizer);
-        var navigation = new NavigationService(settings, paths, fileDialogs, minecraftDiscovery, instanceManagement, gameDirectories, rootFolders, selections, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, modpackExport, loaderProcessorRunner, fileCompleter, localModUpdates, javaDiscovery, javaSelector, launchPipeline, legacyLogin, login, prompts, uiDispatcher, logger, help, helpActions, folders, urls, memoryOptimizer, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, microsoftDeviceCodes);
+        var navigation = new NavigationService(settings, paths, fileDialogs, minecraftDiscovery, instanceManagement, gameDirectories, rootFolders, selections, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, modpackExport, loaderProcessorRunner, fileCompleter, localModUpdates, javaDiscovery, javaSelector, launchPipeline, legacyLogin, login, prompts, uiDispatcher, logger, help, helpActions, linkService, folders, urls, memoryOptimizer, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, microsoftDeviceCodes);
         helpActions.SetEventHandler(HelpActionService.EventSwitchPage, (eventData, cancellationToken) =>
         {
             if (!HelpActionService.TryMapOldPclPageRoute(eventData.Split('|', StringSplitOptions.TrimEntries).FirstOrDefault() ?? "", out var route, out var message))
@@ -171,6 +173,13 @@ public sealed class AppServices
             cancellationToken.ThrowIfCancellationRequested();
             uiDispatcher.Invoke(() => navigation.Navigate(route));
             return Task.FromResult(new HelpActionResult(true, "已切换页面：" + route));
+        });
+        helpActions.SetEventHandler(HelpActionService.EventJoinRoom, async (eventData, cancellationToken) =>
+        {
+            settings.Set(AppSettingKeys.LinkLastInviteCode, eventData.Trim());
+            await settings.SaveAsync(cancellationToken);
+            uiDispatcher.Invoke(() => navigation.Navigate(PageRoute.Link));
+            return new HelpActionResult(true, "已打开陶瓦联机页面");
         });
         helpActions.SetEventHandler(HelpActionService.EventImportModpack, (eventData, cancellationToken) =>
             OpenModpackDownloadPresetAsync(eventData, "已打开整合包导入入口", settings, navigation, uiDispatcher, cancellationToken));
