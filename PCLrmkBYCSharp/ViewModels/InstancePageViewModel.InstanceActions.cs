@@ -286,7 +286,8 @@ public sealed partial class InstancePageViewModel
         }
 
         var selectedName = SelectedInstance.Name;
-        if (!_prompts.Confirm("版本删除确认", $"你确定要删除版本 {selectedName} 吗？"))
+        if (ShouldConfirmDangerousActions()
+            && !_prompts.Confirm("版本删除确认", $"你确定要删除版本 {selectedName} 吗？"))
         {
             StatusMessage = "已取消删除版本";
             return;

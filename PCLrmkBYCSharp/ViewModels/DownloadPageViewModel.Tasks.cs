@@ -215,6 +215,13 @@ public sealed partial class DownloadPageViewModel
             return;
         }
 
+        if (ShouldConfirmDangerousActions()
+            && _prompts.Confirm("取消下载任务", $"确定要取消下载任务 {SelectedDownloadTask.Name} 吗？") == false)
+        {
+            StatusMessage = "已取消操作";
+            return;
+        }
+
         StatusMessage = _downloadManager.Cancel(SelectedDownloadTask.Name)
             ? "已请求取消下载任务：" + SelectedDownloadTask.Name
             : "当前任务不可取消";
@@ -223,6 +230,13 @@ public sealed partial class DownloadPageViewModel
 
     private void CancelAllRunningDownloadTasks()
     {
+        if (ShouldConfirmDangerousActions()
+            && _prompts.Confirm("取消全部下载", $"当前有 {RunningTaskCount} 个下载任务正在运行，确定要全部取消吗？") == false)
+        {
+            StatusMessage = "已取消操作";
+            return;
+        }
+
         var count = _downloadManager.CancelAllRunning();
         RefreshTaskSnapshots();
         StatusMessage = count == 0
@@ -232,11 +246,23 @@ public sealed partial class DownloadPageViewModel
 
     private void ClearFinishedDownloadTasks()
     {
+        if (ShouldConfirmDangerousActions()
+            && _prompts.Confirm("清理下载任务", $"确定要清理 {FinishedTaskCount} 个已结束下载任务吗？这不会删除已下载文件。") == false)
+        {
+            StatusMessage = "已取消操作";
+            return;
+        }
+
         var count = _downloadManager.ClearFinished();
         RefreshTaskSnapshots();
         StatusMessage = count == 0
             ? "没有可清理的已结束任务"
             : $"已清理 {count} 个已结束任务";
+    }
+
+    private bool ShouldConfirmDangerousActions()
+    {
+        return _settings.Get(AppSettingKeys.AccessibilityConfirmDangerousActions, true);
     }
 
     public async Task RetrySelectedDownloadTaskAsync()

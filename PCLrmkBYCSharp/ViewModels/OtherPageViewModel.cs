@@ -24,6 +24,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private readonly IFileDialogService? _fileDialogs;
     private readonly IDownloadManagerService? _downloadManager;
     private readonly ILaunchMemoryOptimizer? _memoryOptimizer;
+    private readonly IUserPromptService? _prompts;
     private int _doNotClickCount;
     private IReadOnlyList<HelpEntry> _allHelpEntries = [];
 
@@ -77,7 +78,8 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         IAppSettingsService? settings = null,
         IFileDialogService? fileDialogs = null,
         IDownloadManagerService? downloadManager = null,
-        ILaunchMemoryOptimizer? memoryOptimizer = null)
+        ILaunchMemoryOptimizer? memoryOptimizer = null,
+        IUserPromptService? prompts = null)
         : base(PageRoute.Other, "更多", "帮助、关于、诊断、反馈与维护工具")
     {
         _help = help;
@@ -87,6 +89,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         _fileDialogs = fileDialogs;
         _downloadManager = downloadManager;
         _memoryOptimizer = memoryOptimizer;
+        _prompts = prompts;
         RegisterHelpEventHandlers();
         var assembly = typeof(OtherPageViewModel).Assembly;
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
@@ -342,6 +345,13 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
             return;
         }
 
+        if (ShouldConfirmDangerousActions()
+            && _prompts?.Confirm("清理游戏垃圾", "将清理临时 natives、旧压缩日志和临时残留，不会删除存档或版本主体。是否继续？") == false)
+        {
+            ToolboxStatusText = "已取消清理游戏垃圾";
+            return;
+        }
+
         try
         {
             var result = CleanGameTrash(root);
@@ -414,6 +424,13 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         var fileName = SanitizeFileName(string.IsNullOrWhiteSpace(CustomDownloadFileName) ? InferFileNameFromUrl(url) : CustomDownloadFileName);
         var folder = CustomDownloadFolder.Trim();
         var localPath = Path.Combine(folder, fileName);
+        if (ShouldConfirmDangerousActions()
+            && _prompts?.Confirm("下载自定义文件", $"将从以下地址下载文件：\n{url}\n\n保存到：\n{localPath}\n\n是否继续？") == false)
+        {
+            CustomDownloadStatusText = "已取消自定义文件下载";
+            return;
+        }
+
         try
         {
             Directory.CreateDirectory(folder);
@@ -442,6 +459,11 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
             && uri.Scheme is "http" or "https"
             && !string.IsNullOrWhiteSpace(CustomDownloadFolder)
             && !string.IsNullOrWhiteSpace(CustomDownloadFileName);
+    }
+
+    private bool ShouldConfirmDangerousActions()
+    {
+        return _settings?.Get(AppSettingKeys.AccessibilityConfirmDangerousActions, true) ?? true;
     }
 
     private string GetMinecraftRootPath()

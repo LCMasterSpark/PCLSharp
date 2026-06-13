@@ -608,11 +608,23 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock Text="最大线程数" Style="{StaticResource LabelTextStyle}" />
-                                    <TextBox Text="{Binding ToolDownloadThread, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Slider Minimum="0"
+                                            Maximum="255"
+                                            TickFrequency="1"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding ToolDownloadThread, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{Binding ToolDownloadThread, StringFormat=档位：{0}}"
+                                               Style="{StaticResource MutedTextStyle}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="速度限制" Style="{StaticResource LabelTextStyle}" />
-                                    <TextBox Text="{Binding ToolDownloadSpeed, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Slider Minimum="0"
+                                            Maximum="42"
+                                            TickFrequency="1"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding ToolDownloadSpeed, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{Binding ToolDownloadSpeed, StringFormat=档位：{0}}"
+                                               Style="{StaticResource MutedTextStyle}" />
                                 </StackPanel>
                             </Grid>
                             <CheckBox Grid.Row="5"
@@ -723,11 +735,23 @@
                                 </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock Text="窗口宽度" Style="{StaticResource LabelTextStyle}" />
-                                    <TextBox Text="{Binding LaunchWindowWidth, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Slider Minimum="320"
+                                            Maximum="4096"
+                                            TickFrequency="16"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding LaunchWindowWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{Binding LaunchWindowWidth, StringFormat={}{0} px}"
+                                               Style="{StaticResource MutedTextStyle}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">
                                     <TextBlock Text="窗口高度" Style="{StaticResource LabelTextStyle}" />
-                                    <TextBox Text="{Binding LaunchWindowHeight, UpdateSourceTrigger=PropertyChanged}" />
+                                    <Slider Minimum="240"
+                                            Maximum="2160"
+                                            TickFrequency="16"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding LaunchWindowHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                    <TextBlock Text="{Binding LaunchWindowHeight, StringFormat={}{0} px}"
+                                               Style="{StaticResource MutedTextStyle}" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="4">
                                     <TextBlock Text="窗口模式" Style="{StaticResource LabelTextStyle}" />
@@ -785,8 +809,19 @@
                                           DisplayMemberPath="DisplayName"
                                           SelectedValuePath="Value"
                                           SelectedValue="{Binding LaunchRamType, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                                <TextBox Margin="0,8,0,0"
-                                         Text="{Binding LaunchRamCustom, UpdateSourceTrigger=PropertyChanged}" />
+                                <DockPanel Margin="0,8,0,0">
+                                    <TextBlock DockPanel.Dock="Right"
+                                               Width="40"
+                                               Margin="10,0,0,0"
+                                               VerticalAlignment="Center"
+                                               TextAlignment="Right"
+                                               Text="{Binding LaunchRamCustom}" />
+                                    <Slider Minimum="0"
+                                            Maximum="49"
+                                            TickFrequency="1"
+                                            IsSnapToTickEnabled="True"
+                                            Value="{Binding LaunchRamCustom, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                </DockPanel>
                                 <CheckBox Content="启动前进行内存优化"
                                           Margin="0,8,0,0"
                                           IsChecked="{Binding LaunchArgumentRam, Mode=TwoWay}" />

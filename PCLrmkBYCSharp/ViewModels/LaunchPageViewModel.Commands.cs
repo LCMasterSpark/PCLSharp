@@ -305,6 +305,13 @@ public sealed partial class LaunchPageViewModel
             return;
         }
 
+        if (ShouldConfirmDangerousActions()
+            && _prompts.Confirm("删除正版账号缓存", $"确定要删除正版账号缓存 {SelectedMicrosoftAccount.Name} 吗？") == false)
+        {
+            StatusMessage = "已取消删除正版账号缓存";
+            return;
+        }
+
         var removed = SelectedMicrosoftAccount;
         var remaining = ReadMicrosoftAccounts()
             .Where(account => !IsSameMicrosoftAccount(account, removed))

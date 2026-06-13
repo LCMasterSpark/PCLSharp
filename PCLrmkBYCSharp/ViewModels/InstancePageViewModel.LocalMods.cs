@@ -303,7 +303,8 @@ public sealed partial class InstancePageViewModel
             return;
         }
 
-        if (!_prompts.Confirm("删除 Mod", $"你确定要删除选中的 {selected.Count} 个 Mod 吗？"))
+        if (ShouldConfirmDangerousActions()
+            && !_prompts.Confirm("删除 Mod", $"你确定要删除选中的 {selected.Count} 个 Mod 吗？"))
         {
             StatusMessage = "已取消删除 Mod";
             return;
@@ -335,7 +336,8 @@ public sealed partial class InstancePageViewModel
             return;
         }
 
-        if (!_prompts.Confirm("删除 Mod", $"你确定要删除 Mod {SelectedLocalMod.Title} 吗？"))
+        if (ShouldConfirmDangerousActions()
+            && !_prompts.Confirm("删除 Mod", $"你确定要删除 Mod {SelectedLocalMod.Title} 吗？"))
         {
             StatusMessage = "已取消删除 Mod";
             return;

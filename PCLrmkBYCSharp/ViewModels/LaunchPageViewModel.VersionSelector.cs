@@ -286,7 +286,8 @@ public sealed partial class LaunchPageViewModel
             return;
         }
 
-        if (!_prompts.Confirm("版本删除确认", $"你确定要删除版本 {instance.Name} 吗？"))
+        if (ShouldConfirmDangerousActions()
+            && !_prompts.Confirm("版本删除确认", $"你确定要删除版本 {instance.Name} 吗？"))
         {
             StatusMessage = "已取消删除版本";
             return;

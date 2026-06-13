@@ -41,6 +41,13 @@ public sealed partial class DownloadPageViewModel
             return;
         }
 
+        if (ShouldConfirmDangerousActions()
+            && _prompts.Confirm("移除 Minecraft 文件夹", $"确定要从列表中移除 {SelectedMinecraftRootFolder.Name} 吗？\n\n这不会删除磁盘上的文件。") == false)
+        {
+            StatusMessage = "已取消移除 Minecraft 文件夹";
+            return;
+        }
+
         _rootFolders.RemoveFolder(SelectedMinecraftRootFolder.Path);
         var next = MinecraftRootFolders.FirstOrDefault(folder => !string.Equals(folder.Path, SelectedMinecraftRootFolder.Path, StringComparison.OrdinalIgnoreCase))
             ?? _rootFolders.LoadFolders(_minecraftDiscovery.GetDefaultMinecraftRoot(), "").FirstOrDefault();

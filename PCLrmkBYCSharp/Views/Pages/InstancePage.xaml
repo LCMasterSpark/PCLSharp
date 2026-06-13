@@ -959,11 +959,25 @@
                             </StackPanel>
                             <StackPanel Grid.Column="4">
                                 <TextBlock Text="窗口宽度" FontWeight="SemiBold" />
-                                <TextBox Margin="0,6,0,0" Text="{Binding LaunchWindowWidth, UpdateSourceTrigger=PropertyChanged}" />
+                                <Slider Margin="0,6,0,0"
+                                        Minimum="320"
+                                        Maximum="4096"
+                                        TickFrequency="16"
+                                        IsSnapToTickEnabled="True"
+                                        Value="{Binding LaunchWindowWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="{Binding LaunchWindowWidth, StringFormat={}{0} px}"
+                                           Style="{StaticResource MutedTextStyle}" />
                             </StackPanel>
                             <StackPanel Grid.Column="6">
                                 <TextBlock Text="窗口高度" FontWeight="SemiBold" />
-                                <TextBox Margin="0,6,0,0" Text="{Binding LaunchWindowHeight, UpdateSourceTrigger=PropertyChanged}" />
+                                <Slider Margin="0,6,0,0"
+                                        Minimum="240"
+                                        Maximum="2160"
+                                        TickFrequency="16"
+                                        IsSnapToTickEnabled="True"
+                                        Value="{Binding LaunchWindowHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="{Binding LaunchWindowHeight, StringFormat={}{0} px}"
+                                           Style="{StaticResource MutedTextStyle}" />
                             </StackPanel>
                         </Grid>
 

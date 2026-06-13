@@ -72,7 +72,8 @@ public sealed partial class InstancePageViewModel
         }
 
         var selectedName = SelectedInstance.Name;
-        if (!_prompts.Confirm("恢复全局设置", $"确定要清除 {selectedName} 的实例单独启动设置吗？"))
+        if (ShouldConfirmDangerousActions()
+            && !_prompts.Confirm("恢复全局设置", $"确定要清除 {selectedName} 的实例单独启动设置吗？"))
         {
             StatusMessage = "已取消恢复全局设置";
             return;

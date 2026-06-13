@@ -1126,11 +1126,23 @@
                             </Grid.ColumnDefinitions>
                             <StackPanel>
                                 <TextBlock Text="宽度" Style="{StaticResource SectionTitleStyle}" />
-                                <TextBox Text="{Binding LaunchWindowWidth, UpdateSourceTrigger=PropertyChanged}" />
+                                <Slider Minimum="320"
+                                        Maximum="4096"
+                                        TickFrequency="16"
+                                        IsSnapToTickEnabled="True"
+                                        Value="{Binding LaunchWindowWidth, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="{Binding LaunchWindowWidth, StringFormat={}{0} px}"
+                                           Style="{StaticResource MutedTextStyle}" />
                             </StackPanel>
                             <StackPanel Grid.Column="2">
                                 <TextBlock Text="高度" Style="{StaticResource SectionTitleStyle}" />
-                                <TextBox Text="{Binding LaunchWindowHeight, UpdateSourceTrigger=PropertyChanged}" />
+                                <Slider Minimum="240"
+                                        Maximum="2160"
+                                        TickFrequency="16"
+                                        IsSnapToTickEnabled="True"
+                                        Value="{Binding LaunchWindowHeight, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="{Binding LaunchWindowHeight, StringFormat={}{0} px}"
+                                           Style="{StaticResource MutedTextStyle}" />
                             </StackPanel>
                         </Grid>
                     </Grid>
