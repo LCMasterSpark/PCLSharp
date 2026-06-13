@@ -932,6 +932,30 @@ public sealed class LaunchServicesTests
         Assert.Contains(logger.Messages, message => message.Contains("游戏进程退出：0", StringComparison.Ordinal));
     }
 
+    [Fact]
+    public async Task GameProcessWatcherDrainsStderrBeforeReturningExitedResult()
+    {
+        var logger = new CaptureLoggerService();
+        using var process = new Process
+        {
+            StartInfo = new ProcessStartInfo("cmd.exe", "/c \"echo final-crash-line 1>&2 & exit /b 7\"")
+            {
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            }
+        };
+        process.Start();
+
+        var result = await new GameProcessWatcher(logger, TimeSpan.FromSeconds(2)).WatchAsync(process);
+
+        Assert.True(result.HasExited);
+        Assert.Equal(7, result.ExitCode);
+        Assert.Contains(result.ErrorTail, message => message.Contains("final-crash-line", StringComparison.Ordinal));
+        Assert.Contains(logger.Messages, message => message.Contains("游戏错误：final-crash-line", StringComparison.Ordinal));
+    }
+
     [Theory]
     [InlineData(0, ProcessPriorityClass.AboveNormal)]
     [InlineData(1, null)]

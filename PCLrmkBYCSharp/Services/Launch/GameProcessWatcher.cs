@@ -18,6 +18,7 @@ public sealed partial class GameProcessWatcher(
         AttachOutputReaders(process, outputTail, errorTail);
         if (process.HasExited)
         {
+            DrainRedirectedOutput(process);
             logger.Warn($"游戏进程已退出：{process.ExitCode}");
             return GameProcessWatchResult.Exited(process.ExitCode, outputTail.ToArray(), errorTail.ToArray());
         }
@@ -27,6 +28,7 @@ public sealed partial class GameProcessWatcher(
         if (completed == waitTask)
         {
             await waitTask.ConfigureAwait(false);
+            DrainRedirectedOutput(process);
             logger.Info($"游戏进程退出：{process.ExitCode}");
             return GameProcessWatchResult.Exited(process.ExitCode, outputTail.ToArray(), errorTail.ToArray());
         }
@@ -36,6 +38,7 @@ public sealed partial class GameProcessWatcher(
             try
             {
                 await waitTask.ConfigureAwait(false);
+                DrainRedirectedOutput(process);
                 logger.Info($"游戏进程退出：{process.ExitCode}");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -45,6 +48,18 @@ public sealed partial class GameProcessWatcher(
         }, CancellationToken.None);
 
         return GameProcessWatchResult.Running(outputTail.ToArray(), errorTail.ToArray());
+    }
+
+    private void DrainRedirectedOutput(Process process)
+    {
+        try
+        {
+            process.WaitForExit();
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or SystemException)
+        {
+            logger.Warn("等待游戏输出排空失败：" + ex.Message);
+        }
     }
 
     private void AttachOutputReaders(Process process, ConcurrentQueue<string> outputTail, ConcurrentQueue<string> errorTail)
