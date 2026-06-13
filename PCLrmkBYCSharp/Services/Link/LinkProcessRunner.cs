@@ -16,6 +16,7 @@ public sealed class LinkProcessRunner : ILinkProcessRunner
         var handle = new LinkProcessHandle(process);
         process.OutputDataReceived += (_, args) => handle.PublishOutput(args.Data, isError: false);
         process.ErrorDataReceived += (_, args) => handle.PublishOutput(args.Data, isError: true);
+        process.Exited += (_, _) => handle.PublishExited();
 
         if (!process.Start())
         {
@@ -48,7 +49,24 @@ public sealed class LinkProcessRunner : ILinkProcessRunner
     {
         public event EventHandler<LinkProcessOutputEventArgs>? OutputReceived;
 
+        public event EventHandler<LinkProcessExitedEventArgs>? Exited;
+
         public int Id => process.Id;
+
+        public int? ExitCode
+        {
+            get
+            {
+                try
+                {
+                    return process.HasExited ? process.ExitCode : null;
+                }
+                catch (InvalidOperationException)
+                {
+                    return null;
+                }
+            }
+        }
 
         public bool HasExited
         {
@@ -71,6 +89,11 @@ public sealed class LinkProcessRunner : ILinkProcessRunner
             {
                 OutputReceived?.Invoke(this, new LinkProcessOutputEventArgs(line, isError));
             }
+        }
+
+        public void PublishExited()
+        {
+            Exited?.Invoke(this, new LinkProcessExitedEventArgs(ExitCode));
         }
 
         public void Stop()

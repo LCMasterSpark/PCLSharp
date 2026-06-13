@@ -39,6 +39,12 @@ public sealed class LinkProcessService : ILinkProcessService
             var startInfo = LinkProcessRunner.CreateStartInfo(plan.ExecutablePath, plan.ProcessArguments);
             _process = _runner.Start(startInfo);
             _process.OutputReceived += HandleOutputReceived;
+            _process.Exited += HandleProcessExited;
+            if (_process.HasExited)
+            {
+                return PublishExited(_process.ExitCode);
+            }
+
             _logger.Info("联机后端已启动：" + BuildCommandPreview(plan));
             return Publish(LinkProcessState.Running, _process.Id, "联机后端已启动。", BuildCommandPreview(plan));
         }
@@ -62,6 +68,7 @@ public sealed class LinkProcessService : ILinkProcessService
         {
             var processId = process.Id;
             process.OutputReceived -= HandleOutputReceived;
+            process.Exited -= HandleProcessExited;
             process.Stop();
             _process = null;
             _logger.Info("联机后端已停止，PID：" + processId);
@@ -72,6 +79,40 @@ public sealed class LinkProcessService : ILinkProcessService
             _logger.Error(ex, "停止联机后端失败");
             return Publish(LinkProcessState.Failed, process.Id, "停止联机后端失败：" + ex.Message, Current.CommandPreview);
         }
+    }
+
+    private void HandleProcessExited(object? sender, LinkProcessExitedEventArgs args)
+    {
+        if (!ReferenceEquals(sender, _process))
+        {
+            return;
+        }
+
+        PublishExited(args.ExitCode);
+    }
+
+    private LinkProcessSnapshot PublishExited(int? exitCode)
+    {
+        var process = _process;
+        if (process is not null)
+        {
+            process.OutputReceived -= HandleOutputReceived;
+            process.Exited -= HandleProcessExited;
+        }
+
+        _process = null;
+        var exitCodeText = exitCode is null ? "未知" : exitCode.Value.ToString();
+        var message = exitCode == 0
+            ? $"联机后端已退出，退出码：{exitCodeText}。"
+            : $"联机后端异常退出，退出码：{exitCodeText}。";
+        if (exitCode == 0)
+        {
+            _logger.Info(message);
+            return Publish(LinkProcessState.Stopped, null, message, Current.CommandPreview);
+        }
+
+        _logger.Warn(message);
+        return Publish(LinkProcessState.Failed, null, message, Current.CommandPreview);
     }
 
     private void HandleOutputReceived(object? sender, LinkProcessOutputEventArgs args)

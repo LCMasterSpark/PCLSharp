@@ -163,6 +163,36 @@ public sealed class PclLinkServiceTests
         Assert.DoesNotContain("SECRET", string.Join(Environment.NewLine, service.Current.RecentLogLines), StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData(0, LinkProcessState.Stopped, "联机后端已退出")]
+    [InlineData(7, LinkProcessState.Failed, "联机后端异常退出")]
+    public void LinkProcessServiceUpdatesSnapshotWhenBackendExits(int exitCode, LinkProcessState expectedState, string expectedMessage)
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "easytier.exe");
+        File.WriteAllText(executable, "");
+        var plan = new LinkBackendService().CreatePlan(
+            LinkRoomRole.Joiner,
+            LinkProviderKind.EasyTier,
+            new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0),
+            LinkLatencyMode.DirectFirst,
+            "",
+            executable);
+        var runner = new CaptureLinkProcessRunner();
+        var service = new LinkProcessService(runner, new NullLoggerService());
+        var snapshots = new List<LinkProcessSnapshot>();
+        service.SnapshotChanged += (_, snapshot) => snapshots.Add(snapshot);
+
+        service.Start(plan);
+        runner.Handle.PublishExited(exitCode);
+
+        Assert.Equal(expectedState, service.Current.State);
+        Assert.Null(service.Current.ProcessId);
+        Assert.Contains(expectedMessage, service.Current.Message, StringComparison.Ordinal);
+        Assert.Contains($"退出码：{exitCode}", service.Current.Message, StringComparison.Ordinal);
+        Assert.Contains(snapshots, snapshot => snapshot.State == expectedState && snapshot.Message.Contains(expectedMessage, StringComparison.Ordinal));
+    }
+
     [Fact]
     public void LinkProcessServiceStopsRunningBackend()
     {
@@ -244,7 +274,11 @@ public sealed class PclLinkServiceTests
     {
         public event EventHandler<LinkProcessOutputEventArgs>? OutputReceived;
 
+        public event EventHandler<LinkProcessExitedEventArgs>? Exited;
+
         public int Id => 1234;
+
+        public int? ExitCode { get; private set; }
 
         public bool HasExited { get; private set; }
 
@@ -253,6 +287,13 @@ public sealed class PclLinkServiceTests
         public void Publish(string line, bool isError = false)
         {
             OutputReceived?.Invoke(this, new LinkProcessOutputEventArgs(line, isError));
+        }
+
+        public void PublishExited(int? exitCode)
+        {
+            ExitCode = exitCode;
+            HasExited = true;
+            Exited?.Invoke(this, new LinkProcessExitedEventArgs(exitCode));
         }
 
         public void Stop()

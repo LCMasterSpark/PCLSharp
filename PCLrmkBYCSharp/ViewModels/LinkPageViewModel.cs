@@ -16,6 +16,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private readonly IExternalUrlService? _urls;
     private readonly IFileDialogService? _fileDialogs;
     private readonly ILinkProcessService? _linkProcess;
+    private readonly IUiDispatcherService? _dispatcher;
     private LinkBackendLaunchPlan? _currentPlan;
 
     public LinkPageViewModel(
@@ -25,7 +26,8 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         IExternalUrlService? urls = null,
         ILinkBackendService? linkBackend = null,
         IFileDialogService? fileDialogs = null,
-        ILinkProcessService? linkProcess = null)
+        ILinkProcessService? linkProcess = null,
+        IUiDispatcherService? dispatcher = null)
         : base(PageRoute.Link, "陶瓦联机", "Terracotta / EasyTier 联机入口")
     {
         _linkService = linkService;
@@ -35,6 +37,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         _urls = urls;
         _fileDialogs = fileDialogs;
         _linkProcess = linkProcess;
+        _dispatcher = dispatcher;
         if (_linkProcess is not null)
         {
             _linkProcess.SnapshotChanged += HandleProcessSnapshotChanged;
@@ -294,7 +297,13 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
 
     private void HandleProcessSnapshotChanged(object? sender, LinkProcessSnapshot snapshot)
     {
-        ApplyProcessSnapshot(snapshot);
+        if (_dispatcher is null || _dispatcher.CheckAccess())
+        {
+            ApplyProcessSnapshot(snapshot);
+            return;
+        }
+
+        _dispatcher.Invoke(() => ApplyProcessSnapshot(snapshot));
     }
 
     private void ApplyProcessSnapshot(LinkProcessSnapshot snapshot)
