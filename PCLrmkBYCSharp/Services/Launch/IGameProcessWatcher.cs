@@ -4,5 +4,5 @@ namespace PCLrmkBYCSharp.Services.Launch;
 
 public interface IGameProcessWatcher
 {
-    Task WatchAsync(Process process, CancellationToken cancellationToken = default);
+    Task<GameProcessWatchResult> WatchAsync(Process process, CancellationToken cancellationToken = default);
 }

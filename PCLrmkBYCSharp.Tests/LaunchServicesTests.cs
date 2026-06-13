@@ -918,12 +918,15 @@ public sealed class LaunchServicesTests
         };
         process.Start();
 
-        await new GameProcessWatcher(logger).WatchAsync(process);
+        var result = await new GameProcessWatcher(logger, TimeSpan.FromSeconds(2)).WatchAsync(process);
         await process.WaitForExitAsync();
         await WaitUntilAsync(() =>
             logger.Messages.Any(message => message.Contains("游戏输出：hello-out --accessToken ***", StringComparison.Ordinal))
             && logger.Messages.Any(message => message.Contains("游戏错误：hello-err --accessToken ***", StringComparison.Ordinal)));
 
+        Assert.Equal(0, result.ExitCode);
+        Assert.Contains(result.OutputTail, message => message.Contains("hello-out --accessToken ***", StringComparison.Ordinal));
+        Assert.Contains(result.ErrorTail, message => message.Contains("hello-err --accessToken ***", StringComparison.Ordinal));
         Assert.DoesNotContain(logger.Messages, message => message.Contains("secret-out", StringComparison.Ordinal));
         Assert.DoesNotContain(logger.Messages, message => message.Contains("secret-err", StringComparison.Ordinal));
         Assert.Contains(logger.Messages, message => message.Contains("游戏进程退出：0", StringComparison.Ordinal));
@@ -1353,6 +1356,40 @@ public sealed class LaunchServicesTests
         Assert.Equal(instance.VersionPath, launcher.LastStartInfo?.WorkingDirectory);
         Assert.False(launcher.LastStartInfo?.UseShellExecute);
         Assert.True(launcher.LastStartInfo?.RedirectStandardError);
+    }
+
+    [Fact]
+    public async Task LaunchPipelineReturnsDiagnosticWhenGameExitsEarly()
+    {
+        using var temp = new TempDirectory();
+        CreateEmptyAssetIndex(temp.Path, "5");
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "assetIndex": { "id": "5" },
+          "libraries": []
+        }
+        """, createJar: true);
+        var java = CreateJava(Path.Combine(temp.Path, "java", "bin", "java.exe"), 17);
+        var launcher = new FakeProcessLauncher();
+        var watcher = new FakeGameProcessWatcher(GameProcessWatchResult.Exited(
+            1,
+            [],
+            [
+                "Error loading class: net/minecraft/client/Minecraft (java.lang.IllegalArgumentException: Unsupported class file major version 69)",
+                "Mixin apply for mod fancymenu failed"
+            ]));
+        var pipeline = CreatePipeline(new FakeJavaDiscoveryService([java]), launcher, gameProcessWatcher: watcher);
+
+        var result = await pipeline.LaunchAsync(CreateRequest(instance, temp.Path) with { StartProcess = true });
+
+        var issue = Assert.Single(result.Issues, issue => issue.Code == "GameExitedEarly");
+        Assert.False(result.Success);
+        Assert.Equal(1, launcher.StartCount);
+        Assert.Contains("Java 版本过新", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("Unsupported class file major version 69", issue.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -2614,7 +2651,8 @@ public sealed class LaunchServicesTests
         IAppSettingsService? settings = null,
         IMinecraftGameDirectoryService? gameDirectories = null,
         ILaunchMemoryOptimizer? memoryOptimizer = null,
-        IDownloadManagerService? downloadManager = null)
+        IDownloadManagerService? downloadManager = null,
+        IGameProcessWatcher? gameProcessWatcher = null)
     {
         return new LaunchPipelineService(
             javaDiscovery,
@@ -2630,7 +2668,7 @@ public sealed class LaunchServicesTests
             new LaunchScriptExporter(),
             processLauncher,
             processConfigurator ?? new FakeLaunchProcessConfigurator(),
-            new FakeGameProcessWatcher(),
+            gameProcessWatcher ?? new FakeGameProcessWatcher(),
             new NullLoggerService(),
             gameWindow,
             launcherVisibility,
@@ -2972,11 +3010,11 @@ public sealed class LaunchServicesTests
         }
     }
 
-    private sealed class FakeGameProcessWatcher : IGameProcessWatcher
+    private sealed class FakeGameProcessWatcher(GameProcessWatchResult? result = null) : IGameProcessWatcher
     {
-        public Task WatchAsync(Process process, CancellationToken cancellationToken = default)
+        public Task<GameProcessWatchResult> WatchAsync(Process process, CancellationToken cancellationToken = default)
         {
-            return Task.CompletedTask;
+            return Task.FromResult(result ?? GameProcessWatchResult.Running());
         }
     }
 

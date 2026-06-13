@@ -1,24 +1,41 @@
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 namespace PCLrmkBYCSharp.Services.Launch;
 
-public sealed partial class GameProcessWatcher(IAppLoggerService logger) : IGameProcessWatcher
+public sealed partial class GameProcessWatcher(
+    IAppLoggerService logger,
+    TimeSpan? earlyExitWindow = null,
+    int maxTailLines = 80) : IGameProcessWatcher
 {
-    public Task WatchAsync(Process process, CancellationToken cancellationToken = default)
+    private readonly TimeSpan _earlyExitWindow = earlyExitWindow ?? TimeSpan.FromSeconds(8);
+
+    public async Task<GameProcessWatchResult> WatchAsync(Process process, CancellationToken cancellationToken = default)
     {
-        AttachOutputReaders(process);
+        var outputTail = new ConcurrentQueue<string>();
+        var errorTail = new ConcurrentQueue<string>();
+        AttachOutputReaders(process, outputTail, errorTail);
         if (process.HasExited)
         {
             logger.Warn($"游戏进程已退出：{process.ExitCode}");
-            return Task.CompletedTask;
+            return GameProcessWatchResult.Exited(process.ExitCode, outputTail.ToArray(), errorTail.ToArray());
+        }
+
+        var waitTask = process.WaitForExitAsync(cancellationToken);
+        var completed = await Task.WhenAny(waitTask, Task.Delay(_earlyExitWindow, cancellationToken)).ConfigureAwait(false);
+        if (completed == waitTask)
+        {
+            await waitTask.ConfigureAwait(false);
+            logger.Info($"游戏进程退出：{process.ExitCode}");
+            return GameProcessWatchResult.Exited(process.ExitCode, outputTail.ToArray(), errorTail.ToArray());
         }
 
         _ = Task.Run(async () =>
         {
             try
             {
-                await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
+                await waitTask.ConfigureAwait(false);
                 logger.Info($"游戏进程退出：{process.ExitCode}");
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
@@ -27,10 +44,10 @@ public sealed partial class GameProcessWatcher(IAppLoggerService logger) : IGame
             }
         }, CancellationToken.None);
 
-        return Task.CompletedTask;
+        return GameProcessWatchResult.Running(outputTail.ToArray(), errorTail.ToArray());
     }
 
-    private void AttachOutputReaders(Process process)
+    private void AttachOutputReaders(Process process, ConcurrentQueue<string> outputTail, ConcurrentQueue<string> errorTail)
     {
         try
         {
@@ -40,7 +57,9 @@ public sealed partial class GameProcessWatcher(IAppLoggerService logger) : IGame
                 {
                     if (!string.IsNullOrWhiteSpace(args.Data))
                     {
-                        logger.Info("游戏输出：" + Sanitize(args.Data));
+                        var line = Sanitize(args.Data);
+                        EnqueueTail(outputTail, line);
+                        logger.Info("游戏输出：" + line);
                     }
                 };
                 process.BeginOutputReadLine();
@@ -59,7 +78,9 @@ public sealed partial class GameProcessWatcher(IAppLoggerService logger) : IGame
                 {
                     if (!string.IsNullOrWhiteSpace(args.Data))
                     {
-                        logger.Warn("游戏错误：" + Sanitize(args.Data));
+                        var line = Sanitize(args.Data);
+                        EnqueueTail(errorTail, line);
+                        logger.Warn("游戏错误：" + line);
                     }
                 };
                 process.BeginErrorReadLine();
@@ -68,6 +89,14 @@ public sealed partial class GameProcessWatcher(IAppLoggerService logger) : IGame
         catch (Exception ex) when (ex is InvalidOperationException or SystemException)
         {
             logger.Warn("读取游戏错误输出失败：" + ex.Message);
+        }
+    }
+
+    private void EnqueueTail(ConcurrentQueue<string> queue, string line)
+    {
+        queue.Enqueue(line);
+        while (queue.Count > maxTailLines && queue.TryDequeue(out _))
+        {
         }
     }
 

@@ -277,7 +277,14 @@ public sealed class LaunchPipelineService
             SetStep("启动进程", LaunchStepStatus.Succeeded, $"进程 ID：{process.Id}");
 
             SetStep("等待游戏窗口", LaunchStepStatus.Running, "正在监控游戏进程");
-            await _watcher.WatchAsync(process, cancellationToken).ConfigureAwait(false);
+            var watchResult = await _watcher.WatchAsync(process, cancellationToken).ConfigureAwait(false);
+            if (watchResult.HasExited && watchResult.ExitCode != 0)
+            {
+                var issue = BuildEarlyGameExitIssue(watchResult);
+                SetStep("等待游戏窗口", LaunchStepStatus.Failed, issue.Message);
+                return new LaunchResult(false, profileResult.Profile, [issue], process);
+            }
+
             var windowTitle = _windowTitle.ResolveTitle(profileResult.Profile);
             if (!string.IsNullOrWhiteSpace(windowTitle))
             {
@@ -464,6 +471,69 @@ public sealed class LaunchPipelineService
         return string.IsNullOrWhiteSpace(sample)
             ? $"{samplePrefix} {source.Count} 个文件{unresolvable}"
             : $"{samplePrefix} {source.Count} 个文件：{sample}{unresolvable}";
+    }
+
+    private static LaunchValidationIssue BuildEarlyGameExitIssue(GameProcessWatchResult watchResult)
+    {
+        var diagnosis = DiagnoseGameExit(watchResult);
+        var message = $"游戏进程很快退出，退出码：{watchResult.ExitCode}";
+        if (!string.IsNullOrWhiteSpace(diagnosis))
+        {
+            message += "；" + diagnosis;
+        }
+
+        var tail = watchResult.CombinedTail
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .TakeLast(3)
+            .ToArray();
+        if (tail.Length > 0)
+        {
+            message += "；最近日志：" + string.Join(" | ", tail);
+        }
+
+        return new LaunchValidationIssue("GameExitedEarly", message);
+    }
+
+    private static string DiagnoseGameExit(GameProcessWatchResult watchResult)
+    {
+        var text = string.Join('\n', watchResult.CombinedTail);
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return "没有捕获到游戏输出，请查看最新日志文件";
+        }
+
+        if (text.Contains("Unsupported class file major version", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Java 版本过新，Forge / Mixin 或部分 Mod 不兼容当前 Java，请切换到该版本推荐的 Java";
+        }
+
+        if (text.Contains("UnsupportedClassVersionError", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("has been compiled by a more recent version", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Java 版本过旧，请切换到该 Minecraft 版本要求的 Java";
+        }
+
+        if (text.Contains("OutOfMemoryError", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("Java heap space", StringComparison.OrdinalIgnoreCase))
+        {
+            return "游戏内存不足，请提高最大内存或减少 Mod";
+        }
+
+        if (text.Contains("Mixin apply", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("ClassMetadataNotFoundException", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("NoClassDefFoundError", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("ClassNotFoundException", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Mod / 加载器依赖可能不匹配，请检查 Mod 版本、前置依赖和加载器版本";
+        }
+
+        if (text.Contains("Could not find or load main class", StringComparison.OrdinalIgnoreCase)
+            || (text.Contains("main class", StringComparison.OrdinalIgnoreCase) && text.Contains("not found", StringComparison.OrdinalIgnoreCase)))
+        {
+            return "启动主类缺失，版本 JSON、客户端 jar 或加载器安装可能不完整";
+        }
+
+        return "游戏自行退出，建议查看下方最近日志或完整日志文件";
     }
 
     private async Task<IReadOnlyList<JavaEntry>> GetJavaCandidatesAsync(LaunchRequest request, MinecraftInstance instance, CancellationToken cancellationToken)
