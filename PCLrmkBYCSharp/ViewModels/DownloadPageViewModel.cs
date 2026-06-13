@@ -44,6 +44,7 @@ public sealed partial class DownloadPageViewModel : PageViewModelBase
     private readonly object _minecraftRootFoldersSync = new();
     private bool _isSyncingRootFolderSelection;
     private bool _hasLoadedVersionManifest;
+    private bool _hasAppliedVersionManifestToUi;
     private bool _isAutoLoadingResourceVersions;
     private readonly List<MinecraftRemoteVersion> _allVersions = [];
 

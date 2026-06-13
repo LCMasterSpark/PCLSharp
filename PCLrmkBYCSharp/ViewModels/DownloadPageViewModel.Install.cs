@@ -63,16 +63,24 @@ public sealed partial class DownloadPageViewModel
             var versions = await _minecraftClientDownload.GetVersionManifestAsync();
             _allVersions.Clear();
             _allVersions.AddRange(versions);
-            UpdateVersionCategoryItems();
-            ApplyVersionCategoryFilter(preserveSelection: false);
-            SelectedVersion = Versions.FirstOrDefault();
-            if (SelectedVersion is not null)
-            {
-                InstanceName = SelectedVersion.Id;
-            }
+            _hasLoadedVersionManifest = true;
+            ApplyLoadedVersionManifestToUi(preserveSelection: false);
 
             StatusMessage = $"版本列表已刷新：{Versions.Count} 个";
         });
+    }
+
+    private void ApplyLoadedVersionManifestToUi(bool preserveSelection)
+    {
+        UpdateVersionCategoryItems();
+        ApplyVersionCategoryFilter(preserveSelection);
+        if (SelectedVersion is not null)
+        {
+            InstanceName = SelectedVersion.Id;
+        }
+
+        _hasAppliedVersionManifestToUi = true;
+        NotifyDownloadInfoChanged();
     }
 
     private void ApplyVersionCategoryFilter(bool preserveSelection)

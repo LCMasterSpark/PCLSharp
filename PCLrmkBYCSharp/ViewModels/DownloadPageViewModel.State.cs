@@ -100,19 +100,47 @@ public sealed partial class DownloadPageViewModel
 
     public Task PreloadVersionManifestAsync()
     {
-        return EnsureVersionManifestLoadedAsync();
+        return PreloadVersionManifestCoreAsync();
     }
 
     private async Task<bool> EnsureVersionManifestLoadedAsync()
     {
-        if (_hasLoadedVersionManifest)
+        if (!_hasLoadedVersionManifest)
+        {
+            await RefreshVersionsAsync();
+            return true;
+        }
+
+        if (_hasAppliedVersionManifestToUi)
         {
             return false;
         }
 
-        _hasLoadedVersionManifest = true;
-        await RefreshVersionsAsync();
+        ApplyLoadedVersionManifestToUi(preserveSelection: false);
+        StatusMessage = $"版本列表已刷新：{Versions.Count} 个";
         return true;
+    }
+
+    private async Task PreloadVersionManifestCoreAsync()
+    {
+        if (_hasLoadedVersionManifest)
+        {
+            return;
+        }
+
+        try
+        {
+            var versions = await _minecraftClientDownload.GetVersionManifestAsync().ConfigureAwait(false);
+            _allVersions.Clear();
+            _allVersions.AddRange(versions);
+            _hasLoadedVersionManifest = true;
+        }
+        catch (Exception ex)
+        {
+            _hasLoadedVersionManifest = false;
+            _logger.Error(ex, "启动预热 Minecraft 版本列表失败");
+            throw;
+        }
     }
 
     public int VersionCount => Versions.Count;
