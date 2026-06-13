@@ -124,7 +124,7 @@ public sealed partial class LaunchPageViewModel
 
     private bool IsOnUiThread()
     {
-        if (_isApplyingUiUpdate)
+        if (_isApplyingUiUpdate && _uiUpdateThreadId == Environment.CurrentManagedThreadId)
         {
             return true;
         }

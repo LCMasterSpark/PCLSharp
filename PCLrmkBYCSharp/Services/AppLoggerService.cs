@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text;
 using System.IO;
 using MeloongCore;
 
@@ -51,7 +52,7 @@ public sealed class AppLoggerService(IAppPathService paths) : IAppLoggerService
 
         lock (_fileLock)
         {
-            File.AppendAllText(_logFilePath, line + Environment.NewLine);
+            File.AppendAllText(_logFilePath, line + Environment.NewLine, Encoding.UTF8);
         }
     }
 }

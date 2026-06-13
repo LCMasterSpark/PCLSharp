@@ -22,7 +22,9 @@ public sealed partial class LaunchPageViewModel
     private void RunAsUiUpdate(Action action)
     {
         var wasApplying = _isApplyingUiUpdate;
+        var previousThreadId = _uiUpdateThreadId;
         _isApplyingUiUpdate = true;
+        _uiUpdateThreadId = Environment.CurrentManagedThreadId;
         try
         {
             action();
@@ -30,6 +32,7 @@ public sealed partial class LaunchPageViewModel
         finally
         {
             _isApplyingUiUpdate = wasApplying;
+            _uiUpdateThreadId = previousThreadId;
         }
     }
 

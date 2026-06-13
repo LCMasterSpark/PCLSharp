@@ -56,6 +56,7 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
     private bool _isSyncingVersionSelectorRow;
     private bool _isChangingRootPathFromSelection;
     private bool _isApplyingUiUpdate;
+    private int _uiUpdateThreadId;
     private string _selectionRecoveryStatusMessage = string.Empty;
     private CancellationTokenSource? _busyCancellation;
 
