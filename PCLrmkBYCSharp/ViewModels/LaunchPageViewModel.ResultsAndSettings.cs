@@ -304,6 +304,40 @@ public sealed partial class LaunchPageViewModel
                 case "ProcessStartFailed":
                     suggestions.Add("检查 Java 路径、杀毒软件拦截、文件权限以及启动参数；可先点击“生成参数”查看命令摘要。");
                     break;
+                case "GameExitedEarly":
+                    if (issue.Message.Contains("Java 版本过新", StringComparison.Ordinal)
+                        || issue.Message.Contains("Unsupported class file major version", StringComparison.OrdinalIgnoreCase))
+                    {
+                        suggestions.Add("当前 Java 对该版本或 Mod 可能过新，请点击“扫描 Java”或“选择文件”切换到推荐 Java，例如 1.18-1.20.4 通常使用 Java 17。");
+                    }
+                    else if (issue.Message.Contains("Java 版本过旧", StringComparison.Ordinal)
+                        || issue.Message.Contains("UnsupportedClassVersionError", StringComparison.OrdinalIgnoreCase))
+                    {
+                        suggestions.Add("当前 Java 可能过旧，请切换到该 Minecraft 版本要求的 Java，例如 1.20.5+ 通常使用 Java 21。");
+                    }
+                    else if (issue.Message.Contains("内存", StringComparison.Ordinal)
+                        || issue.Message.Contains("OutOfMemoryError", StringComparison.OrdinalIgnoreCase))
+                    {
+                        suggestions.Add("提高最大内存、关闭内存优化或减少 Mod 后重试。");
+                    }
+                    else if (issue.Message.Contains("Mod", StringComparison.OrdinalIgnoreCase)
+                        || issue.Message.Contains("Mixin", StringComparison.OrdinalIgnoreCase)
+                        || issue.Message.Contains("ClassNotFound", StringComparison.OrdinalIgnoreCase)
+                        || issue.Message.Contains("NoClassDefFound", StringComparison.OrdinalIgnoreCase))
+                    {
+                        suggestions.Add("检查 Mod 与加载器版本是否匹配，并确认前置依赖已安装；可先禁用最近新增的 Mod 后重试。");
+                    }
+                    else if (issue.Message.Contains("主类", StringComparison.Ordinal)
+                        || issue.Message.Contains("main class", StringComparison.OrdinalIgnoreCase))
+                    {
+                        suggestions.Add("版本安装可能不完整，请在“实例”页补全文件，必要时重新安装加载器或重新导入整合包。");
+                    }
+                    else
+                    {
+                        suggestions.Add("查看最近日志中的错误行；如果看不出原因，先尝试生成参数、补全文件并重新扫描 Java。");
+                    }
+
+                    break;
                 case "PatchPrepareFailed":
                     suggestions.Add("尝试在实例启动设置中关闭 JLW/LUA 相关补丁选项后重试。");
                     break;

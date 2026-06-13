@@ -1499,6 +1499,42 @@ public sealed class LaunchStage5BTests
         await viewModel.LaunchGameAsync();
 
         Assert.False(viewModel.HasLaunchFileCompletionAction);
+        Assert.Contains("扫描 Java", viewModel.LaunchDiagnostics, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LaunchPageShowsEarlyExitDiagnosticSuggestion()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteVersion(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        settings.Set(AppSettingKeys.MinecraftRootPath, temp.Path);
+        settings.Set(AppSettingKeys.SelectedInstanceName, instance.Name);
+        var pipeline = new FixedFailedLaunchPipelineService(new LaunchValidationIssue(
+            "GameExitedEarly",
+            "游戏进程很快退出，退出码：1；Java 版本过新，Forge / Mixin 或部分 Mod 不兼容当前 Java；最近日志：Unsupported class file major version 69"));
+        var viewModel = new LaunchPageViewModel(
+            new FakeMinecraftDiscoveryService(temp.Path, [instance]),
+            new FakeJavaDiscoveryService([]),
+            pipeline,
+            settings,
+            new NullFileDialogService(),
+            new LegacyLoginService(),
+            new NullLoggerService());
+
+        await viewModel.LaunchGameAsync();
+
+        Assert.False(viewModel.HasLaunchFileCompletionAction);
+        Assert.Contains("GameExitedEarly", viewModel.LaunchDiagnostics, StringComparison.Ordinal);
+        Assert.Contains("Java 版本过新", viewModel.LaunchDiagnostics, StringComparison.Ordinal);
+        Assert.Contains("切换到推荐 Java", viewModel.LaunchDiagnostics, StringComparison.Ordinal);
+        Assert.Contains("1.18-1.20.4 通常使用 Java 17", viewModel.LaunchDiagnostics, StringComparison.Ordinal);
     }
 
     [Fact]
