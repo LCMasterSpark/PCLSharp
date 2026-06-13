@@ -1,5 +1,6 @@
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services.Downloads;
+using PCLrmkBYCSharp.Services.FeatureHub;
 using PCLrmkBYCSharp.Services.Launch;
 using PCLrmkBYCSharp.Services.Link;
 using PCLrmkBYCSharp.ViewModels;
@@ -39,6 +40,8 @@ public sealed class NavigationService : INavigationService
         IHelpService help,
         IHelpActionService helpActions,
         ILinkService linkService,
+        IAppUpdateCheckService updateCheck,
+        IFeatureHubService featureHub,
         IFolderOpenService? folders = null,
         IExternalUrlService? urls = null,
         ILaunchMemoryOptimizer? memoryOptimizer = null,
@@ -87,7 +90,7 @@ public sealed class NavigationService : INavigationService
             [PageRoute.Link] = new LinkPageViewModel(linkService, settings, logger, urls),
             [PageRoute.Instance] = new InstancePageViewModel(minecraftDiscovery, instanceManagement, launchFileCompleter, launchPipeline, downloadManager, modpackExport, settings, fileDialogs, prompts, logger, gameDirectories, rootFolders, selections, localModUpdateService: localModUpdates, folders: folders, dispatcher: dispatcher),
             [PageRoute.Setup] = new SetupPageViewModel(settings, paths, fileDialogs, logger),
-            [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions, settings, fileDialogs, downloadManager, memoryOptimizer, prompts)
+            [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions, settings, fileDialogs, downloadManager, memoryOptimizer, prompts, updateCheck, featureHub)
         };
         CurrentPage = _pages[PageRoute.Launch];
     }

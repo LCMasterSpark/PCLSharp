@@ -6,6 +6,7 @@ using CommunityToolkit.Mvvm.Input;
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services;
 using PCLrmkBYCSharp.Services.Downloads;
+using PCLrmkBYCSharp.Services.FeatureHub;
 using PCLrmkBYCSharp.Services.Launch;
 
 namespace PCLrmkBYCSharp.ViewModels;
@@ -25,6 +26,8 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private readonly IDownloadManagerService? _downloadManager;
     private readonly ILaunchMemoryOptimizer? _memoryOptimizer;
     private readonly IUserPromptService? _prompts;
+    private readonly IAppUpdateCheckService? _updateCheck;
+    private readonly IFeatureHubService? _featureHub;
     private int _doNotClickCount;
     private IReadOnlyList<HelpEntry> _allHelpEntries = [];
 
@@ -70,6 +73,33 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     [ObservableProperty]
     private string customDownloadStatusText = "填写下载地址后即可创建下载任务。";
 
+    [ObservableProperty]
+    private string featureHubStatusText = "实验与规划入口已就绪";
+
+    [ObservableProperty]
+    private string updateStatusText = "更新系统已预留，可手动检查 GitHub Release。";
+
+    [ObservableProperty]
+    private string crashAnalysisText = "崩溃分析服务尚未刷新。";
+
+    [ObservableProperty]
+    private string accountCenterText = "账号管理中心入口尚未刷新。";
+
+    [ObservableProperty]
+    private string skinCenterText = "皮肤中心入口尚未刷新。";
+
+    [ObservableProperty]
+    private string extensionPointText = "扩展点目录尚未刷新。";
+
+    [ObservableProperty]
+    private IReadOnlyList<FeatureModuleSnapshot> featureModules = [];
+
+    [ObservableProperty]
+    private IReadOnlyList<HomeFeedItem> homeFeedItems = [];
+
+    [ObservableProperty]
+    private IReadOnlyList<ExtensionPointInfo> extensionPoints = [];
+
     public OtherPageViewModel(
         IAppPathService? paths = null,
         IHelpService? help = null,
@@ -79,7 +109,9 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         IFileDialogService? fileDialogs = null,
         IDownloadManagerService? downloadManager = null,
         ILaunchMemoryOptimizer? memoryOptimizer = null,
-        IUserPromptService? prompts = null)
+        IUserPromptService? prompts = null,
+        IAppUpdateCheckService? updateCheck = null,
+        IFeatureHubService? featureHub = null)
         : base(PageRoute.Other, "更多", "帮助、关于、诊断、反馈与维护工具")
     {
         _help = help;
@@ -90,6 +122,8 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         _downloadManager = downloadManager;
         _memoryOptimizer = memoryOptimizer;
         _prompts = prompts;
+        _updateCheck = updateCheck;
+        _featureHub = featureHub;
         RegisterHelpEventHandlers();
         var assembly = typeof(OtherPageViewModel).Assembly;
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
@@ -121,6 +155,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
             new("致谢", "测试与反馈", "感谢参与 PCL Sharp 试用、截图标注和问题复现的所有人。", null)
         ];
         CustomDownloadFolder = Path.Combine(paths?.AppDataDirectory ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "MyDownload");
+        RefreshFeatureHub();
     }
 
     private void RegisterHelpEventHandlers()
@@ -181,7 +216,8 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         new(1, "帮助", "搜索并打开内置帮助条目"),
         new(2, "百宝箱", "诊断、维护与快捷工具"),
         new(3, "反馈", "问题反馈与重构建议"),
-        new(4, "关于与鸣谢", "项目说明、版权与感谢名单")
+        new(4, "实验与规划", "更新、崩溃、账号、皮肤与扩展"),
+        new(5, "关于与鸣谢", "项目说明、版权与感谢名单")
     ];
 
     public bool IsOverviewSectionSelected => SelectedOtherSection == 0;
@@ -192,7 +228,9 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
 
     public bool IsFeedbackSectionSelected => SelectedOtherSection == 3;
 
-    public bool IsAboutSectionSelected => SelectedOtherSection == 4;
+    public bool IsFeatureHubSectionSelected => SelectedOtherSection == 4;
+
+    public bool IsAboutSectionSelected => SelectedOtherSection == 5;
 
     public string SelectedHelpPreview
     {
@@ -269,7 +307,69 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         OnPropertyChanged(nameof(IsHelpSectionSelected));
         OnPropertyChanged(nameof(IsToolBoxSectionSelected));
         OnPropertyChanged(nameof(IsFeedbackSectionSelected));
+        OnPropertyChanged(nameof(IsFeatureHubSectionSelected));
         OnPropertyChanged(nameof(IsAboutSectionSelected));
+    }
+
+    [RelayCommand]
+    private async Task CheckUpdateAsync()
+    {
+        if (_updateCheck is null)
+        {
+            UpdateStatusText = "更新检查服务未初始化";
+            return;
+        }
+
+        try
+        {
+            UpdateStatusText = "正在检查更新...";
+            var info = await _updateCheck.CheckAsync();
+            UpdateStatusText = info.IsUpdateAvailable
+                ? $"发现新版本：{info.LatestVersion}，当前版本：{info.CurrentVersion}"
+                : $"当前已是最新版本：{info.CurrentVersion}";
+            FeatureHubStatusText = "更新检查完成";
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "检查更新失败");
+            UpdateStatusText = "检查更新失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void RefreshFeatureHub()
+    {
+        if (_featureHub is null)
+        {
+            FeatureModules =
+            [
+                new("更新系统", "占位", "等待服务容器接入。", "接入 AppUpdateCheckService。"),
+                new("崩溃分析", "占位", "等待服务容器接入。", "接入 CrashAnalysisService。"),
+                new("账号管理中心", "占位", "等待服务容器接入。", "接入账号缓存与列表。")
+            ];
+            HomeFeedItems = [];
+            ExtensionPoints = [];
+            FeatureHubStatusText = "功能枢纽服务未初始化";
+            return;
+        }
+
+        FeatureModules = _featureHub.GetModules();
+        HomeFeedItems = _featureHub.GetHomeFeedItems();
+        ExtensionPoints = _featureHub.GetExtensionPoints();
+
+        var crash = _featureHub.AnalyzeCrashes();
+        CrashAnalysisText = string.IsNullOrWhiteSpace(crash.LatestReportPath)
+            ? crash.Status
+            : $"{crash.Status}\n最近报告：{crash.LatestReportPath}\n报告数量：{crash.ReportCount}";
+
+        var account = _featureHub.GetAccountSummary();
+        AccountCenterText = $"{account.Status}\n当前登录：{account.CurrentLoginType}\n显示名称：{account.CurrentDisplayName}\n缓存账号：{account.CachedAccountCount}";
+
+        var skin = _featureHub.GetSkinSummary();
+        SkinCenterText = $"{skin.Status}\n皮肤模式：{skin.SkinMode}\n皮肤标识：{skin.SkinIdentity}\nSlim：{(skin.SlimModel ? "是" : "否")}";
+
+        ExtensionPointText = $"已登记 {ExtensionPoints.Count} 个扩展点；当前先做目录与权限边界占位。";
+        FeatureHubStatusText = "实验与规划信息已刷新";
     }
 
     partial void OnCustomDownloadUrlChanged(string value)

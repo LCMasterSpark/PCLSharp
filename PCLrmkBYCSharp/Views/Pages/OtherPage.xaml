@@ -170,6 +170,237 @@
                     <Grid.Style>
                         <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFeatureHubSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="实验与规划"
+                                           FontSize="22"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="这里集中放置暂未完整迁移、但已经预留服务契约和 UI 落点的功能。"
+                                           Margin="0,7,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                                <TextBlock Text="{Binding FeatureHubStatusText}"
+                                           Margin="0,8,0,0"
+                                           Foreground="{StaticResource AppAccentBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                    Width="108"
+                                    MinHeight="34"
+                                    VerticalAlignment="Top"
+                                    Command="{Binding RefreshFeatureHubCommand}"
+                                    Content="刷新状态" />
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="2">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="1.1*" MinWidth="420" />
+                            <ColumnDefinition Width="18" />
+                            <ColumnDefinition Width="1.4*" MinWidth="520" />
+                        </Grid.ColumnDefinitions>
+
+                        <Border Style="{StaticResource CardBorderStyle}">
+                            <DockPanel>
+                                <TextBlock DockPanel.Dock="Top"
+                                           Text="功能占位清单"
+                                           FontSize="17"
+                                           FontWeight="SemiBold"
+                                           Margin="0,0,0,12" />
+                                <ListBox ItemsSource="{Binding FeatureModules}"
+                                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel>
+                                                <DockPanel>
+                                                    <TextBlock Text="{Binding Status}"
+                                                               DockPanel.Dock="Right"
+                                                               Foreground="{StaticResource AppAccentBrush}"
+                                                               FontSize="12" />
+                                                    <TextBlock Text="{Binding Title}"
+                                                               FontWeight="SemiBold"
+                                                               FontSize="14"
+                                                               TextWrapping="Wrap" />
+                                                </DockPanel>
+                                                <TextBlock Text="{Binding Description}"
+                                                           Margin="0,5,0,0"
+                                                           FontSize="12"
+                                                           Style="{StaticResource MutedTextStyle}" />
+                                                <TextBlock Text="{Binding NextStep}"
+                                                           Margin="0,5,0,0"
+                                                           FontSize="12"
+                                                           Foreground="{StaticResource AppAccentBrush}"
+                                                           TextWrapping="Wrap" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                            </DockPanel>
+                        </Border>
+
+                        <Grid Grid.Column="2">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="14" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <Border Style="{StaticResource CardBorderStyle}">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="12" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel>
+                                        <TextBlock Text="更新系统"
+                                                   FontSize="17"
+                                                   FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding UpdateStatusText}"
+                                                   Margin="0,7,0,0"
+                                                   Style="{StaticResource MutedTextStyle}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="2"
+                                            Width="110"
+                                            MinHeight="34"
+                                            VerticalAlignment="Center"
+                                            Command="{Binding CheckUpdateCommand}"
+                                            Content="检查更新" />
+                                </Grid>
+                            </Border>
+
+                            <Grid Grid.Row="2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="14" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="14" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="14" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <Border Style="{StaticResource CardBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="崩溃分析" FontWeight="SemiBold" FontSize="16" />
+                                        <TextBlock Text="{Binding CrashAnalysisText}"
+                                                   Margin="0,8,0,0"
+                                                   LineHeight="20"
+                                                   Style="{StaticResource MutedTextStyle}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="账号管理中心" FontWeight="SemiBold" FontSize="16" />
+                                        <TextBlock Text="{Binding AccountCenterText}"
+                                                   Margin="0,8,0,0"
+                                                   LineHeight="20"
+                                                   Style="{StaticResource MutedTextStyle}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="皮肤中心" FontWeight="SemiBold" FontSize="16" />
+                                        <TextBlock Text="{Binding SkinCenterText}"
+                                                   Margin="0,8,0,0"
+                                                   LineHeight="20"
+                                                   Style="{StaticResource MutedTextStyle}" />
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="主页公告" FontWeight="SemiBold" FontSize="16" />
+                                        <ItemsControl ItemsSource="{Binding HomeFeedItems}" Margin="0,8,0,0">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Margin="0,0,0,10">
+                                                        <TextBlock Text="{Binding Title}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                                                        <TextBlock Text="{Binding Description}"
+                                                                   Margin="0,3,0,0"
+                                                                   FontSize="12"
+                                                                   Style="{StaticResource MutedTextStyle}" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+
+                                <Border Grid.Row="4" Grid.ColumnSpan="3" Style="{StaticResource CardBorderStyle}">
+                                    <DockPanel>
+                                        <TextBlock DockPanel.Dock="Top"
+                                                   Text="扩展点"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="16"
+                                                   Margin="0,0,0,8" />
+                                        <TextBlock DockPanel.Dock="Bottom"
+                                                   Text="{Binding ExtensionPointText}"
+                                                   Margin="0,8,0,0"
+                                                   Foreground="{StaticResource AppAccentBrush}"
+                                                   TextWrapping="Wrap" />
+                                        <ItemsControl ItemsSource="{Binding ExtensionPoints}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <UniformGrid Columns="3" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Border Margin="0,0,10,10"
+                                                            Padding="10"
+                                                            Background="{StaticResource AppSurfaceBrush}"
+                                                            BorderBrush="{StaticResource AppBorderBrush}"
+                                                            BorderThickness="1"
+                                                            CornerRadius="6">
+                                                        <StackPanel>
+                                                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                                            <TextBlock Text="{Binding Status}"
+                                                                       Margin="0,3,0,0"
+                                                                       Foreground="{StaticResource AppAccentBrush}"
+                                                                       FontSize="12" />
+                                                            <TextBlock Text="{Binding Description}"
+                                                                       Margin="0,5,0,0"
+                                                                       FontSize="12"
+                                                                       Style="{StaticResource MutedTextStyle}" />
+                                                        </StackPanel>
+                                                    </Border>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DockPanel>
+                                </Border>
+                            </Grid>
+                        </Grid>
+                    </Grid>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsHelpSectionSelected}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>
