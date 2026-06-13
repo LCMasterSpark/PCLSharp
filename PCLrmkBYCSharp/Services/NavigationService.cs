@@ -28,6 +28,7 @@ public sealed class NavigationService : INavigationService
         ILaunchFileCompleter launchFileCompleter,
         ILocalModUpdateService localModUpdates,
         IJavaDiscoveryService javaDiscovery,
+        IJavaSelectorService javaSelector,
         ILaunchPipelineService launchPipeline,
         ILegacyLoginService legacyLogin,
         ILoginService loginService,
@@ -71,7 +72,8 @@ public sealed class NavigationService : INavigationService
             instanceManagement,
             folders,
             loginService,
-            microsoftDeviceCodes);
+            microsoftDeviceCodes,
+            javaSelector);
         helpActions.SetEventHandler(HelpActionService.EventLaunchGame, launchPage.ExecuteCustomLaunchEventAsync);
 
         _pages = new Dictionary<PageRoute, PageViewModelBase>

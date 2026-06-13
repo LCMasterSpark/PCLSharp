@@ -15,18 +15,22 @@ public sealed partial class JavaSelectorService : IJavaSelectorService
         if (minecraftVersion >= new Version(20, 0, 5) || releaseTime >= new DateTime(2024, 4, 2))
         {
             min = new Version(1, 21, 0, 0);
+            max = new Version(1, 21, 999, 999);
         }
         else if (minecraftVersion.Major >= 18 || releaseTime >= new DateTime(2021, 11, 16))
         {
             min = new Version(1, 17, 0, 0);
+            max = new Version(1, 17, 999, 999);
         }
         else if (minecraftVersion.Major >= 17 || releaseTime >= new DateTime(2021, 5, 11))
         {
             min = new Version(1, 16, 0, 0);
+            max = new Version(1, 16, 999, 999);
         }
         else if (releaseTime?.Year >= 2017 || minecraftVersion.Major >= 12)
         {
             min = new Version(1, 8, 0, 0);
+            max = new Version(1, 8, 999, 999);
         }
         else if (releaseTime is not null && releaseTime <= new DateTime(2013, 5, 1) && releaseTime.Value.Year >= 2001)
         {

@@ -1,13 +1,5 @@
 using System.IO;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Text.Json;
-using System.Windows;
-using System.Windows.Data;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using PCLrmkBYCSharp.Models;
-using PCLrmkBYCSharp.Services;
 using PCLrmkBYCSharp.Services.Launch;
 
 namespace PCLrmkBYCSharp.ViewModels;
@@ -30,11 +22,11 @@ public sealed partial class LaunchPageViewModel
         }
 
         var savedJava = ResolveJavaPath(SelectedInstance?.Name);
+        var selectedJava = SelectCompatibleJavaForCurrentInstance(savedJava);
         _isRestoringJavaSelection = true;
         try
         {
-            SelectedJava = JavaEntries.FirstOrDefault(java => string.Equals(java.PathJava, savedJava, StringComparison.OrdinalIgnoreCase))
-                ?? JavaEntries.FirstOrDefault();
+            SelectedJava = selectedJava;
         }
         finally
         {
@@ -42,7 +34,60 @@ public sealed partial class LaunchPageViewModel
         }
 
         OnPropertyChanged(nameof(SelectedJavaSummary));
-        StatusMessage = $"Java 扫描完成：{JavaEntries.Count} 个";
+        StatusMessage = BuildJavaScanStatus(savedJava, selectedJava);
+    }
+
+    private JavaEntry? SelectCompatibleJavaForCurrentInstance(string savedJava)
+    {
+        if (SelectedInstance is null)
+        {
+            return JavaEntries.FirstOrDefault(java => string.Equals(java.PathJava, savedJava, StringComparison.OrdinalIgnoreCase))
+                ?? JavaEntries.FirstOrDefault();
+        }
+
+        var savedEntry = JavaEntries.FirstOrDefault(java => string.Equals(java.PathJava, savedJava, StringComparison.OrdinalIgnoreCase));
+        if (ShouldIgnoreJavaCompatibility(SelectedInstance.Name) && savedEntry is not null)
+        {
+            return savedEntry;
+        }
+
+        return _javaSelector.SelectBest(SelectedInstance, JavaEntries, savedJava)
+            ?? savedEntry
+            ?? JavaEntries.FirstOrDefault();
+    }
+
+    private string BuildJavaScanStatus(string savedJava, JavaEntry? selectedJava)
+    {
+        if (SelectedInstance is null)
+        {
+            return $"Java 扫描完成：{JavaEntries.Count} 个";
+        }
+
+        var requirement = _javaSelector.GetRequirement(SelectedInstance);
+        if (selectedJava is null)
+        {
+            return $"Java 扫描完成：未找到满足 {FormatJavaVersion(requirement.MinVersion)} - {FormatJavaVersion(requirement.MaxVersion)} 的 Java";
+        }
+
+        if (!string.IsNullOrWhiteSpace(savedJava)
+            && !string.Equals(selectedJava.PathJava, savedJava, StringComparison.OrdinalIgnoreCase)
+            && !ShouldIgnoreJavaCompatibility(SelectedInstance.Name))
+        {
+            return $"已为 {SelectedInstance.Name} 自动切换到兼容 Java：{selectedJava.DisplayName}";
+        }
+
+        return $"Java 扫描完成：{JavaEntries.Count} 个，当前使用 {selectedJava.DisplayName}";
+    }
+
+    private bool ShouldIgnoreJavaCompatibility(string? instanceName)
+    {
+        return !string.IsNullOrWhiteSpace(instanceName)
+            && _settings.Get(GetInstanceSettingKey(instanceName, AppSettingKeys.VersionAdvanceJava), false);
+    }
+
+    private static string FormatJavaVersion(Version version)
+    {
+        return version.Major == 1 ? version.Minor.ToString() : version.ToString();
     }
 
     private void BrowseMinecraftRoot()
@@ -188,5 +233,4 @@ public sealed partial class LaunchPageViewModel
         LaunchSkinType = 4;
         LaunchSkinId = selected;
     }
-
 }

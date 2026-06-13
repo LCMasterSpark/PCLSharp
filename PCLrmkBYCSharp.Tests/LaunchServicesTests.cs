@@ -44,7 +44,7 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
-    public void JavaSelectorReturnsPreferredCompatibleJava()
+    public void JavaSelectorIgnoresPreferredJavaAboveCompatibleRange()
     {
         var selector = new JavaSelectorService();
         var instance = CreateInstance("1.20.1");
@@ -53,7 +53,7 @@ public sealed class LaunchServicesTests
 
         var selected = selector.SelectBest(instance, [java17, java21], java21.PathJava);
 
-        Assert.Equal(java21, selected);
+        Assert.Equal(java17, selected);
     }
 
     [Fact]
@@ -87,6 +87,19 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public void JavaSelectorRejectsJavaAboveStableRangeForMinecraft1205AndNewer()
+    {
+        var selector = new JavaSelectorService();
+        var instance = CreateInstance("1.20.5");
+        var java21 = CreateJava("C:\\Java21\\bin\\java.exe", 21);
+        var java25 = new JavaEntry("C:\\Java25\\bin\\java.exe", new Version(25, 0, 2), false, true, false, true);
+
+        var selected = selector.SelectBest(instance, [java25, java21], java25.PathJava);
+
+        Assert.Equal(java21, selected);
+    }
+
+    [Fact]
     public void JavaSelectorReadsOldPclJavaSettingJson()
     {
         var selector = new JavaSelectorService();
@@ -96,7 +109,7 @@ public sealed class LaunchServicesTests
 
         var selected = selector.SelectBest(instance, [java17, java21], java21.ToPclSettingJson());
 
-        Assert.Equal(java21, selected);
+        Assert.Equal(java17, selected);
         Assert.Equal(java21.PathJava, JavaEntry.ResolveSettingJavaPath(java21.ToPclSettingJson()));
     }
 

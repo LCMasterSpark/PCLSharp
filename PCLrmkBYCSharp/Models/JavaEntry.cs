@@ -28,6 +28,7 @@ public sealed record JavaEntry(
             return $"{(IsJre ? "JRE" : "JDK")} {MajorVersion} ({version}){(Is64Bit ? "" : "，32 位")}{(IsUserImport ? "，手动导入" : "")}";
         }
     }
+
     public string ToPclSettingJson()
     {
         return JsonSerializer.Serialize(new JavaSettingEntry(

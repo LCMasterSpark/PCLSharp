@@ -1,6 +1,6 @@
-using System.IO;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
+using System.IO;
 using System.Text.Json;
 using System.Windows;
 using System.Windows.Data;
@@ -27,6 +27,7 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
     private const string UseGlobalJavaSettingText = "使用全局设置";
     private readonly IMinecraftDiscoveryService _minecraftDiscovery;
     private readonly IJavaDiscoveryService _javaDiscovery;
+    private readonly IJavaSelectorService _javaSelector;
     private readonly ILaunchPipelineService _launchPipeline;
     private readonly IMinecraftInstanceManagementService _instanceManagement;
     private readonly IAppSettingsService _settings;
@@ -76,11 +77,13 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
         IMinecraftInstanceManagementService? instanceManagement = null,
         IFolderOpenService? folders = null,
         ILoginService? loginService = null,
-        IMicrosoftDeviceCodeStatusService? microsoftDeviceCodes = null)
+        IMicrosoftDeviceCodeStatusService? microsoftDeviceCodes = null,
+        IJavaSelectorService? javaSelector = null)
         : base(PageRoute.Launch, "启动", "登录、选择实例与 Java，然后按旧版流程启动")
     {
         _minecraftDiscovery = minecraftDiscovery;
         _javaDiscovery = javaDiscovery;
+        _javaSelector = javaSelector ?? new JavaSelectorService();
         _launchPipeline = launchPipeline;
         _instanceManagement = instanceManagement ?? new MinecraftInstanceManagementService();
         _settings = settings;
@@ -107,7 +110,7 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
         launchSkinType = _settings.Get(AppSettingKeys.LaunchSkinType, 0);
         launchSkinId = _settings.Get(AppSettingKeys.LaunchSkinID, "");
         launchSkinSlim = _settings.Get(AppSettingKeys.LaunchSkinSlim, false);
-        legacyName = _settings.Get(AppSettingKeys.LoginLegacyName, "Steve").Split('¨', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "Steve";
+        legacyName = _settings.Get(AppSettingKeys.LoginLegacyName, "Steve").Split('篓', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? "Steve";
         loginUserName = GetLoginUserName(selectedLoginType);
         loginPassword = GetLoginPassword(selectedLoginType);
         loginServer = GetLoginServer(selectedLoginType);
@@ -129,5 +132,4 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
 
         RefreshMicrosoftAccounts();
     }
-
 }
