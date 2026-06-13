@@ -26,6 +26,7 @@ public sealed class AppServices
         IJavaDiscoveryService javaDiscovery,
         ILaunchPipelineService launchPipeline,
         IAppExitGuardService exitGuard,
+        UserPromptService prompts,
         INavigationService navigation)
     {
         Paths = paths;
@@ -43,6 +44,7 @@ public sealed class AppServices
         JavaDiscovery = javaDiscovery;
         LaunchPipeline = launchPipeline;
         ExitGuard = exitGuard;
+        Prompts = prompts;
         Navigation = navigation;
     }
 
@@ -76,6 +78,8 @@ public sealed class AppServices
 
     public IAppExitGuardService ExitGuard { get; }
 
+    public UserPromptService Prompts { get; }
+
     public INavigationService Navigation { get; }
 
     public static AppServices Create(Dispatcher dispatcher)
@@ -93,7 +97,10 @@ public sealed class AppServices
             Path.Combine(AppContext.BaseDirectory, "PCL", "Help"),
             Path.Combine(paths.AppDataDirectory, "Help")
         ]);
-        var helpActions = new HelpActionService(settings: settings);
+        var helpActions = new HelpActionService(
+            showMessage: (title, message) => prompts.Confirm(title, message),
+            showHint: (message, _) => prompts.Confirm("提示", message),
+            settings: settings);
         var linkService = new PclLinkService();
         var instanceManagement = new MinecraftInstanceManagementService();
         var minecraftDiscovery = new MinecraftDiscoveryService(instanceManagement);
@@ -189,7 +196,7 @@ public sealed class AppServices
             OpenModpackDownloadPresetAsync(eventData, "已打开整合包安装入口", settings, navigation, uiDispatcher, cancellationToken));
         helpActions.SetEventHandler(HelpActionService.EventCheckUpdate, (eventData, cancellationToken) =>
             CheckAppUpdateAsync(eventData, updateCheck, cancellationToken));
-        return new AppServices(paths, logger, uiDispatcher, fileDialogs, settings, minecraftDiscovery, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, loaderProcessorRunner, javaDiscovery, launchPipeline, exitGuard, navigation);
+        return new AppServices(paths, logger, uiDispatcher, fileDialogs, settings, minecraftDiscovery, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, loaderProcessorRunner, javaDiscovery, launchPipeline, exitGuard, prompts, navigation);
     }
 
     private static async Task<HelpActionResult> OpenModpackDownloadPresetAsync(

@@ -33,7 +33,7 @@ public sealed partial class DownloadPageViewModel : PageViewModelBase
     private readonly IExternalUrlService _urls;
     private readonly IAppLoggerService _logger;
     private readonly IUiDispatcherService? _dispatcher;
-    private readonly SynchronizationContext? _uiContext = SynchronizationContext.Current;
+    private readonly SynchronizationContext? _uiContext = CaptureUiSynchronizationContext();
     private readonly List<CommunityResourceProject> _lastResourceProjects = [];
     private readonly object _versionsSync = new();
     private readonly object _versionCategoryItemsSync = new();
@@ -180,5 +180,13 @@ public sealed partial class DownloadPageViewModel : PageViewModelBase
         BindingOperations.EnableCollectionSynchronization(ResourceVersions, _resourceVersionsSync);
         BindingOperations.EnableCollectionSynchronization(LoaderVersions, _loaderVersionsSync);
         BindingOperations.EnableCollectionSynchronization(MinecraftRootFolders, _minecraftRootFoldersSync);
+    }
+
+    private static SynchronizationContext? CaptureUiSynchronizationContext()
+    {
+        var context = SynchronizationContext.Current;
+        return context?.GetType().FullName == "System.Windows.Threading.DispatcherSynchronizationContext"
+            ? context
+            : null;
     }
 }

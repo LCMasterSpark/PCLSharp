@@ -1,4 +1,5 @@
 using System.Windows;
+using System.Windows.Threading;
 
 namespace PCLrmkBYCSharp.Services;
 
@@ -11,52 +12,102 @@ public interface IUserPromptService
 
 public sealed class UserPromptService : IUserPromptService
 {
+    public event EventHandler<UserPromptRequest>? PromptRequested;
+
     public bool Confirm(string title, string message)
     {
-        return MessageBox.Show(message, title, MessageBoxButton.OKCancel, MessageBoxImage.Warning) == MessageBoxResult.OK;
+        return ShowPrompt(title, message, defaultValue: "", acceptsInput: false).Confirmed == true;
     }
 
     public string? Prompt(string title, string message, string defaultValue)
     {
-        var input = new System.Windows.Controls.TextBox
-        {
-            Text = defaultValue,
-            MinWidth = 320,
-            Margin = new Thickness(0, 8, 0, 0)
-        };
-        input.SelectAll();
+        var result = ShowPrompt(title, message, defaultValue, acceptsInput: true);
+        return result.Confirmed == true ? result.InputText : null;
+    }
 
-        var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(18) };
-        panel.Children.Add(new System.Windows.Controls.TextBlock { Text = message, TextWrapping = TextWrapping.Wrap });
-        panel.Children.Add(input);
-
-        var window = new Window
+    private UserPromptRequest ShowPrompt(string title, string message, string defaultValue, bool acceptsInput)
+    {
+        var dispatcher = Application.Current?.Dispatcher;
+        if (dispatcher is null)
         {
-            Title = title,
-            Content = panel,
-            SizeToContent = SizeToContent.WidthAndHeight,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            ResizeMode = ResizeMode.NoResize,
-            Owner = Application.Current?.MainWindow
-        };
+            return UserPromptRequest.CreateCompleted(title, message, defaultValue, acceptsInput, confirmed: true);
+        }
 
-        var buttons = new System.Windows.Controls.StackPanel
-        {
-            Orientation = System.Windows.Controls.Orientation.Horizontal,
-            HorizontalAlignment = HorizontalAlignment.Right,
-            Margin = new Thickness(0, 14, 0, 0)
-        };
-        var ok = new System.Windows.Controls.Button { Content = "确定", MinWidth = 82, IsDefault = true };
-        var cancel = new System.Windows.Controls.Button { Content = "取消", MinWidth = 82, Margin = new Thickness(10, 0, 0, 0), IsCancel = true };
-        ok.Click += (_, _) =>
-        {
-            window.DialogResult = true;
-            window.Close();
-        };
-        buttons.Children.Add(ok);
-        buttons.Children.Add(cancel);
-        panel.Children.Add(buttons);
+        return dispatcher.CheckAccess()
+            ? ShowPromptOnUiThread(title, message, defaultValue, acceptsInput)
+            : dispatcher.Invoke(() => ShowPromptOnUiThread(title, message, defaultValue, acceptsInput));
+    }
 
-        return window.ShowDialog() == true ? input.Text : null;
+    private UserPromptRequest ShowPromptOnUiThread(string title, string message, string defaultValue, bool acceptsInput)
+    {
+        var request = new UserPromptRequest(title, message, defaultValue, acceptsInput);
+        if (PromptRequested is null)
+        {
+            request.Complete(false);
+            return request;
+        }
+
+        PromptRequested.Invoke(this, request);
+        if (request.IsCompleted)
+        {
+            return request;
+        }
+
+        var frame = new DispatcherFrame();
+        void CompleteFrame(object? sender, EventArgs args)
+        {
+            frame.Continue = false;
+            request.Completed -= CompleteFrame;
+        }
+
+        request.Completed += CompleteFrame;
+        Dispatcher.PushFrame(frame);
+        return request;
+    }
+}
+
+public sealed class UserPromptRequest
+{
+    public UserPromptRequest(string title, string message, string inputText, bool acceptsInput)
+    {
+        Title = title;
+        Message = message;
+        InputText = inputText;
+        AcceptsInput = acceptsInput;
+    }
+
+    public event EventHandler? Completed;
+
+    public string Title { get; }
+
+    public string Message { get; }
+
+    public string InputText { get; set; }
+
+    public bool AcceptsInput { get; }
+
+    public Visibility InputVisibility => AcceptsInput ? Visibility.Visible : Visibility.Collapsed;
+
+    public bool IsCompleted { get; private set; }
+
+    public bool? Confirmed { get; private set; }
+
+    public void Complete(bool confirmed)
+    {
+        if (IsCompleted)
+        {
+            return;
+        }
+
+        Confirmed = confirmed;
+        IsCompleted = true;
+        Completed?.Invoke(this, EventArgs.Empty);
+    }
+
+    public static UserPromptRequest CreateCompleted(string title, string message, string inputText, bool acceptsInput, bool confirmed)
+    {
+        var request = new UserPromptRequest(title, message, inputText, acceptsInput);
+        request.Complete(confirmed);
+        return request;
     }
 }

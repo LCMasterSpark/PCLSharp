@@ -56,9 +56,9 @@ public sealed class HelpActionService : IHelpActionService
         _openUri = openUri ?? OpenUriWithShellAsync;
         _startProcess = startProcess ?? StartProcessAsync;
         _downloadFile = downloadFile;
-        _showMessage = showMessage ?? ((title, message) => MessageBox.Show(message, title, MessageBoxButton.OK, MessageBoxImage.Information));
+        _showMessage = showMessage ?? ((_, _) => { });
         _setClipboardText = setClipboardText ?? Clipboard.SetText;
-        _showHint = showHint ?? ((message, _) => MessageBox.Show(message, "提示", MessageBoxButton.OK, MessageBoxImage.Information));
+        _showHint = showHint ?? ((_, _) => { });
         _switchPage = switchPage;
         _settings = settings;
     }

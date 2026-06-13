@@ -99,13 +99,6 @@ public sealed partial class DownloadPageViewModel
             return;
         }
 
-        var appDispatcher = System.Windows.Application.Current?.Dispatcher;
-        if (appDispatcher is not null && !appDispatcher.CheckAccess())
-        {
-            _ = appDispatcher.InvokeAsync(TryApplyTaskSnapshots);
-            return;
-        }
-
         if (_uiContext is not null && SynchronizationContext.Current != _uiContext)
         {
             _uiContext.Post(_ => TryApplyTaskSnapshots(), null);
@@ -146,23 +139,11 @@ public sealed partial class DownloadPageViewModel
             return _dispatcher.CheckAccess();
         }
 
-        var appDispatcher = System.Windows.Application.Current?.Dispatcher;
-        if (appDispatcher is not null)
-        {
-            return appDispatcher.CheckAccess();
-        }
-
         return _uiContext is null || SynchronizationContext.Current == _uiContext;
     }
 
     private bool ShouldMarshalDirectCollectionUpdate()
     {
-        var appDispatcher = System.Windows.Application.Current?.Dispatcher;
-        if (appDispatcher is not null && !appDispatcher.CheckAccess())
-        {
-            return true;
-        }
-
         return _uiContext is not null && SynchronizationContext.Current != _uiContext;
     }
 

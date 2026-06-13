@@ -273,6 +273,75 @@
                                Foreground="{StaticResource AppMutedTextBrush}" />
                 </DockPanel>
             </Border>
+
+            <Grid x:Name="PromptOverlay"
+                  Grid.RowSpan="3"
+                  Grid.ColumnSpan="2"
+                  Panel.ZIndex="100"
+                  Visibility="Collapsed"
+                  Background="#99000000">
+                <Border Width="460"
+                        MaxWidth="620"
+                        Padding="22"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Background="{StaticResource AppPanelBrush}"
+                        BorderBrush="{StaticResource AppAccentBrush}"
+                        BorderThickness="1"
+                        CornerRadius="6">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="{Binding Title}"
+                                   FontSize="20"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource AppTextBrush}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBlock Grid.Row="1"
+                                   Text="{Binding Message}"
+                                   Margin="0,12,0,0"
+                                   FontSize="13"
+                                   LineHeight="19"
+                                   Foreground="{StaticResource AppMutedTextBrush}"
+                                   TextWrapping="Wrap" />
+
+                        <TextBox x:Name="PromptInputBox"
+                                 Grid.Row="2"
+                                 Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                 Visibility="{Binding InputVisibility}"
+                                 Margin="0,16,0,0"
+                                 MinHeight="34"
+                                 Padding="10,7"
+                                 Background="{StaticResource AppCardBrush}"
+                                 Foreground="{StaticResource AppTextBrush}"
+                                 BorderBrush="{StaticResource AppBorderBrush}"
+                                 BorderThickness="1" />
+
+                        <StackPanel Grid.Row="3"
+                                    Orientation="Horizontal"
+                                    HorizontalAlignment="Right"
+                                    Margin="0,18,0,0">
+                            <Button x:Name="PromptOkButton"
+                                    Content="确定"
+                                    IsDefault="True"
+                                    MinWidth="96"
+                                    Click="PromptOkButton_Click" />
+                            <Button x:Name="PromptCancelButton"
+                                    Content="取消"
+                                    IsCancel="True"
+                                    MinWidth="96"
+                                    Margin="10,0,0,0"
+                                    Click="PromptCancelButton_Click" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+            </Grid>
         </Grid>
     </Border>
 </Window>

@@ -1,6 +1,7 @@
 using System.Windows;
 using System.ComponentModel;
 using System.Windows.Input;
+using PCLrmkBYCSharp.Services;
 using PCLrmkBYCSharp.ViewModels;
 
 namespace PCLrmkBYCSharp.Views;
@@ -8,14 +9,22 @@ namespace PCLrmkBYCSharp.Views;
 public partial class MainWindow : Window
 {
     private readonly MainWindowViewModel _viewModel;
+    private readonly UserPromptService? _prompts;
+    private UserPromptRequest? _activePrompt;
 
-    public MainWindow(MainWindowViewModel viewModel)
+    public MainWindow(MainWindowViewModel viewModel, UserPromptService? prompts = null)
     {
         _viewModel = viewModel;
+        _prompts = prompts;
         InitializeComponent();
         DataContext = viewModel;
         Loaded += HandleLoaded;
         Closing += HandleClosing;
+        Closed += HandleClosed;
+        if (_prompts is not null)
+        {
+            _prompts.PromptRequested += HandlePromptRequested;
+        }
     }
 
     private void HandleLoaded(object sender, RoutedEventArgs e)
@@ -63,5 +72,57 @@ public partial class MainWindow : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private void HandleClosed(object? sender, EventArgs e)
+    {
+        if (_prompts is not null)
+        {
+            _prompts.PromptRequested -= HandlePromptRequested;
+        }
+
+        _activePrompt?.Complete(false);
+        _activePrompt = null;
+    }
+
+    private void HandlePromptRequested(object? sender, UserPromptRequest request)
+    {
+        _activePrompt = request;
+        PromptOverlay.DataContext = request;
+        PromptOverlay.Visibility = Visibility.Visible;
+        PromptInputBox.Visibility = request.InputVisibility;
+        if (request.AcceptsInput)
+        {
+            PromptInputBox.Focus();
+            PromptInputBox.SelectAll();
+        }
+        else
+        {
+            PromptOkButton.Focus();
+        }
+
+        request.Completed += HandlePromptCompleted;
+    }
+
+    private void HandlePromptCompleted(object? sender, EventArgs e)
+    {
+        if (sender is UserPromptRequest request)
+        {
+            request.Completed -= HandlePromptCompleted;
+        }
+
+        PromptOverlay.Visibility = Visibility.Collapsed;
+        PromptOverlay.DataContext = null;
+        _activePrompt = null;
+    }
+
+    private void PromptOkButton_Click(object sender, RoutedEventArgs e)
+    {
+        _activePrompt?.Complete(true);
+    }
+
+    private void PromptCancelButton_Click(object sender, RoutedEventArgs e)
+    {
+        _activePrompt?.Complete(false);
     }
 }

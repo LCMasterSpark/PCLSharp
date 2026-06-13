@@ -35,13 +35,12 @@ public partial class App : Application
                 _services.Logger,
                 _services.ExitGuard);
 
-            MainWindow = new MainWindow(viewModel);
+            MainWindow = new MainWindow(viewModel, _services.Prompts);
             MainWindow.Show();
         }
         catch (Exception ex)
         {
             LogFatalException(ex, "应用启动失败");
-            MessageBox.Show(ex.Message, "PCL Sharp", MessageBoxButton.OK, MessageBoxImage.Error);
             Shutdown(-1);
         }
     }
@@ -63,7 +62,7 @@ public partial class App : Application
     private void HandleDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         _services?.Logger.Error(e.Exception, "未处理的界面异常");
-        MessageBox.Show(e.Exception.Message, "PCL Sharp", MessageBoxButton.OK, MessageBoxImage.Error);
+        _services?.Prompts.Confirm("PCL Sharp 遇到错误", e.Exception.Message);
         e.Handled = true;
     }
 
