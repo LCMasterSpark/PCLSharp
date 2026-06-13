@@ -1392,6 +1392,37 @@ public sealed class LaunchServicesTests
         Assert.Contains("Unsupported class file major version 69", issue.Message, StringComparison.Ordinal);
     }
 
+    [Theory]
+    [InlineData("net.fabricmc.loader.impl.FormattedException: Incompatible mod set! Mod sodium requires fabric-api", "Mod 前置依赖缺失或版本不匹配")]
+    [InlineData("org.lwjgl.glfw.GLFWErrorCallbackI: GLFW error 65542: WGL: The driver does not appear to support OpenGL", "显卡驱动或 OpenGL 支持异常")]
+    [InlineData("java.nio.file.AccessDeniedException: C:\\Games\\.minecraft\\versions\\test\\test.jar", "文件被占用或没有访问权限")]
+    [InlineData("java.lang.UnsatisfiedLinkError: Failed to load library lwjgl.dll from natives directory", "natives 或 LWJGL 运行库加载失败")]
+    public async Task LaunchPipelineDiagnosesCommonEarlyGameExitLogs(string logLine, string expectedMessage)
+    {
+        using var temp = new TempDirectory();
+        CreateEmptyAssetIndex(temp.Path, "5");
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "assetIndex": { "id": "5" },
+          "libraries": []
+        }
+        """, createJar: true);
+        var java = CreateJava(Path.Combine(temp.Path, "java", "bin", "java.exe"), 17);
+        var launcher = new FakeProcessLauncher();
+        var watcher = new FakeGameProcessWatcher(GameProcessWatchResult.Exited(1, [], [logLine]));
+        var pipeline = CreatePipeline(new FakeJavaDiscoveryService([java]), launcher, gameProcessWatcher: watcher);
+
+        var result = await pipeline.LaunchAsync(CreateRequest(instance, temp.Path) with { StartProcess = true });
+
+        var issue = Assert.Single(result.Issues, issue => issue.Code == "GameExitedEarly");
+        Assert.False(result.Success);
+        Assert.Contains(expectedMessage, issue.Message, StringComparison.Ordinal);
+        Assert.Contains(logLine, issue.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public async Task LaunchPipelineUsesGlobalMinecraftRootWhenVersionIsolationIsDisabled()
     {

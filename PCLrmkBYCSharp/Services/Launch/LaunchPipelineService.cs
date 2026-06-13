@@ -519,12 +519,47 @@ public sealed class LaunchPipelineService
             return "游戏内存不足，请提高最大内存或减少 Mod";
         }
 
+        if (text.Contains("Incompatible mod set", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("ModResolutionException", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("Missing or unsupported mandatory dependencies", StringComparison.OrdinalIgnoreCase)
+            || (text.Contains("requires", StringComparison.OrdinalIgnoreCase)
+                && (text.Contains("mod", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("fabric", StringComparison.OrdinalIgnoreCase)
+                    || text.Contains("forge", StringComparison.OrdinalIgnoreCase)))
+            || (text.Contains("depends", StringComparison.OrdinalIgnoreCase)
+                && text.Contains("mod", StringComparison.OrdinalIgnoreCase)))
+        {
+            return "Mod 前置依赖缺失或版本不匹配，请补齐依赖并确认 Mod、加载器、Minecraft 版本一致";
+        }
+
         if (text.Contains("Mixin apply", StringComparison.OrdinalIgnoreCase)
             || text.Contains("ClassMetadataNotFoundException", StringComparison.OrdinalIgnoreCase)
             || text.Contains("NoClassDefFoundError", StringComparison.OrdinalIgnoreCase)
             || text.Contains("ClassNotFoundException", StringComparison.OrdinalIgnoreCase))
         {
             return "Mod / 加载器依赖可能不匹配，请检查 Mod 版本、前置依赖和加载器版本";
+        }
+
+        if (text.Contains("GLFW error 65542", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("Pixel format not accelerated", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("OpenGL", StringComparison.OrdinalIgnoreCase) && text.Contains("not supported", StringComparison.OrdinalIgnoreCase))
+        {
+            return "显卡驱动或 OpenGL 支持异常，请更新显卡驱动或切换可用显卡";
+        }
+
+        if (text.Contains("AccessDeniedException", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("Permission denied", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("being used by another process", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("另一个程序正在使用此文件", StringComparison.OrdinalIgnoreCase))
+        {
+            return "文件被占用或没有访问权限，请关闭占用程序并检查文件夹权限";
+        }
+
+        if (text.Contains("UnsatisfiedLinkError", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("Failed to load library", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("lwjgl", StringComparison.OrdinalIgnoreCase) && text.Contains("native", StringComparison.OrdinalIgnoreCase))
+        {
+            return "natives 或 LWJGL 运行库加载失败，请尝试补全文件或重新安装该版本";
         }
 
         if (text.Contains("Could not find or load main class", StringComparison.OrdinalIgnoreCase)
