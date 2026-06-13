@@ -90,6 +90,7 @@ public sealed class AppServices
         var fileDialogs = new FileDialogService();
         var folders = new FolderOpenService();
         var urls = new ExternalUrlService();
+        var clipboard = new ClipboardService();
         var prompts = new UserPromptService();
         var settings = new AppSettingsService(paths);
         var help = new HelpService(logger, customHelpDirectories:
@@ -173,7 +174,7 @@ public sealed class AppServices
             gameDirectories,
             settings,
             memoryOptimizer);
-        var navigation = new NavigationService(settings, paths, fileDialogs, minecraftDiscovery, instanceManagement, gameDirectories, rootFolders, selections, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, modpackExport, loaderProcessorRunner, fileCompleter, localModUpdates, javaDiscovery, javaSelector, launchPipeline, legacyLogin, login, prompts, uiDispatcher, logger, help, helpActions, linkService, linkBackend, linkProcess, updateCheck, featureHub, folders, urls, memoryOptimizer, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, microsoftDeviceCodes);
+        var navigation = new NavigationService(settings, paths, fileDialogs, minecraftDiscovery, instanceManagement, gameDirectories, rootFolders, selections, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, modpackExport, loaderProcessorRunner, fileCompleter, localModUpdates, javaDiscovery, javaSelector, launchPipeline, legacyLogin, login, prompts, uiDispatcher, logger, help, helpActions, linkService, linkBackend, linkProcess, clipboard, updateCheck, featureHub, folders, urls, memoryOptimizer, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, microsoftDeviceCodes);
         helpActions.SetEventHandler(HelpActionService.EventSwitchPage, (eventData, cancellationToken) =>
         {
             if (!HelpActionService.TryMapOldPclPageRoute(eventData.Split('|', StringSplitOptions.TrimEntries).FirstOrDefault() ?? "", out var route, out var message))

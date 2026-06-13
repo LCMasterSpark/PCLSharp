@@ -17,6 +17,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private readonly IFileDialogService? _fileDialogs;
     private readonly ILinkProcessService? _linkProcess;
     private readonly IUiDispatcherService? _dispatcher;
+    private readonly IClipboardService? _clipboard;
     private LinkBackendLaunchPlan? _currentPlan;
 
     public LinkPageViewModel(
@@ -27,7 +28,8 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         ILinkBackendService? linkBackend = null,
         IFileDialogService? fileDialogs = null,
         ILinkProcessService? linkProcess = null,
-        IUiDispatcherService? dispatcher = null)
+        IUiDispatcherService? dispatcher = null,
+        IClipboardService? clipboard = null)
         : base(PageRoute.Link, "陶瓦联机", "Terracotta / EasyTier 联机入口")
     {
         _linkService = linkService;
@@ -38,6 +40,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         _fileDialogs = fileDialogs;
         _linkProcess = linkProcess;
         _dispatcher = dispatcher;
+        _clipboard = clipboard;
         if (_linkProcess is not null)
         {
             _linkProcess.SnapshotChanged += HandleProcessSnapshotChanged;
@@ -120,6 +123,27 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private string linkProcessLogText = "联机后端输出会显示在这里。";
 
     public bool HasUrlService => _urls is not null;
+
+    [RelayCommand]
+    private void CopyInviteCode()
+    {
+        var text = string.IsNullOrWhiteSpace(GeneratedInviteCode)
+            ? InviteCodeInput
+            : GeneratedInviteCode;
+        CopyText(text, "邀请码");
+    }
+
+    [RelayCommand]
+    private void CopyShareText()
+    {
+        CopyText(ShareText, "分享文本");
+    }
+
+    [RelayCommand]
+    private void CopyLaunchPlan()
+    {
+        CopyText(BackendPlanText, "启动计划");
+    }
 
     [RelayCommand]
     private async Task CreateRoomAsync()
@@ -338,6 +362,32 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         LinkConnectionStatusText = "联机后端未运行。";
         LinkConnectedPeersText = "暂无已连接节点。";
         StatusMessage = message;
+    }
+
+    private void CopyText(string text, string displayName)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            StatusMessage = $"暂无可复制的{displayName}。";
+            return;
+        }
+
+        if (_clipboard is null)
+        {
+            StatusMessage = "当前环境没有可用的剪贴板服务。";
+            return;
+        }
+
+        try
+        {
+            _clipboard.SetText(text);
+            StatusMessage = $"{displayName}已复制。";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"{displayName}复制失败：" + ex.Message;
+            _logger.Error(ex, displayName + "复制失败");
+        }
     }
 
     private string GetSelectedExecutablePath()

@@ -346,6 +346,56 @@ public sealed class PclLinkServiceTests
         Assert.Contains("已就绪", viewModel.BackendStatusText, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task LinkPageViewModelCopiesInviteAndShareText()
+    {
+        using var temp = new TempDirectory();
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        var clipboard = new CaptureClipboardService();
+        var viewModel = new LinkPageViewModel(
+            new PclLinkService(),
+            settings,
+            new NullLoggerService(),
+            linkBackend: CreateLinkBackendService(),
+            clipboard: clipboard);
+
+        await viewModel.CreateRoomCommand.ExecuteAsync(null);
+        viewModel.CopyInviteCodeCommand.Execute(null);
+
+        Assert.Equal(viewModel.GeneratedInviteCode, clipboard.LastText);
+        Assert.Contains("已复制", viewModel.StatusMessage, StringComparison.Ordinal);
+
+        viewModel.CopyShareTextCommand.Execute(null);
+
+        Assert.Equal(viewModel.ShareText, clipboard.LastText);
+        Assert.Contains(viewModel.GeneratedInviteCode, clipboard.LastText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LinkPageViewModelCopiesLaunchPlan()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "terracotta.exe");
+        File.WriteAllText(executable, "");
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        var clipboard = new CaptureClipboardService();
+        var viewModel = new LinkPageViewModel(
+            new PclLinkService(),
+            settings,
+            new NullLoggerService(),
+            linkBackend: CreateLinkBackendService(),
+            fileDialogs: new ExecutableFileDialogService(executable),
+            clipboard: clipboard);
+
+        await viewModel.PickSelectedBackendExecutableCommand.ExecuteAsync(null);
+        await viewModel.CreateRoomCommand.ExecuteAsync(null);
+        viewModel.CopyLaunchPlanCommand.Execute(null);
+
+        Assert.Equal(viewModel.BackendPlanText, clipboard.LastText);
+        Assert.Contains("计划参数", clipboard.LastText, StringComparison.Ordinal);
+        Assert.Contains("已复制", viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
     private sealed class ExecutableFileDialogService(string executablePath) : IFileDialogService
     {
         public string? PickFolder(string title, string initialDirectory) => null;
@@ -408,6 +458,16 @@ public sealed class PclLinkServiceTests
         public LinkPortAllocation Allocate(int minecraftPort)
         {
             return new LinkPortAllocation(25570, 25571, 25572);
+        }
+    }
+
+    private sealed class CaptureClipboardService : IClipboardService
+    {
+        public string LastText { get; private set; } = "";
+
+        public void SetText(string text)
+        {
+            LastText = text;
         }
     }
 
