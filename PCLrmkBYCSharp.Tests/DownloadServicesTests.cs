@@ -2052,6 +2052,9 @@ public sealed class DownloadServicesTests
             new FakeMinecraftClientDownloadService(),
             manager,
             folders: folders);
+        Assert.Contains("暂无下载任务", viewModel.DownloadTaskOverviewText);
+        Assert.Contains("选择一个任务", viewModel.SelectedDownloadTaskActionHint);
+
         manager.AddSnapshot(new DownloadTaskSnapshot("资源下载", DownloadTaskState.Running, 1, 0, 0, 0, "下载中")
         {
             CanCancel = true,
@@ -2065,6 +2068,10 @@ public sealed class DownloadServicesTests
         Assert.Equal("已接收：0 B", viewModel.SelectedDownloadTaskBytesText);
         Assert.Contains(file.LocalPath, viewModel.SelectedDownloadTaskPathText);
         Assert.Contains("下载中", viewModel.SelectedDownloadTaskMessage);
+        Assert.Contains("运行中 1 个", viewModel.DownloadTaskOverviewText);
+        Assert.Contains("可以取消", viewModel.SelectedDownloadTaskActionHint);
+        viewModel.SelectedSection = viewModel.Sections.Single(section => section.Section == DownloadSection.Manager);
+        Assert.Contains("当前任务：资源下载", viewModel.DownloadInfoDetails);
 
         viewModel.CancelSelectedDownloadTaskCommand.Execute(null);
         viewModel.OpenSelectedDownloadTaskFolderCommand.Execute(null);
@@ -2079,10 +2086,12 @@ public sealed class DownloadServicesTests
         }, [file]);
         Assert.Equal("失败", viewModel.SelectedDownloadTaskStateText);
         Assert.Contains("失败", viewModel.SelectedDownloadTaskMessage);
+        Assert.Contains("可以重试", viewModel.SelectedDownloadTaskActionHint);
 
         await viewModel.RetrySelectedDownloadTaskAsync();
 
         Assert.Equal("已完成", viewModel.SelectedDownloadTaskStateText);
+        Assert.Contains("可以打开文件位置", viewModel.SelectedDownloadTaskActionHint);
         Assert.Equal(1, manager.RetryCount);
         Assert.Contains("已重试下载任务", viewModel.StatusMessage);
     }

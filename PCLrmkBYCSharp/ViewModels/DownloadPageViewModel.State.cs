@@ -184,6 +184,19 @@ public sealed partial class DownloadPageViewModel
 
     public string DownloadedBytesText => FormatByteSize(DownloadTasks.Sum(task => task.BytesReceived));
 
+    public string DownloadTaskOverviewText
+    {
+        get
+        {
+            if (DownloadTasks.Count == 0)
+            {
+                return "暂无下载任务。下载原版、Mod 或整合包后会在这里集中管理。";
+            }
+
+            return $"任务 {DownloadTaskCount} 个，运行中 {RunningTaskCount} 个，失败 {FailedTaskCount} 个，整体 {OverallTaskProgressText}";
+        }
+    }
+
     public bool HasSelectedDownloadTask => SelectedDownloadTask is not null;
 
     public string SelectedDownloadTaskStateText => SelectedDownloadTask?.State switch
@@ -215,6 +228,27 @@ public sealed partial class DownloadPageViewModel
     public string SelectedDownloadTaskMessage => string.IsNullOrWhiteSpace(SelectedDownloadTask?.Message)
         ? "暂无详细信息"
         : SelectedDownloadTask.Message;
+
+    public string SelectedDownloadTaskActionHint
+    {
+        get
+        {
+            if (SelectedDownloadTask is null)
+            {
+                return "选择一个任务后可查看文件位置、取消运行中的任务，或重试失败任务。";
+            }
+
+            return SelectedDownloadTask.State switch
+            {
+                DownloadTaskState.Waiting => "任务正在等待调度，可以取消。",
+                DownloadTaskState.Running => "任务正在下载，可以取消；完成后可打开文件位置。",
+                DownloadTaskState.Succeeded => "任务已完成，可以打开文件位置或清理已结束任务。",
+                DownloadTaskState.Failed => "任务失败，可以重试或打开位置查看残留文件。",
+                DownloadTaskState.Canceled => "任务已取消，如保留了文件列表可以重试。",
+                _ => "可根据任务状态执行取消、重试或打开位置。"
+            };
+        }
+    }
 
     public bool IsInstallSection => SelectedSection.Section == DownloadSection.Install;
 
@@ -475,7 +509,7 @@ public sealed partial class DownloadPageViewModel
     public string DownloadInfoDetails => SelectedSection.Section switch
     {
         DownloadSection.Install => $"分类：{SelectedVersionCategory}\n版本类型：{SelectedVersion?.TypeText ?? "未选择"}\n安装方式：{SelectedInstallMode}\n目标实例：{InstanceVersionSafeName}\n版本数：{VersionCount}\n列表会在启动器打开后自动预热一次，手动刷新仍可重新获取。",
-        DownloadSection.Manager => $"总体进度：{OverallTaskProgressText}\n文件：{DownloadedFileCountText}\n已接收：{DownloadedBytesText}\n任务列表、取消、重试和打开位置请在“下载管理”页操作。",
+        DownloadSection.Manager => $"{DownloadTaskOverviewText}\n文件：{DownloadedFileCountText}\n已接收：{DownloadedBytesText}\n当前任务：{SelectedDownloadTask?.Name ?? "未选择"}\n{SelectedDownloadTaskActionHint}",
         _ => $"{SelectedResourceDetail}\n{SelectedResourcePlatformText}\n{SelectedResourceGameVersionText}\n{SelectedResourceLoaderText}\n{SelectedResourceVersionSummary}\n{SelectedResourceDependencyText}\n{SelectedResourceDependencyListText}\n{SelectedResourceFileSummary}\n{SelectedResourceDownloadPlanText}\n{ResourceInstallTarget}"
     };
 

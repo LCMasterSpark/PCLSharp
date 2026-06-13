@@ -712,6 +712,10 @@
                             <TextBlock Text="{Binding OverallTaskProgressText, StringFormat=总体进度：{0}}"
                                        Margin="0,8,0,0"
                                        Foreground="{StaticResource AppMutedTextBrush}" />
+                            <TextBlock Text="{Binding DownloadTaskOverviewText}"
+                                       Margin="0,8,0,0"
+                                       TextWrapping="Wrap"
+                                       Foreground="{StaticResource AppAccentBrush}" />
                             <TextBlock Text="{Binding DownloadedFileCountText, StringFormat=文件：{0}}"
                                        Margin="0,4,0,0"
                                        Foreground="{StaticResource AppMutedTextBrush}" />
@@ -767,6 +771,10 @@
                                     CornerRadius="4">
                                 <DockPanel>
                                     <StackPanel DockPanel.Dock="Bottom" Margin="0,12,0,0">
+                                        <TextBlock Text="{Binding SelectedDownloadTaskActionHint}"
+                                                   Margin="0,0,0,10"
+                                                   TextWrapping="Wrap"
+                                                   Foreground="{StaticResource AppMutedTextBrush}" />
                                         <Button Content="取消"
                                                 Command="{Binding CancelSelectedDownloadTaskCommand}" />
                                         <Button Content="重试"
@@ -777,6 +785,10 @@
                                                 Command="{Binding OpenSelectedDownloadTaskFolderCommand}" />
                                     </StackPanel>
                                     <StackPanel>
+                                        <TextBlock Text="任务详情"
+                                                   Margin="0,0,0,10"
+                                                   FontSize="16"
+                                                   FontWeight="SemiBold" />
                                         <DockPanel>
                                             <TextBlock Text="{Binding SelectedDownloadTaskStateText}"
                                                        FontWeight="SemiBold"

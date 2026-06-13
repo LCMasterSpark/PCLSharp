@@ -74,6 +74,7 @@ public sealed partial class DownloadPageViewModel
         OnPropertyChanged(nameof(OverallTaskProgressText));
         OnPropertyChanged(nameof(DownloadedFileCountText));
         OnPropertyChanged(nameof(DownloadedBytesText));
+        OnPropertyChanged(nameof(DownloadTaskOverviewText));
         NotifySelectedDownloadTaskDetailsChanged();
         NotifySelectedResourceDownloadStateChanged();
         NotifyDownloadInfoChanged();
@@ -174,6 +175,7 @@ public sealed partial class DownloadPageViewModel
         OnPropertyChanged(nameof(SelectedDownloadTaskBytesText));
         OnPropertyChanged(nameof(SelectedDownloadTaskPathText));
         OnPropertyChanged(nameof(SelectedDownloadTaskMessage));
+        OnPropertyChanged(nameof(SelectedDownloadTaskActionHint));
     }
 
     private int IndexOfDownloadTask(string name)
