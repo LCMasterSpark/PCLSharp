@@ -9,7 +9,7 @@ public sealed class NativesExtractor(IAppLoggerService logger) : INativesExtract
 {
     public Task<string> ExtractAsync(MinecraftInstance instance, CancellationToken cancellationToken = default)
     {
-        var nativesDirectory = Path.Combine(instance.VersionPath, $"{instance.Name}-natives");
+        var nativesDirectory = LaunchNativesPath.GetDirectory(instance, ensureCreated: true);
         Directory.CreateDirectory(nativesDirectory);
         var extractedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var document in LoadVersionDocuments(instance))

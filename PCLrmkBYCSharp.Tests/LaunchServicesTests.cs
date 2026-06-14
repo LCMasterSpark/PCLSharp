@@ -362,6 +362,33 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public void LaunchArgumentBuilderCreatesNativesDirectoryBeforeShorteningPath()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "Forge Child", """
+        {
+          "id": "Forge Child",
+          "type": "release",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "cpw.mods.bootstraplauncher.BootstrapLauncher",
+          "arguments": {
+            "jvm": ["-Djava.library.path=${natives_directory}"],
+            "game": ["--username", "${auth_player_name}"]
+          },
+          "libraries": []
+        }
+        """, createJar: true);
+        var nativesDirectory = Path.Combine(instance.VersionPath, "Forge Child-natives");
+        Assert.False(Directory.Exists(nativesDirectory));
+        var builder = new LaunchArgumentBuilder();
+
+        var result = builder.Build(CreateRequest(instance, temp.Path), CreateJava("C:\\Java17\\bin\\java.exe", 17), new LegacyLoginService().CreateSession("Alex"));
+
+        Assert.True(Directory.Exists(nativesDirectory));
+        Assert.Contains(MeloongCore.PathUtils.ToShortPath(nativesDirectory), result.Arguments);
+    }
+
+    [Fact]
     public void LaunchArgumentBuilderLetsLaterGameOptionsOverrideEarlierValuesLikeOldPcl()
     {
         using var temp = new TempDirectory();

@@ -901,7 +901,7 @@ public sealed partial class LaunchArgumentBuilder(
 
     private static string GetNativesDirectory(MinecraftInstance instance)
     {
-        return Path.Combine(instance.VersionPath, $"{instance.Name}-natives");
+        return LaunchNativesPath.GetDirectory(instance, ensureCreated: true);
     }
 
     private static string ReplaceTokens(string value, IReadOnlyDictionary<string, string> replacements)
