@@ -389,6 +389,59 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public void LaunchNativesPathFallsBackWhenShortPathIsStillNonAsciiLikeOldPcl()
+    {
+        using var temp = new TempDirectory();
+        var appData = Path.Combine(temp.Path, "AppData");
+        var programData = Path.Combine(temp.Path, "ProgramData");
+        var instance = WriteInstance(temp.Path, "中文版本", """
+        {
+          "id": "中文版本",
+          "type": "release",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """);
+
+        var directory = LaunchNativesPath.GetDirectory(
+            instance,
+            ensureCreated: true,
+            appDataDirectory: appData,
+            programDataDirectory: programData,
+            shortenPath: path => path,
+            isGbkEncoding: () => false);
+
+        Assert.Equal(Path.Combine(appData, ".minecraft", "bin", "natives"), directory);
+        Assert.True(Directory.Exists(directory));
+    }
+
+    [Fact]
+    public void LaunchNativesPathKeepsVersionDirectoryOnGbkSystemsLikeOldPcl()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "中文版本", """
+        {
+          "id": "中文版本",
+          "type": "release",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """);
+        var expected = Path.Combine(instance.VersionPath, "中文版本-natives");
+
+        var directory = LaunchNativesPath.GetDirectory(
+            instance,
+            ensureCreated: true,
+            shortenPath: path => path,
+            isGbkEncoding: () => true);
+
+        Assert.Equal(expected, directory);
+        Assert.True(Directory.Exists(directory));
+    }
+
+    [Fact]
     public void LaunchArgumentBuilderLetsLaterGameOptionsOverrideEarlierValuesLikeOldPcl()
     {
         using var temp = new TempDirectory();
