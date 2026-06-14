@@ -1,10 +1,10 @@
-using PCLrmkBYCSharp.Services.Link;
-using PCLrmkBYCSharp.Models;
-using PCLrmkBYCSharp.Services;
-using PCLrmkBYCSharp.ViewModels;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
+using PCLrmkBYCSharp.Models;
+using PCLrmkBYCSharp.Services;
+using PCLrmkBYCSharp.Services.Link;
+using PCLrmkBYCSharp.ViewModels;
 
 namespace PCLrmkBYCSharp.Tests;
 
@@ -94,6 +94,7 @@ public sealed class PclLinkServiceTests
 
         Assert.True(plan.CanStart);
         Assert.Contains("陶瓦联机", plan.DisplayName, StringComparison.Ordinal);
+        Assert.Contains("创建房间", plan.Summary, StringComparison.Ordinal);
         Assert.Contains("SECRET", plan.ProcessArguments, StringComparison.Ordinal);
         Assert.Contains("network-secret=***", plan.PlannedOptions);
         Assert.DoesNotContain("SECRET", string.Join(" ", plan.PlannedOptions), StringComparison.Ordinal);
@@ -117,6 +118,7 @@ public sealed class PclLinkServiceTests
         var plan = service.CreatePlan(LinkRoomRole.Joiner, LinkProviderKind.Terracotta, invite, LinkLatencyMode.DirectFirst, "", executable);
 
         Assert.True(plan.CanStart);
+        Assert.Contains("加入房间", plan.Summary, StringComparison.Ordinal);
         Assert.Contains("--tcp-whitelist=0", plan.ProcessArguments, StringComparison.Ordinal);
         Assert.Contains("--udp-whitelist=0", plan.ProcessArguments, StringComparison.Ordinal);
         Assert.Contains("--listeners 25572", plan.ProcessArguments, StringComparison.Ordinal);

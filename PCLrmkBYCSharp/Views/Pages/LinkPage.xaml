@@ -111,7 +111,7 @@
             <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
                 <StackPanel>
                     <TextBlock Text="加入房间" FontSize="18" FontWeight="SemiBold" />
-                    <TextBlock Text="识别旧 PCL / PCL Sharp 邀请码，校验后会显示加入房间的启动计划。"
+                    <TextBlock Text="识别原 PCL / PCL Sharp 邀请码，校验后会显示加入房间的启动计划。"
                                Margin="0,6,0,14"
                                Style="{StaticResource MutedTextStyle}" />
 
@@ -148,7 +148,7 @@
 
                     <StackPanel>
                         <TextBlock Text="联机方案" FontSize="18" FontWeight="SemiBold" />
-                        <TextBlock Text="陶瓦联机作为默认入口，EasyTier 作为底层 VPN / 高级模式保留。当前阶段先完成本地后端检测和启动计划生成。"
+                        <TextBlock Text="陶瓦联机作为默认入口，EasyTier 作为底层 VPN / 高级模式保留。当前可检测本地后端、生成启动计划并启动进程。"
                                    Margin="0,6,0,16"
                                    Style="{StaticResource MutedTextStyle}" />
                     </StackPanel>
@@ -236,7 +236,7 @@
 
                             <TextBlock Grid.Row="4"
                                        Grid.ColumnSpan="2"
-                                       Text="正式打包前需要确认 Terracotta / EasyTier 的许可证与二进制分发方式；当前不会自动下载或启动外部进程。"
+                                       Text="正式打包前需要确认 Terracotta / EasyTier 的许可证与二进制分发方式；当前可手动选择后端并启动本地进程。"
                                        Margin="0,10,0,0"
                                        Style="{StaticResource MutedTextStyle}" />
                         </Grid>
@@ -336,7 +336,7 @@
         </Grid>
 
         <TextBlock Grid.Row="3"
-                   Text="联机后端契约、启动计划和近期日志已接入；端口转发、异常恢复与二进制管理将继续补齐。"
+                   Text="联机后端契约、启动计划、端口转发和近期日志已接入；二进制下载、异常恢复与节点配置会继续补齐。"
                    Margin="0,14,0,0"
                    Foreground="{StaticResource AppAccentBrush}" />
     </Grid>
