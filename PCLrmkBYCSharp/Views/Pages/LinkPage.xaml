@@ -213,12 +213,17 @@
                                         Command="{Binding PickSelectedBackendExecutableCommand}" />
                             </UniformGrid>
 
-                            <TextBlock Grid.Row="1"
-                                       Grid.ColumnSpan="2"
-                                       Text="{Binding BackendStatusText}"
-                                       Margin="0,8,0,10"
-                                       Foreground="{StaticResource AppAccentBrush}"
-                                       TextWrapping="Wrap" />
+                            <StackPanel Grid.Row="1"
+                                        Grid.ColumnSpan="2"
+                                        Margin="0,8,0,10">
+                                <TextBlock Text="{Binding BackendStatusText}"
+                                           Foreground="{StaticResource AppAccentBrush}"
+                                           TextWrapping="Wrap" />
+                                <TextBlock Text="{Binding BackendDiagnosticText}"
+                                           Margin="0,5,0,0"
+                                           FontSize="12"
+                                           Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
 
                             <TextBlock Grid.Row="2"
                                        Text="Terracotta"

@@ -112,6 +112,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private string backendStatusText = "";
 
     [ObservableProperty]
+    private string backendDiagnosticText = "";
+
+    [ObservableProperty]
     private string backendPlanText = "生成或验证房间后会在这里显示联机启动计划。";
 
     [ObservableProperty]
@@ -309,6 +312,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         BackendStatusText = status.CanStart
             ? status.Message + " 路径：" + status.ExecutablePath
             : status.Message;
+        BackendDiagnosticText = status.DiagnosticText;
     }
 
     [RelayCommand]

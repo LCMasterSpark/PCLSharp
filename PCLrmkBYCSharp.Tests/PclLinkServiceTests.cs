@@ -79,6 +79,7 @@ public sealed class PclLinkServiceTests
         Assert.False(status.CanStart);
         Assert.Equal(LinkBackendReadiness.MissingExecutable, status.Readiness);
         Assert.Contains("尚未配置", status.Message, StringComparison.Ordinal);
+        Assert.Contains("自动查找", status.DiagnosticText, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -395,6 +396,7 @@ public sealed class PclLinkServiceTests
         Assert.Equal(executable, viewModel.TerracottaExecutablePath);
         Assert.Equal(executable, settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, ""));
         Assert.Contains("已就绪", viewModel.BackendStatusText, StringComparison.Ordinal);
+        Assert.Contains("可以创建房间", viewModel.BackendDiagnosticText, StringComparison.Ordinal);
     }
 
     [Fact]
