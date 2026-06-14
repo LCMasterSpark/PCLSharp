@@ -1127,7 +1127,8 @@ public sealed class LaunchStage5BTests
             settings,
             new NullFileDialogService(),
             new LegacyLoginService(),
-            new NullLoggerService());
+            new NullLoggerService(),
+            prompts: new TestPromptService(confirm: true));
 
         await viewModel.InitializeAsync();
 
@@ -1166,7 +1167,8 @@ public sealed class LaunchStage5BTests
             settings,
             new NullFileDialogService(),
             new LegacyLoginService(),
-            new NullLoggerService());
+            new NullLoggerService(),
+            prompts: new TestPromptService(confirm: true));
 
         await viewModel.InitializeAsync();
         await viewModel.GenerateProfileCommand.ExecuteAsync(null);
@@ -2505,7 +2507,8 @@ public sealed class LaunchStage5BTests
             settings,
             new NullFileDialogService(),
             new LegacyLoginService(),
-            new NullLoggerService());
+            new NullLoggerService(),
+            prompts: new TestPromptService(confirm: true));
 
         viewModel.SelectedMicrosoftAccount = viewModel.MicrosoftAccounts.Single(account => account.Name == "FirstAlex");
         viewModel.SwitchMicrosoftAccountCommand.Execute(null);
@@ -2546,7 +2549,8 @@ public sealed class LaunchStage5BTests
             settings,
             new NullFileDialogService(),
             new LegacyLoginService(),
-            new NullLoggerService());
+            new NullLoggerService(),
+            prompts: new TestPromptService(confirm: true));
 
         viewModel.SelectedMicrosoftAccount = viewModel.MicrosoftAccounts.Single(account => account.Name == "FirstAlex");
         viewModel.DeleteMicrosoftAccountCommand.Execute(null);
@@ -2575,7 +2579,8 @@ public sealed class LaunchStage5BTests
             settings,
             new NullFileDialogService(),
             new LegacyLoginService(),
-            new NullLoggerService());
+            new NullLoggerService(),
+            prompts: new TestPromptService(confirm: true));
 
         Assert.Contains(viewModel.MicrosoftAccounts, account => account.Name == "LegacyAlex" && account.RefreshToken == "legacy-refresh");
 

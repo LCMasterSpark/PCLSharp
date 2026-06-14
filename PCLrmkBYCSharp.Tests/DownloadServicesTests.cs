@@ -2140,6 +2140,7 @@ public sealed class DownloadServicesTests
             temp.Path,
             new FakeMinecraftClientDownloadService(),
             manager,
+            prompts: new CapturePromptService(confirmationResult: true),
             folders: folders);
         Assert.Contains("暂无下载任务", viewModel.DownloadTaskOverviewText);
         Assert.Contains("选择一个任务", viewModel.SelectedDownloadTaskActionHint);
@@ -2193,7 +2194,8 @@ public sealed class DownloadServicesTests
         var viewModel = CreateDownloadPageViewModel(
             temp.Path,
             new FakeMinecraftClientDownloadService(),
-            manager);
+            manager,
+            prompts: new CapturePromptService(confirmationResult: true));
         manager.AddSnapshot(new DownloadTaskSnapshot("A", DownloadTaskState.Running, 2, 0, 0, 0, "A 0")
         {
             CanCancel = true
@@ -2226,7 +2228,8 @@ public sealed class DownloadServicesTests
         var viewModel = CreateDownloadPageViewModel(
             temp.Path,
             new FakeMinecraftClientDownloadService(),
-            manager);
+            manager,
+            prompts: new CapturePromptService(confirmationResult: true));
         manager.AddSnapshot(new DownloadTaskSnapshot("running", DownloadTaskState.Running, 2, 1, 1024, 0.5, "running")
         {
             CanCancel = true
@@ -3180,6 +3183,7 @@ public sealed class DownloadServicesTests
         INeoForgeLoaderInstallService? neoForgeLoaderInstall = null,
         IFolderOpenService? folders = null,
         IExternalUrlService? urls = null,
+        IUserPromptService? prompts = null,
         IUiDispatcherService? dispatcher = null)
     {
         var settings = new AppSettingsService(new TestAppPathService(Path.Combine(root, "appdata")));
@@ -3202,6 +3206,7 @@ public sealed class DownloadServicesTests
             minecraftDiscovery ?? new FakeMinecraftDiscoveryService(root),
             fileDialogs ?? new NullFileDialogService(),
             new NullLoggerService(),
+            prompts: prompts,
             loaderVersions: loaderVersions,
             fabricLoaderInstall: fabricLoaderInstall,
             quiltLoaderInstall: quiltLoaderInstall,

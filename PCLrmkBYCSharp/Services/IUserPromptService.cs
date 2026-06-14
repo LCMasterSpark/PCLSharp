@@ -30,7 +30,7 @@ public sealed class UserPromptService : IUserPromptService
         var dispatcher = Application.Current?.Dispatcher;
         if (dispatcher is null)
         {
-            return UserPromptRequest.CreateCompleted(title, message, defaultValue, acceptsInput, confirmed: true);
+            return UserPromptRequest.CreateCompleted(title, message, defaultValue, acceptsInput, confirmed: false);
         }
 
         return dispatcher.CheckAccess()
