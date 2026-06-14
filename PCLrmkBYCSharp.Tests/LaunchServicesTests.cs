@@ -92,6 +92,49 @@ public sealed class LaunchServicesTests
         Assert.DoesNotContain("stale report", issue.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task LaunchPipelineDiagnosesTooNewJavaWhenForgeGameStopsEarly()
+    {
+        using var temp = new TempDirectory();
+        CreateEmptyAssetIndex(temp.Path, "5");
+        var instance = WriteInstance(temp.Path, "ForgePack", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "assetIndex": { "id": "5" },
+          "libraries": [
+            { "name": "net.minecraftforge:forge:1.20.1-47.2.32" }
+          ]
+        }
+        """, createJar: true);
+        var forgeJar = Path.Combine(temp.Path, "libraries", "net", "minecraftforge", "forge", "1.20.1-47.2.32", "forge-1.20.1-47.2.32.jar");
+        Directory.CreateDirectory(Path.GetDirectoryName(forgeJar)!);
+        File.WriteAllText(forgeJar, "");
+        var java25 = new JavaEntry(Path.Combine(temp.Path, "java25", "bin", "java.exe"), new Version(25, 0, 2), false, true, true, false);
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        settings.Set($"Instance.{instance.Name}.{AppSettingKeys.VersionAdvanceJava}", true);
+        var watcher = new FakeGameProcessWatcher(GameProcessWatchResult.Exited(
+            1,
+            [],
+            [
+                "[Render thread/INFO]: Stopping!",
+                "[Render thread/ERROR]: Shutdown failure!"
+            ]));
+        var pipeline = CreatePipeline(
+            new FakeJavaDiscoveryService([java25]),
+            new FakeProcessLauncher(),
+            settings: settings,
+            gameProcessWatcher: watcher);
+
+        var result = await pipeline.LaunchAsync(CreateRequest(instance, temp.Path) with { JavaPath = java25.PathJava, StartProcess = true });
+
+        var issue = Assert.Single(result.Issues, issue => issue.Code == "GameExitedEarly");
+        Assert.False(result.Success);
+        Assert.Contains("当前使用 Java 25", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("切换到 Java 17", issue.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("java version \"1.8.0_321\"\r\nJava(TM) 64-Bit Server VM", 8, true)]
     [InlineData("openjdk version \"17.0.8\" 2023-07-18\r\nOpenJDK 64-Bit Server VM", 17, true)]

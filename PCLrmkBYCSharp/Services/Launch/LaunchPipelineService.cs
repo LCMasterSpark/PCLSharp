@@ -497,7 +497,7 @@ public sealed class LaunchPipelineService : ILaunchPipelineService
             .Concat(crashReportTail)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .ToArray();
-        var diagnosis = DiagnoseGameExit(combinedTail);
+        var diagnosis = DiagnoseGameExit(profile, combinedTail);
         var message = $"游戏进程很快退出，退出码：{watchResult.ExitCode}；Java：{profile.Java.DisplayName}；游戏目录：{profile.ProcessStartInfo.WorkingDirectory}";
         if (!string.IsNullOrWhiteSpace(diagnosis))
         {
@@ -515,7 +515,7 @@ public sealed class LaunchPipelineService : ILaunchPipelineService
         return new LaunchValidationIssue("GameExitedEarly", message);
     }
 
-    private static string DiagnoseGameExit(IReadOnlyList<string> logTail)
+    private static string DiagnoseGameExit(LaunchProfile profile, IReadOnlyList<string> logTail)
     {
         var text = string.Join('\n', logTail);
         if (string.IsNullOrWhiteSpace(text))
@@ -589,7 +589,30 @@ public sealed class LaunchPipelineService : ILaunchPipelineService
             return "启动主类缺失，版本 JSON、客户端 jar 或加载器安装可能不完整";
         }
 
+        var javaTooNewDiagnosis = DiagnoseJavaTooNew(profile);
+        if (!string.IsNullOrWhiteSpace(javaTooNewDiagnosis))
+        {
+            return javaTooNewDiagnosis;
+        }
+
         return "游戏自行退出，建议查看下方最近日志或完整日志文件";
+    }
+
+    private static string DiagnoseJavaTooNew(LaunchProfile profile)
+    {
+        var requirement = new JavaSelectorService().GetRequirement(profile.Instance);
+        var maxMajor = requirement.MaxVersion.Major == 1
+            ? requirement.MaxVersion.Minor
+            : requirement.MaxVersion.Major;
+        if (maxMajor >= 999 || profile.Java.MajorVersion <= maxMajor)
+        {
+            return "";
+        }
+
+        var recommended = requirement.MinVersion.Major == 1
+            ? requirement.MinVersion.Minor
+            : requirement.MinVersion.Major;
+        return $"当前使用 Java {profile.Java.MajorVersion}，高于该版本推荐的 Java {recommended}；Forge、Mixin 或部分 Mod 可能不兼容过新的 Java，请切换到 Java {recommended} 后重试";
     }
 
     private static IReadOnlyList<string> ReadLatestGameLogTail(LaunchProfile profile)
