@@ -21,7 +21,8 @@ public sealed class OtherPageViewModelTests
         var clipboard = new CaptureClipboardService();
         var reportPath = System.IO.Path.Combine(temp.Path, ".minecraft", "crash-reports", "crash-test.txt");
         var featureHub = new FakeFeatureHubService(reportPath);
-        var viewModel = new OtherPageViewModel(paths, helpService, new NullLoggerService(), actions, featureHub: featureHub, folders: folders, clipboard: clipboard);
+        var files = new CaptureFileOpenService();
+        var viewModel = new OtherPageViewModel(paths, helpService, new NullLoggerService(), actions, featureHub: featureHub, folders: folders, files: files, clipboard: clipboard);
 
         await viewModel.OnNavigatedToAsync();
         viewModel.HelpSearchText = "marker";
@@ -61,6 +62,11 @@ public sealed class OtherPageViewModelTests
 
         Assert.Equal(System.IO.Path.GetDirectoryName(reportPath), folders.OpenedFolders.Last());
         Assert.Contains("已打开报告目录", viewModel.CrashAnalysisText, StringComparison.Ordinal);
+
+        viewModel.OpenCrashReportFileCommand.Execute(null);
+
+        Assert.Equal(reportPath, files.LastFile);
+        Assert.Contains("已打开报告文件", viewModel.CrashAnalysisText, StringComparison.Ordinal);
 
         viewModel.CopyCrashAnalysisCommand.Execute(null);
 
@@ -354,6 +360,16 @@ public sealed class OtherPageViewModelTests
         public void OpenFolder(string folderPath)
         {
             OpenedFolders.Add(folderPath);
+        }
+    }
+
+    private sealed class CaptureFileOpenService : IFileOpenService
+    {
+        public string LastFile { get; private set; } = "";
+
+        public void OpenFile(string filePath)
+        {
+            LastFile = filePath;
         }
     }
 

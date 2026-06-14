@@ -30,6 +30,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private readonly IAppUpdateCheckService? _updateCheck;
     private readonly IFeatureHubService? _featureHub;
     private readonly IFolderOpenService? _folders;
+    private readonly IFileOpenService? _files;
     private readonly IClipboardService? _clipboard;
     private int _doNotClickCount;
     private IReadOnlyList<HelpEntry> _allHelpEntries = [];
@@ -120,6 +121,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         IAppUpdateCheckService? updateCheck = null,
         IFeatureHubService? featureHub = null,
         IFolderOpenService? folders = null,
+        IFileOpenService? files = null,
         IClipboardService? clipboard = null)
         : base(PageRoute.Other, "更多", "帮助、关于、诊断、反馈与维护工具")
     {
@@ -135,6 +137,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         _updateCheck = updateCheck;
         _featureHub = featureHub;
         _folders = folders;
+        _files = files;
         _clipboard = clipboard;
         RegisterHelpEventHandlers();
         var assembly = typeof(OtherPageViewModel).Assembly;
@@ -376,6 +379,33 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         {
             _logger?.Error(ex, "打开崩溃报告目录失败");
             CrashAnalysisText = "打开崩溃报告目录失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenCrashReportFile()
+    {
+        if (string.IsNullOrWhiteSpace(_latestCrashAnalysis?.LatestReportPath))
+        {
+            CrashAnalysisText = "尚未发现可打开的崩溃报告。";
+            return;
+        }
+
+        if (_files is null)
+        {
+            CrashAnalysisText = "文件打开服务未初始化。";
+            return;
+        }
+
+        try
+        {
+            _files.OpenFile(_latestCrashAnalysis.LatestReportPath);
+            CrashAnalysisText = BuildCrashAnalysisText(_latestCrashAnalysis) + "\n已打开报告文件。";
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "打开崩溃报告文件失败");
+            CrashAnalysisText = "打开崩溃报告文件失败：" + ex.Message;
         }
     }
 
