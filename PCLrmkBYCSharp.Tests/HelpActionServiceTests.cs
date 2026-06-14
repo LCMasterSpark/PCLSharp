@@ -37,7 +37,7 @@ public sealed class HelpActionServiceTests
     }
 
     [Fact]
-    public async Task HelpActionServiceShowsMessageBoxEvents()
+    public async Task HelpActionServiceShowsMessageBoxEventsThroughInjectedOverlayAction()
     {
         string? title = null;
         string? message = null;
