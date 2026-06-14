@@ -428,6 +428,25 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         CrashAnalysisText = BuildCrashAnalysisText(_latestCrashAnalysis) + "\n崩溃诊断已复制到剪贴板。";
     }
 
+    [RelayCommand]
+    private void CopyAccountSummary()
+    {
+        if (_clipboard is null)
+        {
+            AccountCenterText = "剪贴板服务未初始化。";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(AccountCenterText))
+        {
+            AccountCenterText = "账号管理中心还没有可复制的摘要。";
+            return;
+        }
+
+        _clipboard.SetText("Plain Craft Launcher Sharp 账号摘要" + Environment.NewLine + AccountCenterText);
+        AccountCenterText += "\n账号摘要已复制到剪贴板。";
+    }
+
     public override async Task OnNavigatedToAsync()
     {
         if (_help is null || _allHelpEntries.Count > 0)

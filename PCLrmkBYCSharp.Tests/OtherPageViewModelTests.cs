@@ -74,6 +74,14 @@ public sealed class OtherPageViewModelTests
         Assert.Contains(reportPath, clipboard.Text, StringComparison.Ordinal);
         Assert.Contains("崩溃诊断已复制", viewModel.CrashAnalysisText, StringComparison.Ordinal);
 
+        viewModel.CopyAccountSummaryCommand.Execute(null);
+
+        Assert.Contains("Plain Craft Launcher Sharp 账号摘要", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("当前登录：Legacy", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("显示名称：Steve", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("缓存账号：0", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("账号摘要已复制", viewModel.AccountCenterText, StringComparison.Ordinal);
+
         var help = Assert.Single(viewModel.HelpResults);
         Assert.Equal("marker help", help.Title);
         Assert.Contains("marker help", viewModel.SelectedHelpPreview, StringComparison.Ordinal);
