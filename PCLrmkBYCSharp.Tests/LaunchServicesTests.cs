@@ -2084,6 +2084,41 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public async Task LaunchPatchServiceCopiesRequiredPatchFilesAndLogsReadableMessage()
+    {
+        using var temp = new TempDirectory();
+        var sourceDirectory = Path.Combine(temp.Path, "patches");
+        Directory.CreateDirectory(sourceDirectory);
+        File.WriteAllText(Path.Combine(sourceDirectory, "java-wrapper.jar"), "wrapper");
+        File.WriteAllText(Path.Combine(sourceDirectory, "lwjgl-unsafe-agent.jar"), "lua");
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var profile = new LaunchProfile(
+            instance,
+            CreateJava("C:\\Java17\\bin\\java.exe", 17),
+            new LegacyLoginService().CreateSession("Alex"),
+            "-jar JavaWrapper.jar -javaagent:LUA.jar",
+            "",
+            new ProcessStartInfo("java.exe"),
+            []);
+        var logger = new CaptureLoggerService();
+        var service = new LaunchPatchService(logger, sourceDirectory);
+
+        var result = await service.PrepareAsync(profile);
+
+        Assert.True(result.Success);
+        Assert.True(File.Exists(Path.Combine(instance.VersionPath, "JavaWrapper.jar")));
+        Assert.True(File.Exists(Path.Combine(instance.VersionPath, "LUA.jar")));
+        Assert.Contains(logger.Messages, message => message.StartsWith("已准备启动补丁文件：", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task LaunchFileCompleterPlansLibrariesAssetIndexAndAssets()
     {
         using var temp = new TempDirectory();
