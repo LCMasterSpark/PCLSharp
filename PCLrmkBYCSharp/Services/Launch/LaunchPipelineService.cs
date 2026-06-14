@@ -5,10 +5,23 @@ using PCLrmkBYCSharp.Services.Downloads;
 
 namespace PCLrmkBYCSharp.Services.Launch;
 
-public sealed class LaunchPipelineService
-    : ILaunchPipelineService
+public sealed class LaunchPipelineService : ILaunchPipelineService
 {
+    private const string StepPreCheck = "预检测";
+    private const string StepJava = "获取 Java";
+    private const string StepLogin = "登录";
     private const string StepFileCompletion = "补全文件";
+    private const string StepLocalFileCheck = "本地缺失检查";
+    private const string StepArguments = "获取启动参数";
+    private const string StepMemory = "内存优化";
+    private const string StepNatives = "解压文件";
+    private const string StepPreRun = "预启动处理";
+    private const string StepPatches = "准备补丁文件";
+    private const string StepCustomCommand = "执行自定义命令";
+    private const string StepProcess = "启动进程";
+    private const string StepWatchWindow = "等待游戏窗口";
+    private const string StepFinish = "结束处理";
+
     private readonly IJavaDiscoveryService _javaDiscovery;
     private readonly IJavaSelectorService _javaSelector;
     private readonly ILoginService _login;
@@ -98,60 +111,61 @@ public sealed class LaunchPipelineService
         var issues = ValidateRequest(request);
         if (issues.Count > 0)
         {
-            SetStep("预检测", LaunchStepStatus.Failed, issues[0].Message);
+            SetStep(StepPreCheck, LaunchStepStatus.Failed, issues[0].Message);
             return LaunchResult.Failed(issues.ToArray());
         }
 
         var instance = request.Instance!;
-        SetStep("预检测", LaunchStepStatus.Succeeded, "预检测已通过");
+        SetStep(StepPreCheck, LaunchStepStatus.Succeeded, "预检测已通过");
 
-        SetStep("获取 Java", LaunchStepStatus.Running, "正在选择 Java");
+        SetStep(StepJava, LaunchStepStatus.Running, "正在选择 Java");
         var javaCandidates = await GetJavaCandidatesAsync(request, instance, cancellationToken).ConfigureAwait(false);
         var java = SelectJava(request, instance, javaCandidates);
         if (java is null)
         {
             var requirement = _javaSelector.GetRequirement(instance);
             var issue = new LaunchValidationIssue("JavaNotFound", $"未找到满足 {requirement.DisplayText} 的 Java");
-            SetStep("获取 Java", LaunchStepStatus.Failed, issue.Message);
+            SetStep(StepJava, LaunchStepStatus.Failed, issue.Message);
             return LaunchResult.Failed(issue);
         }
 
-        SetStep("获取 Java", LaunchStepStatus.Succeeded, java.DisplayName);
+        SetStep(StepJava, LaunchStepStatus.Succeeded, java.DisplayName);
 
-        SetStep("登录", LaunchStepStatus.Running, "正在登录");
+        SetStep(StepLogin, LaunchStepStatus.Running, "正在登录");
         LoginSession login;
         try
         {
             login = await _login.LoginAsync(CreateLoginRequest(request), cancellationToken).ConfigureAwait(false);
-            SetStep("登录", LaunchStepStatus.Succeeded, login.UserName);
+            SetStep(StepLogin, LaunchStepStatus.Succeeded, login.UserName);
         }
         catch (Exception ex)
         {
             var issue = new LaunchValidationIssue("LoginInvalid", ex.Message);
-            SetStep("登录", LaunchStepStatus.Failed, issue.Message);
+            SetStep(StepLogin, LaunchStepStatus.Failed, issue.Message);
             return LaunchResult.Failed(issue);
         }
 
         SetStep(StepFileCompletion, LaunchStepStatus.Skipped, "生成参数模式不下载文件");
-        SetStep("获取启动参数", LaunchStepStatus.Running, "正在生成启动参数");
+        SetStep(StepArguments, LaunchStepStatus.Running, "正在生成启动参数");
         var arguments = _argumentBuilder.Build(request, java, login);
         IReadOnlyList<string> missingFiles;
         if (ShouldDisableFileCheck(request))
         {
             missingFiles = [];
-            SetStep("本地缺失检查", LaunchStepStatus.Skipped, "已按版本设置关闭文件校验");
+            SetStep(StepLocalFileCheck, LaunchStepStatus.Skipped, "已按版本设置关闭文件校验");
         }
         else
         {
-        var completion = await _fileCompleter.BuildCompletionPlanAsync(request, arguments.MissingFiles, cancellationToken).ConfigureAwait(false);
-        SetStep(
-            "本地缺失检查",
-            completion.MissingFiles.Count == 0 ? LaunchStepStatus.Succeeded : LaunchStepStatus.Failed,
-            completion.MissingFiles.Count == 0 ? "本地文件完整" : $"缺少 {completion.MissingFiles.Count} 个本地文件");
-        SetStep("获取启动参数", LaunchStepStatus.Succeeded, "启动参数已生成");
+            var completion = await _fileCompleter.BuildCompletionPlanAsync(request, arguments.MissingFiles, cancellationToken).ConfigureAwait(false);
+            SetStep(
+                StepLocalFileCheck,
+                completion.MissingFiles.Count == 0 ? LaunchStepStatus.Succeeded : LaunchStepStatus.Failed,
+                completion.MissingFiles.Count == 0 ? "本地文件完整" : $"缺少 {completion.MissingFiles.Count} 个本地文件");
 
             missingFiles = completion.MissingFiles;
         }
+
+        SetStep(StepArguments, LaunchStepStatus.Succeeded, "启动参数已生成");
 
         var startInfo = CreateStartInfo(request, java, arguments.Arguments);
         var profile = new LaunchProfile(
@@ -188,7 +202,7 @@ public sealed class LaunchPipelineService
                 return profileResult;
             }
 
-            SetStep("补全文件", LaunchStepStatus.Succeeded, completionResult.Message);
+            SetStep(StepFileCompletion, LaunchStepStatus.Succeeded, completionResult.Message);
             if (profileResult.Profile.MissingFiles.Count > 0)
             {
                 var sample = string.Join("、", profileResult.Profile.MissingFiles
@@ -197,91 +211,91 @@ public sealed class LaunchPipelineService
                     .Where(name => !string.IsNullOrWhiteSpace(name)));
                 var suffix = string.IsNullOrWhiteSpace(sample) ? "" : $"：{sample}";
                 var issue = new LaunchValidationIssue("MissingLocalFiles", $"已尝试自动补全，但仍缺少 {profileResult.Profile.MissingFiles.Count} 个本地文件{suffix}");
-                SetStep("本地缺失检查", LaunchStepStatus.Failed, issue.Message);
+                SetStep(StepLocalFileCheck, LaunchStepStatus.Failed, issue.Message);
                 return new LaunchResult(false, profileResult.Profile, [issue], null);
             }
         }
 
         if (ShouldOptimizeMemory(request))
         {
-            SetStep("内存优化", LaunchStepStatus.Running, "正在进行启动前内存优化");
+            SetStep(StepMemory, LaunchStepStatus.Running, "正在进行启动前内存优化");
             try
             {
                 var optimizeResult = await _memoryOptimizer.OptimizeAsync(cancellationToken).ConfigureAwait(false);
-                SetStep("内存优化", LaunchStepStatus.Succeeded, $"已处理 {optimizeResult.ProcessCount} 个进程");
+                SetStep(StepMemory, LaunchStepStatus.Succeeded, $"已处理 {optimizeResult.ProcessCount} 个进程");
             }
             catch (OperationCanceledException)
             {
-                SetStep("内存优化", LaunchStepStatus.Failed, "内存优化已取消");
+                SetStep(StepMemory, LaunchStepStatus.Failed, "内存优化已取消");
                 throw;
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "启动前内存优化失败");
                 var issue = new LaunchValidationIssue("MemoryOptimizeFailed", ex.Message);
-                SetStep("内存优化", LaunchStepStatus.Failed, issue.Message);
+                SetStep(StepMemory, LaunchStepStatus.Failed, issue.Message);
                 return new LaunchResult(false, profileResult.Profile, [issue], null);
             }
         }
         else
         {
-            SetStep("内存优化", LaunchStepStatus.Skipped, "未启用启动前内存优化");
+            SetStep(StepMemory, LaunchStepStatus.Skipped, "未启用启动前内存优化");
         }
 
-        SetStep("解压文件", LaunchStepStatus.Running, "正在解压 natives");
+        SetStep(StepNatives, LaunchStepStatus.Running, "正在解压 natives");
         await _nativesExtractor.ExtractAsync(profileResult.Profile.Instance, cancellationToken).ConfigureAwait(false);
-        SetStep("解压文件", LaunchStepStatus.Succeeded, "natives 已准备");
+        SetStep(StepNatives, LaunchStepStatus.Succeeded, "natives 已准备");
 
-        SetStep("预启动处理", LaunchStepStatus.Running, "正在更新启动前配置");
+        SetStep(StepPreRun, LaunchStepStatus.Running, "正在更新启动前配置");
         await _preRun.PrepareAsync(request, profileResult.Profile.Login, cancellationToken).ConfigureAwait(false);
-        SetStep("预启动处理", LaunchStepStatus.Succeeded, "预启动处理完成");
+        SetStep(StepPreRun, LaunchStepStatus.Succeeded, "预启动处理完成");
 
-        SetStep("准备补丁文件", LaunchStepStatus.Running, "正在准备 JLW/LUA 补丁文件");
+        SetStep(StepPatches, LaunchStepStatus.Running, "正在准备 JLW/LUA 补丁文件");
         var patchResult = await _patches.PrepareAsync(profileResult.Profile, cancellationToken).ConfigureAwait(false);
         if (!patchResult.Success)
         {
             var issue = new LaunchValidationIssue("PatchPrepareFailed", patchResult.Message);
-            SetStep("准备补丁文件", LaunchStepStatus.Failed, patchResult.Message);
+            SetStep(StepPatches, LaunchStepStatus.Failed, patchResult.Message);
             return new LaunchResult(false, profileResult.Profile, [issue], null);
         }
 
         SetStep(
-            "准备补丁文件",
+            StepPatches,
             patchResult.PreparedFiles.Count == 0 ? LaunchStepStatus.Skipped : LaunchStepStatus.Succeeded,
             patchResult.Message);
 
-        SetStep("执行自定义命令", LaunchStepStatus.Running, "正在执行自定义命令");
+        SetStep(StepCustomCommand, LaunchStepStatus.Running, "正在执行自定义命令");
         await _customCommand.RunAsync(request, profileResult.Profile, cancellationToken).ConfigureAwait(false);
-        SetStep("执行自定义命令", LaunchStepStatus.Succeeded, "自定义命令执行完成");
+        SetStep(StepCustomCommand, LaunchStepStatus.Succeeded, "自定义命令执行完成");
 
         var exported = await _scriptExporter.ExportAsync(profileResult.Profile, request.SaveBatchPath, cancellationToken).ConfigureAwait(false);
         if (exported is not null)
         {
-            SetStep("启动进程", LaunchStepStatus.Skipped, "已导出启动脚本：" + exported);
+            SetStep(StepProcess, LaunchStepStatus.Skipped, "已导出启动脚本：" + exported);
             return profileResult;
         }
 
         if (!request.StartProcess)
         {
-            SetStep("启动进程", LaunchStepStatus.Skipped, "仅生成参数，未启动进程");
+            SetStep(StepProcess, LaunchStepStatus.Skipped, "仅生成参数，未启动进程");
             return profileResult;
         }
 
-        SetStep("启动进程", LaunchStepStatus.Running, "正在启动游戏进程");
+        SetStep(StepProcess, LaunchStepStatus.Running, "正在启动游戏进程");
         try
         {
             _processConfigurator.PrepareStart(profileResult.Profile);
             var process = _processLauncher.Start(profileResult.Profile.ProcessStartInfo);
             _processConfigurator.Configure(process);
             _logger.Info($"已启动游戏进程：{profileResult.Profile.Java.PathJava}");
-            SetStep("启动进程", LaunchStepStatus.Succeeded, $"进程 ID：{process.Id}");
+            SetStep(StepProcess, LaunchStepStatus.Succeeded, $"进程 ID：{process.Id}");
 
-            SetStep("等待游戏窗口", LaunchStepStatus.Running, "正在监控游戏进程");
+            SetStep(StepWatchWindow, LaunchStepStatus.Running, "正在监控游戏进程");
             var watchResult = await _watcher.WatchAsync(process, cancellationToken).ConfigureAwait(false);
             if (watchResult.HasExited && (watchResult.ExitCode != 0 || watchResult.IsEarlyExit))
             {
                 var issue = BuildEarlyGameExitIssue(profileResult.Profile, watchResult);
-                SetStep("等待游戏窗口", LaunchStepStatus.Failed, issue.Message);
+                SetStep(StepWatchWindow, LaunchStepStatus.Failed, issue.Message);
                 return new LaunchResult(false, profileResult.Profile, [issue], process);
             }
 
@@ -296,16 +310,16 @@ public sealed class LaunchPipelineService
                 _gameWindow.ScheduleMaximize(process, TimeSpan.FromSeconds(2), cancellationToken);
             }
 
-            SetStep("等待游戏窗口", LaunchStepStatus.Succeeded, "游戏进程监控已接入");
+            SetStep(StepWatchWindow, LaunchStepStatus.Succeeded, "游戏进程监控已接入");
             _launcherVisibility.ApplyAfterLaunch(request.LauncherVisibility, process, cancellationToken);
-            SetStep("结束处理", LaunchStepStatus.Succeeded, $"启动器可见性：{request.LauncherVisibility}");
+            SetStep(StepFinish, LaunchStepStatus.Succeeded, $"启动器可见性：{request.LauncherVisibility}");
             return profileResult with { Process = process };
         }
         catch (Exception ex)
         {
             _logger.Error(ex, "启动游戏进程失败");
             var issue = new LaunchValidationIssue("ProcessStartFailed", ex.Message);
-            SetStep("启动进程", LaunchStepStatus.Failed, issue.Message);
+            SetStep(StepProcess, LaunchStepStatus.Failed, issue.Message);
             return new LaunchResult(false, profileResult.Profile, [issue], null);
         }
     }
@@ -794,20 +808,20 @@ public sealed class LaunchPipelineService
         {
             _steps.Clear();
             _steps.AddRange([
-                new LaunchStepState("预检测", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("获取 Java", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("登录", LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepPreCheck, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepJava, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepLogin, LaunchStepStatus.Waiting, ""),
                 new LaunchStepState(StepFileCompletion, LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("本地缺失检查", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("获取启动参数", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("内存优化", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("解压文件", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("预启动处理", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("准备补丁文件", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("执行自定义命令", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("启动进程", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("等待游戏窗口", LaunchStepStatus.Waiting, ""),
-                new LaunchStepState("结束处理", LaunchStepStatus.Waiting, "")
+                new LaunchStepState(StepLocalFileCheck, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepArguments, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepMemory, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepNatives, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepPreRun, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepPatches, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepCustomCommand, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepProcess, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepWatchWindow, LaunchStepStatus.Waiting, ""),
+                new LaunchStepState(StepFinish, LaunchStepStatus.Waiting, "")
             ]);
         }
 
