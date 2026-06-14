@@ -1,3 +1,5 @@
+using System.IO;
+using System.Text;
 using PCLrmkBYCSharp.Models;
 
 namespace PCLrmkBYCSharp.Services.Link;
@@ -7,15 +9,19 @@ public sealed class LinkProcessService : ILinkProcessService
     private const int MaxRecentLogLines = 10;
     private readonly ILinkProcessRunner _runner;
     private readonly IAppLoggerService _logger;
+    private readonly IAppPathService? _paths;
+    private readonly object _linkLogLock = new();
     private readonly Queue<string> _recentLogLines = new();
     private readonly List<string> _connectedPeers = new();
     private ILinkProcessHandle? _process;
+    private string? _linkLogFilePath;
     private int _connectedPeerCount;
 
-    public LinkProcessService(ILinkProcessRunner runner, IAppLoggerService logger)
+    public LinkProcessService(ILinkProcessRunner runner, IAppLoggerService logger, IAppPathService? paths = null)
     {
         _runner = runner;
         _logger = logger;
+        _paths = paths;
         Current = CreateSnapshot(LinkProcessState.Stopped, null, "联机后端未启动。", "");
     }
 
@@ -39,6 +45,7 @@ public sealed class LinkProcessService : ILinkProcessService
         {
             _recentLogLines.Clear();
             ResetConnections();
+            PrepareLinkLogFile(plan);
             var startInfo = LinkProcessRunner.CreateStartInfo(plan.ExecutablePath, plan.ProcessArguments);
             _process = _runner.Start(startInfo);
             _process.OutputReceived += HandleOutputReceived;
@@ -49,11 +56,13 @@ public sealed class LinkProcessService : ILinkProcessService
             }
 
             _logger.Info("联机后端已启动：" + BuildCommandPreview(plan));
+            WriteLinkLog("联机后端已启动，PID：" + _process.Id);
             return Publish(LinkProcessState.Running, _process.Id, "联机后端已启动。", BuildCommandPreview(plan));
         }
         catch (Exception ex)
         {
             _logger.Error(ex, "启动联机后端失败");
+            WriteLinkLog("启动联机后端失败：" + ex.Message);
             return Publish(LinkProcessState.Failed, null, "启动联机后端失败：" + ex.Message, BuildCommandPreview(plan));
         }
     }
@@ -77,11 +86,13 @@ public sealed class LinkProcessService : ILinkProcessService
             _process = null;
             ResetConnections();
             _logger.Info("联机后端已停止，PID：" + processId);
+            WriteLinkLog("联机后端已停止，PID：" + processId);
             return Publish(LinkProcessState.Stopped, null, "联机后端已停止。", Current.CommandPreview);
         }
         catch (Exception ex)
         {
             _logger.Error(ex, "停止联机后端失败");
+            WriteLinkLog("停止联机后端失败：" + ex.Message);
             return Publish(LinkProcessState.Failed, process.Id, "停止联机后端失败：" + ex.Message, Current.CommandPreview);
         }
     }
@@ -114,10 +125,12 @@ public sealed class LinkProcessService : ILinkProcessService
         if (exitCode == 0)
         {
             _logger.Info(message);
+            WriteLinkLog(message);
             return Publish(LinkProcessState.Stopped, null, message, Current.CommandPreview);
         }
 
         _logger.Warn(message);
+        WriteLinkLog(message);
         return Publish(LinkProcessState.Failed, null, message, Current.CommandPreview);
     }
 
@@ -140,6 +153,7 @@ public sealed class LinkProcessService : ILinkProcessService
             _logger.Info("联机后端：" + line);
         }
 
+        WriteLinkLog(line);
         UpdateConnectionCount(args.Line);
         var message = BuildLogMessage(args.Line, args.IsError);
         Publish(LinkProcessState.Running, _process?.Id, message, Current.CommandPreview);
@@ -168,6 +182,49 @@ public sealed class LinkProcessService : ILinkProcessService
     private static string BuildCommandPreview(LinkBackendLaunchPlan plan)
     {
         return $"\"{plan.ExecutablePath}\" " + MaskSecret(plan.ProcessArguments);
+    }
+
+    private void PrepareLinkLogFile(LinkBackendLaunchPlan plan)
+    {
+        if (_paths is null)
+        {
+            _linkLogFilePath = null;
+            return;
+        }
+
+        try
+        {
+            _paths.EnsureCreated();
+            _linkLogFilePath = Path.Combine(_paths.LogsDirectory, $"link-backend-{DateTime.Now:yyyyMMdd-HHmmss}.log");
+            WriteLinkLog("联机后端日志已创建。");
+            WriteLinkLog("启动命令：" + BuildCommandPreview(plan));
+        }
+        catch (Exception ex)
+        {
+            _linkLogFilePath = null;
+            _logger.Warn("创建联机后端独立日志失败：" + ex.Message);
+        }
+    }
+
+    private void WriteLinkLog(string line)
+    {
+        if (string.IsNullOrWhiteSpace(_linkLogFilePath))
+        {
+            return;
+        }
+
+        try
+        {
+            lock (_linkLogLock)
+            {
+                File.AppendAllText(_linkLogFilePath, $"{DateTime.Now:O} {line}{Environment.NewLine}", Encoding.UTF8);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Warn("写入联机后端独立日志失败：" + ex.Message);
+            _linkLogFilePath = null;
+        }
     }
 
     private static string BuildLogMessage(string line, bool isError)

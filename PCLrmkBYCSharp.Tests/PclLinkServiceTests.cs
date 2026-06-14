@@ -288,6 +288,39 @@ public sealed class PclLinkServiceTests
         Assert.Empty(service.Current.ConnectedPeers);
     }
 
+    [Fact]
+    public void LinkProcessServiceWritesIndependentSanitizedBackendLog()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "easytier.exe");
+        File.WriteAllText(executable, "");
+        var paths = new TestAppPathService(Path.Combine(temp.Path, "appdata"));
+        var backend = CreateLinkBackendService();
+        var plan = backend.CreatePlan(
+            LinkRoomRole.Host,
+            LinkProviderKind.EasyTier,
+            new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0),
+            LinkLatencyMode.DirectFirst,
+            "",
+            executable);
+        var runner = new CaptureLinkProcessRunner();
+        var service = new LinkProcessService(runner, new NullLoggerService(), paths);
+
+        service.Start(plan);
+        runner.Handle.Publish("new peer connection added remote_addr=10.0.0.2");
+        runner.Handle.Publish("--network-secret=SECRET backend warning", isError: true);
+        runner.Handle.PublishExited(7);
+
+        var logFile = Assert.Single(Directory.GetFiles(paths.LogsDirectory, "link-backend-*.log"));
+        var content = File.ReadAllText(logFile);
+        Assert.Contains("联机后端日志已创建", content, StringComparison.Ordinal);
+        Assert.Contains("启动命令", content, StringComparison.Ordinal);
+        Assert.Contains("new peer connection added", content, StringComparison.Ordinal);
+        Assert.Contains("联机后端异常退出，退出码：7", content, StringComparison.Ordinal);
+        Assert.Contains("--network-secret=***", content, StringComparison.Ordinal);
+        Assert.DoesNotContain("SECRET", content, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData(0, LinkProcessState.Stopped, "联机后端已退出")]
     [InlineData(7, LinkProcessState.Failed, "联机后端异常退出")]

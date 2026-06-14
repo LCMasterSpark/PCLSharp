@@ -106,7 +106,7 @@ public sealed class AppServices
             settings: settings);
         var linkService = new PclLinkService();
         var linkBackend = new LinkBackendService(new LinkPortAllocator());
-        var linkProcess = new LinkProcessService(new LinkProcessRunner(), logger);
+        var linkProcess = new LinkProcessService(new LinkProcessRunner(), logger, paths);
         var instanceManagement = new MinecraftInstanceManagementService();
         var minecraftDiscovery = new MinecraftDiscoveryService(instanceManagement);
         var gameDirectories = new MinecraftGameDirectoryService(settings);
