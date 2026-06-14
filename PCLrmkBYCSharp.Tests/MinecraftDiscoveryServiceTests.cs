@@ -83,7 +83,8 @@ public sealed class MinecraftDiscoveryServiceTests
 
         Assert.Equal("1.20.1", instance.Version.VanillaVersion);
         Assert.True(instance.Version.HasForge);
-        Assert.Equal("Forge", instance.LoaderSummary);
+        Assert.Equal("47.2.32", instance.Version.ForgeVersion);
+        Assert.Equal("Forge 47.2.32", instance.LoaderSummary);
         Assert.Equal("Java 17", requirement.DisplayText);
     }
 
@@ -1168,6 +1169,39 @@ public sealed class MinecraftDiscoveryServiceTests
         Assert.Equal("0.23.1", dependencies.GetProperty("quilt-loader").GetString());
         Assert.Equal("47.2.0", dependencies.GetProperty("forge").GetString());
         Assert.Equal("20.4.237", dependencies.GetProperty("neoforge").GetString());
+    }
+
+    [Fact]
+    public async Task ModpackExportServiceUsesOldPclLoaderMetadataWhenLibrariesAreIncomplete()
+    {
+        using var temp = new TempDirectory();
+        WriteVersionJson(temp.Path, "MetadataPack", """
+        {
+          "id": "MetadataPack",
+          "type": "release",
+          "releaseTime": "2023-06-12T13:25:51+00:00",
+          "mainClass": "cpw.mods.bootstraplauncher.BootstrapLauncher",
+          "libraries": []
+        }
+        """);
+        var setupPath = Path.Combine(temp.Path, "versions", "MetadataPack", "PCL", "Setup.ini");
+        Directory.CreateDirectory(Path.GetDirectoryName(setupPath)!);
+        await File.WriteAllLinesAsync(setupPath, [
+            "VersionVanillaName:1.20.1",
+            "VersionForge:47.2.32"
+        ]);
+        var instance = Assert.Single(await new MinecraftDiscoveryService().ScanAsync(temp.Path));
+        var target = Path.Combine(temp.Path, "metadata.mrpack");
+
+        await new ModpackExportService(new NullLoggerService())
+            .ExportModrinthAsync(instance, instance.VersionPath, target, "Metadata Pack", "1.0.0");
+
+        using var archive = ZipFile.OpenRead(target);
+        using var indexStream = archive.GetEntry("modrinth.index.json")!.Open();
+        using var document = await System.Text.Json.JsonDocument.ParseAsync(indexStream);
+        var dependencies = document.RootElement.GetProperty("dependencies");
+        Assert.Equal("1.20.1", dependencies.GetProperty("minecraft").GetString());
+        Assert.Equal("47.2.32", dependencies.GetProperty("forge").GetString());
     }
 
     [Fact]

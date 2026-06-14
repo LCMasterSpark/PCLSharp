@@ -175,7 +175,11 @@ public sealed partial class MinecraftDiscoveryService : IMinecraftDiscoveryServi
             HasForge = version.HasForge || !string.IsNullOrWhiteSpace(metadata.ForgeVersion),
             HasFabric = version.HasFabric || !string.IsNullOrWhiteSpace(metadata.FabricVersion),
             HasNeoForge = version.HasNeoForge || !string.IsNullOrWhiteSpace(metadata.NeoForgeVersion),
-            HasOptiFine = version.HasOptiFine || !string.IsNullOrWhiteSpace(metadata.OptiFineVersion)
+            HasOptiFine = version.HasOptiFine || !string.IsNullOrWhiteSpace(metadata.OptiFineVersion),
+            ForgeVersion = string.IsNullOrWhiteSpace(metadata.ForgeVersion) ? version.ForgeVersion : metadata.ForgeVersion,
+            FabricVersion = string.IsNullOrWhiteSpace(metadata.FabricVersion) ? version.FabricVersion : metadata.FabricVersion,
+            NeoForgeVersion = string.IsNullOrWhiteSpace(metadata.NeoForgeVersion) ? version.NeoForgeVersion : metadata.NeoForgeVersion,
+            OptiFineVersion = string.IsNullOrWhiteSpace(metadata.OptiFineVersion) ? version.OptiFineVersion : metadata.OptiFineVersion
         };
     }
 

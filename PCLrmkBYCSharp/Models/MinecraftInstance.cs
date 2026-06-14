@@ -153,11 +153,16 @@ public sealed record MinecraftInstance(
         get
         {
             var loaders = new List<string>();
-            if (Version.HasForge) loaders.Add("Forge");
-            if (Version.HasNeoForge) loaders.Add("NeoForge");
-            if (Version.HasFabric) loaders.Add("Fabric");
-            if (Version.HasOptiFine) loaders.Add("OptiFine");
+            if (Version.HasForge) loaders.Add(FormatLoader("Forge", Version.ForgeVersion));
+            if (Version.HasNeoForge) loaders.Add(FormatLoader("NeoForge", Version.NeoForgeVersion));
+            if (Version.HasFabric) loaders.Add(FormatLoader("Fabric", Version.FabricVersion));
+            if (Version.HasOptiFine) loaders.Add(FormatLoader("OptiFine", Version.OptiFineVersion));
             return loaders.Count == 0 ? "原版/未知" : string.Join(", ", loaders);
         }
+    }
+
+    private static string FormatLoader(string name, string version)
+    {
+        return string.IsNullOrWhiteSpace(version) ? name : name + " " + version;
     }
 }

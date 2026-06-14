@@ -122,6 +122,9 @@ public sealed class ModpackExportService(IAppLoggerService logger) : IModpackExp
     private static IReadOnlyList<string> ReadCurseForgeLoaderIds(MinecraftInstance instance, string minecraftVersion)
     {
         var loaderIds = new List<string>();
+        AddCurseForgeLoaderId(loaderIds, "forge", instance.Version.ForgeVersion);
+        AddCurseForgeLoaderId(loaderIds, "fabric", instance.Version.FabricVersion);
+        AddCurseForgeLoaderId(loaderIds, "neoforge", instance.Version.NeoForgeVersion);
         if (string.IsNullOrWhiteSpace(instance.JsonPath) || !File.Exists(instance.JsonPath))
         {
             return loaderIds;
@@ -148,11 +151,7 @@ public sealed class ModpackExportService(IAppLoggerService logger) : IModpackExp
 
                 var coordinate = nameProperty.GetString();
                 var loaderId = TryCreateCurseForgeLoaderId(coordinate, minecraftVersion);
-                if (!string.IsNullOrWhiteSpace(loaderId) &&
-                    !loaderIds.Contains(loaderId, StringComparer.OrdinalIgnoreCase))
-                {
-                    loaderIds.Add(loaderId);
-                }
+                AddCurseForgeLoaderId(loaderIds, loaderId);
             }
         }
         catch (JsonException)
@@ -166,6 +165,23 @@ public sealed class ModpackExportService(IAppLoggerService logger) : IModpackExp
         }
 
         return loaderIds;
+    }
+
+    private static void AddCurseForgeLoaderId(List<string> loaderIds, string loaderName, string version)
+    {
+        if (!string.IsNullOrWhiteSpace(version))
+        {
+            AddCurseForgeLoaderId(loaderIds, loaderName + "-" + version);
+        }
+    }
+
+    private static void AddCurseForgeLoaderId(List<string> loaderIds, string? loaderId)
+    {
+        if (!string.IsNullOrWhiteSpace(loaderId) &&
+            !loaderIds.Contains(loaderId, StringComparer.OrdinalIgnoreCase))
+        {
+            loaderIds.Add(loaderId);
+        }
     }
 
     private static string TryCreateCurseForgeLoaderId(string? coordinate, string minecraftVersion)
@@ -193,6 +209,9 @@ public sealed class ModpackExportService(IAppLoggerService logger) : IModpackExp
 
     private static void AddDetectedLoaderDependencies(JsonObject dependencies, MinecraftInstance instance)
     {
+        AddMetadataLoaderDependency(dependencies, "fabric-loader", instance.Version.FabricVersion);
+        AddMetadataLoaderDependency(dependencies, "forge", instance.Version.ForgeVersion);
+        AddMetadataLoaderDependency(dependencies, "neoforge", instance.Version.NeoForgeVersion);
         if (string.IsNullOrWhiteSpace(instance.JsonPath) || !File.Exists(instance.JsonPath))
         {
             return;
@@ -238,6 +257,14 @@ public sealed class ModpackExportService(IAppLoggerService logger) : IModpackExp
         }
         catch (UnauthorizedAccessException)
         {
+        }
+    }
+
+    private static void AddMetadataLoaderDependency(JsonObject dependencies, string key, string version)
+    {
+        if (!dependencies.ContainsKey(key) && !string.IsNullOrWhiteSpace(version))
+        {
+            dependencies[key] = version;
         }
     }
 

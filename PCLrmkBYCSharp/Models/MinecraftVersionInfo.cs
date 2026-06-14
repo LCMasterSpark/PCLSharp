@@ -15,4 +15,8 @@ public sealed record MinecraftVersionInfo(
     int LibraryCount = 0,
     string AssetsIndex = "",
     bool HasLegacyMinecraftArguments = false,
-    bool HasModernArguments = false);
+    bool HasModernArguments = false,
+    string ForgeVersion = "",
+    string FabricVersion = "",
+    string NeoForgeVersion = "",
+    string OptiFineVersion = "");
