@@ -90,6 +90,14 @@ public sealed class OtherPageViewModelTests
         Assert.Contains("Slim：否", clipboard.Text, StringComparison.Ordinal);
         Assert.Contains("皮肤摘要已复制", viewModel.SkinCenterText, StringComparison.Ordinal);
 
+        viewModel.CopyExtensionCatalogCommand.Execute(null);
+
+        Assert.Contains("Plain Craft Launcher Sharp 扩展点目录", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("联机后端", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("基础接入", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("诊断规则", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("已复制 2 个扩展点目录项", viewModel.ExtensionPointText, StringComparison.Ordinal);
+
         var help = Assert.Single(viewModel.HelpResults);
         Assert.Equal("marker help", help.Title);
         Assert.Contains("marker help", viewModel.SelectedHelpPreview, StringComparison.Ordinal);
@@ -366,7 +374,11 @@ public sealed class OtherPageViewModelTests
 
         public SkinCenterSummary GetSkinSummary() => new("读取设置", "随机", "未指定", false);
 
-        public IReadOnlyList<ExtensionPointInfo> GetExtensionPoints() => [];
+        public IReadOnlyList<ExtensionPointInfo> GetExtensionPoints() =>
+        [
+            new("联机后端", "记录联机后端启动、连接和日志扩展点。", "基础接入"),
+            new("诊断规则", "记录崩溃报告和启动日志规则扩展点。", "目录占位")
+        ];
     }
 
     private sealed class CaptureFolderOpenService : IFolderOpenService

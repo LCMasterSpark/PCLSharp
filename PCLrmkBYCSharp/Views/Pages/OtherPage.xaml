@@ -394,11 +394,18 @@
 
                                 <Border Grid.Row="4" Grid.ColumnSpan="3" Style="{StaticResource CardBorderStyle}">
                                     <DockPanel>
-                                        <TextBlock DockPanel.Dock="Top"
-                                                   Text="扩展点"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="16"
-                                                   Margin="0,0,0,8" />
+                                        <DockPanel DockPanel.Dock="Top"
+                                                   Margin="0,0,0,8">
+                                            <Button DockPanel.Dock="Right"
+                                                    MinWidth="120"
+                                                    MinHeight="30"
+                                                    Command="{Binding CopyExtensionCatalogCommand}"
+                                                    Content="复制目录" />
+                                            <TextBlock Text="扩展点"
+                                                       FontWeight="SemiBold"
+                                                       FontSize="16"
+                                                       VerticalAlignment="Center" />
+                                        </DockPanel>
                                         <TextBlock DockPanel.Dock="Bottom"
                                                    Text="{Binding ExtensionPointText}"
                                                    Margin="0,8,0,0"

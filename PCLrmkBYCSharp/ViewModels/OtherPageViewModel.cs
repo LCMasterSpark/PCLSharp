@@ -466,6 +466,34 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         SkinCenterText += "\n皮肤摘要已复制到剪贴板。";
     }
 
+    [RelayCommand]
+    private void CopyExtensionCatalog()
+    {
+        if (_clipboard is null)
+        {
+            ExtensionPointText = "剪贴板服务未初始化。";
+            return;
+        }
+
+        if (ExtensionPoints.Count == 0)
+        {
+            ExtensionPointText = "当前没有可复制的扩展点目录。";
+            return;
+        }
+
+        var lines = new List<string>
+        {
+            "Plain Craft Launcher Sharp 扩展点目录"
+        };
+        foreach (var point in ExtensionPoints)
+        {
+            lines.Add($"- {point.Name} [{point.Status}] {point.Description}");
+        }
+
+        _clipboard.SetText(string.Join(Environment.NewLine, lines));
+        ExtensionPointText = $"已复制 {ExtensionPoints.Count} 个扩展点目录项。";
+    }
+
     public override async Task OnNavigatedToAsync()
     {
         if (_help is null || _allHelpEntries.Count > 0)
