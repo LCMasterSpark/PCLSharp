@@ -279,7 +279,9 @@
                   Grid.ColumnSpan="2"
                   Panel.ZIndex="100"
                   Visibility="Collapsed"
-                  Background="#99000000">
+                  Background="#99000000"
+                  Focusable="True"
+                  PreviewKeyDown="PromptOverlay_PreviewKeyDown">
                 <Border Width="460"
                         MaxWidth="620"
                         Padding="22"

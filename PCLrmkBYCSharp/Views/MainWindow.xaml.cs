@@ -11,6 +11,7 @@ public partial class MainWindow : Window
     private readonly MainWindowViewModel _viewModel;
     private readonly UserPromptService? _prompts;
     private UserPromptRequest? _activePrompt;
+    private IInputElement? _promptPreviousFocus;
 
     public MainWindow(MainWindowViewModel viewModel, UserPromptService? prompts = null)
     {
@@ -87,9 +88,12 @@ public partial class MainWindow : Window
 
     private void HandlePromptRequested(object? sender, UserPromptRequest request)
     {
+        _promptPreviousFocus = Keyboard.FocusedElement;
         _activePrompt = request;
+        request.Completed += HandlePromptCompleted;
         PromptOverlay.DataContext = request;
         PromptOverlay.Visibility = Visibility.Visible;
+        PromptOverlay.Focus();
         PromptInputBox.Visibility = request.InputVisibility;
         if (request.AcceptsInput)
         {
@@ -100,8 +104,6 @@ public partial class MainWindow : Window
         {
             PromptOkButton.Focus();
         }
-
-        request.Completed += HandlePromptCompleted;
     }
 
     private void HandlePromptCompleted(object? sender, EventArgs e)
@@ -114,6 +116,7 @@ public partial class MainWindow : Window
         PromptOverlay.Visibility = Visibility.Collapsed;
         PromptOverlay.DataContext = null;
         _activePrompt = null;
+        RestorePromptFocus();
     }
 
     private void PromptOkButton_Click(object sender, RoutedEventArgs e)
@@ -124,5 +127,40 @@ public partial class MainWindow : Window
     private void PromptCancelButton_Click(object sender, RoutedEventArgs e)
     {
         _activePrompt?.Complete(false);
+    }
+
+    private void PromptOverlay_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (_activePrompt is null)
+        {
+            return;
+        }
+
+        if (e.Key == Key.Escape)
+        {
+            _activePrompt.Complete(false);
+            e.Handled = true;
+            return;
+        }
+
+        if (e.Key == Key.Enter && Keyboard.Modifiers == ModifierKeys.None)
+        {
+            _activePrompt.Complete(true);
+            e.Handled = true;
+        }
+    }
+
+    private void RestorePromptFocus()
+    {
+        var previousFocus = _promptPreviousFocus;
+        _promptPreviousFocus = null;
+        if (previousFocus is UIElement uiElement && uiElement.IsVisible && uiElement.IsEnabled)
+        {
+            uiElement.Focus();
+        }
+        else if (previousFocus is ContentElement contentElement)
+        {
+            contentElement.Focus();
+        }
     }
 }
