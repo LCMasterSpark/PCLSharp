@@ -523,6 +523,30 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public void LaunchArgumentBuilderReplacesUserPropertiesLikeOldPcl()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "arguments": { "game": ["--userProperties", "${user_properties}"] },
+          "libraries": []
+        }
+        """, createJar: true);
+        var builder = new LaunchArgumentBuilder();
+
+        var result = builder.Build(
+            CreateRequest(instance, temp.Path),
+            CreateJava("C:\\Java17\\bin\\java.exe", 17),
+            new LegacyLoginService().CreateSession("Alex"));
+
+        Assert.Contains("--userProperties {}", result.Arguments);
+        Assert.DoesNotContain("${user_properties}", result.Arguments);
+    }
+
+    [Fact]
     public void LaunchArgumentBuilderIgnoresCustomRamSliderInAutoModeAndCaps32BitJava()
     {
         using var temp = new TempDirectory();

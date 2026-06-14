@@ -551,6 +551,7 @@ public sealed partial class LaunchArgumentBuilder(
             ["${assets_root}"] = Path.Combine(instance.RootPath, "assets"),
             ["${assets_index_name}"] = GetAssetsIndex(roots),
             ["${game_assets}"] = Path.Combine(instance.RootPath, "assets", "virtual", "legacy"),
+            ["${user_properties}"] = string.IsNullOrWhiteSpace(login.ProfileJson) ? "{}" : login.ProfileJson,
             ["${primary_jar}"] = Path.Combine(instance.VersionPath, instance.Name + ".jar"),
             ["${auth_player_name}"] = login.UserName,
             ["${auth_uuid}"] = login.Uuid,
