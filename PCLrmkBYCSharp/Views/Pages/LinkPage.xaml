@@ -202,10 +202,16 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock Text="联机后端" FontWeight="SemiBold" />
-                            <Button Grid.Column="1"
-                                    Content="选择当前方案文件"
-                                    MinWidth="150"
-                                    Command="{Binding PickSelectedBackendExecutableCommand}" />
+                            <UniformGrid Grid.Column="1"
+                                         Columns="2">
+                                <Button Content="自动查找"
+                                        MinWidth="96"
+                                        Margin="0,0,8,0"
+                                        Command="{Binding AutoDetectBackendExecutableCommand}" />
+                                <Button Content="选择文件"
+                                        MinWidth="96"
+                                        Command="{Binding PickSelectedBackendExecutableCommand}" />
+                            </UniformGrid>
 
                             <TextBlock Grid.Row="1"
                                        Grid.ColumnSpan="2"

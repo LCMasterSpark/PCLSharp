@@ -6,6 +6,8 @@ public interface ILinkBackendService
 {
     LinkBackendStatus GetStatus(LinkProviderKind provider, string? executablePath);
 
+    string? FindExecutable(LinkProviderKind provider, IEnumerable<string> searchRoots);
+
     LinkBackendLaunchPlan CreatePlan(
         LinkRoomRole role,
         LinkProviderKind provider,

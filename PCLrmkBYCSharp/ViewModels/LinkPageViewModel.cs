@@ -287,6 +287,30 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     }
 
     [RelayCommand]
+    private async Task AutoDetectBackendExecutableAsync()
+    {
+        var selected = _linkBackend.FindExecutable(SelectedProvider.Value, GetBackendSearchRoots());
+        if (string.IsNullOrWhiteSpace(selected))
+        {
+            StatusMessage = SelectedProvider.DisplayName + " 后端未在常见目录中找到。";
+            RefreshBackendStatus();
+            return;
+        }
+
+        if (SelectedProvider.Value == LinkProviderKind.Terracotta)
+        {
+            TerracottaExecutablePath = selected;
+        }
+        else
+        {
+            EasyTierExecutablePath = selected;
+        }
+
+        StatusMessage = "已自动找到联机后端：" + selected;
+        await SaveLinkSettingsAsync();
+    }
+
+    [RelayCommand]
     private void OpenTerracotta()
     {
         _urls?.OpenUrl("https://github.com/burningtnt/Terracotta");
@@ -445,6 +469,23 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         return string.IsNullOrWhiteSpace(directory)
             ? Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
             : directory;
+    }
+
+    private IEnumerable<string> GetBackendSearchRoots()
+    {
+        var selectedDirectory = Path.GetDirectoryName(GetSelectedExecutablePath().Trim().Trim('"'));
+        if (!string.IsNullOrWhiteSpace(selectedDirectory))
+        {
+            yield return selectedDirectory;
+        }
+
+        yield return AppContext.BaseDirectory;
+        yield return Environment.CurrentDirectory;
+        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Plain Craft Launcher Sharp");
+        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Terracotta");
+        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "EasyTier");
+        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Terracotta");
+        yield return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "EasyTier");
     }
 }
 

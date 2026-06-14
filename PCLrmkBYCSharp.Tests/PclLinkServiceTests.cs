@@ -82,6 +82,21 @@ public sealed class PclLinkServiceTests
     }
 
     [Fact]
+    public void LinkBackendServiceFindsExecutableInCommonSubdirectories()
+    {
+        using var temp = new TempDirectory();
+        var linkDirectory = Path.Combine(temp.Path, "Link");
+        Directory.CreateDirectory(linkDirectory);
+        var executable = Path.Combine(linkDirectory, "terracotta.exe");
+        File.WriteAllText(executable, "");
+        var service = CreateLinkBackendService();
+
+        var found = service.FindExecutable(LinkProviderKind.Terracotta, [temp.Path]);
+
+        Assert.Equal(Path.GetFullPath(executable), found);
+    }
+
+    [Fact]
     public void LinkBackendServiceBuildsReadyPlanWithMaskedSecret()
     {
         using var temp = new TempDirectory();
@@ -345,6 +360,30 @@ public sealed class PclLinkServiceTests
 
         Assert.Equal(executable, viewModel.TerracottaExecutablePath);
         Assert.Equal(executable, settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, ""));
+        Assert.Contains("已就绪", viewModel.BackendStatusText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LinkPageViewModelAutoDetectsBackendExecutableAndPersistsPath()
+    {
+        using var temp = new TempDirectory();
+        var linkDirectory = Path.Combine(temp.Path, "Link");
+        Directory.CreateDirectory(linkDirectory);
+        var executable = Path.Combine(linkDirectory, "terracotta.exe");
+        File.WriteAllText(executable, "");
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        var viewModel = new LinkPageViewModel(
+            new PclLinkService(),
+            settings,
+            new NullLoggerService(),
+            linkBackend: new LinkBackendService());
+        viewModel.TerracottaExecutablePath = Path.Combine(temp.Path, "missing.exe");
+
+        await viewModel.AutoDetectBackendExecutableCommand.ExecuteAsync(null);
+
+        Assert.Equal(Path.GetFullPath(executable), viewModel.TerracottaExecutablePath);
+        Assert.Equal(Path.GetFullPath(executable), settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, ""));
+        Assert.Contains("已自动找到联机后端", viewModel.StatusMessage, StringComparison.Ordinal);
         Assert.Contains("已就绪", viewModel.BackendStatusText, StringComparison.Ordinal);
     }
 

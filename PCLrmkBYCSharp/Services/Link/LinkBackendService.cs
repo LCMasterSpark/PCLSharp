@@ -7,6 +7,31 @@ namespace PCLrmkBYCSharp.Services.Link;
 public sealed class LinkBackendService : ILinkBackendService
 {
     private const string HostVirtualAddress = "10.114.114.114";
+    private static readonly string[] TerracottaExecutableNames =
+    [
+        "terracotta.exe",
+        "Terracotta.exe"
+    ];
+
+    private static readonly string[] EasyTierExecutableNames =
+    [
+        "easytier-core.exe",
+        "easytier.exe",
+        "easytier-cli.exe",
+        "EasyTier.exe"
+    ];
+
+    private static readonly string[] CommonSubdirectories =
+    [
+        "",
+        "Link",
+        "联机",
+        "Tools",
+        "Bin",
+        "Terracotta",
+        "EasyTier"
+    ];
+
     private readonly ILinkPortAllocator _portAllocator;
 
     public LinkBackendService(ILinkPortAllocator? portAllocator = null)
@@ -43,6 +68,35 @@ public sealed class LinkBackendService : ILinkBackendService
         }
 
         return new LinkBackendStatus(provider, LinkBackendReadiness.Ready, displayName, normalizedPath, displayName + " 后端已就绪。");
+    }
+
+    public string? FindExecutable(LinkProviderKind provider, IEnumerable<string> searchRoots)
+    {
+        if (provider is not (LinkProviderKind.Terracotta or LinkProviderKind.EasyTier))
+        {
+            return null;
+        }
+
+        var names = provider == LinkProviderKind.Terracotta
+            ? TerracottaExecutableNames
+            : EasyTierExecutableNames;
+
+        foreach (var root in NormalizeSearchRoots(searchRoots))
+        {
+            foreach (var directory in EnumerateCandidateDirectories(root))
+            {
+                foreach (var name in names)
+                {
+                    var path = Path.Combine(directory, name);
+                    if (File.Exists(path))
+                    {
+                        return Path.GetFullPath(path);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     public LinkBackendLaunchPlan CreatePlan(
@@ -226,5 +280,46 @@ public sealed class LinkBackendService : ILinkBackendService
     private static string NormalizeExecutablePath(string? executablePath)
     {
         return (executablePath ?? "").Trim().Trim('"');
+    }
+
+    private static IEnumerable<string> NormalizeSearchRoots(IEnumerable<string> searchRoots)
+    {
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var root in searchRoots)
+        {
+            if (string.IsNullOrWhiteSpace(root))
+            {
+                continue;
+            }
+
+            string fullPath;
+            try
+            {
+                fullPath = Path.GetFullPath(root.Trim().Trim('"'));
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                continue;
+            }
+
+            if (Directory.Exists(fullPath) && seen.Add(fullPath))
+            {
+                yield return fullPath;
+            }
+        }
+    }
+
+    private static IEnumerable<string> EnumerateCandidateDirectories(string root)
+    {
+        foreach (var subdirectory in CommonSubdirectories)
+        {
+            var directory = string.IsNullOrEmpty(subdirectory)
+                ? root
+                : Path.Combine(root, subdirectory);
+            if (Directory.Exists(directory))
+            {
+                yield return directory;
+            }
+        }
     }
 }
