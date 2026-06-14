@@ -100,8 +100,8 @@ public sealed class AppServices
             Path.Combine(paths.AppDataDirectory, "Help")
         ]);
         var helpActions = new HelpActionService(
-            showMessage: (title, message) => prompts.Confirm(title, message),
-            showHint: (message, _) => prompts.Confirm("提示", message),
+            showMessage: prompts.Alert,
+            showHint: (message, _) => prompts.Alert("提示", message),
             setClipboardText: clipboard.SetText,
             settings: settings);
         var linkService = new PclLinkService();

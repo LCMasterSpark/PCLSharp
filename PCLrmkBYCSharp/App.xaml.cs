@@ -62,7 +62,7 @@ public partial class App : Application
     private void HandleDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
     {
         _services?.Logger.Error(e.Exception, "未处理的界面异常");
-        _services?.Prompts.Confirm("PCL Sharp 遇到错误", e.Exception.Message);
+        _services?.Prompts.Alert("PCL Sharp 遇到错误", e.Exception.Message);
         e.Handled = true;
     }
 

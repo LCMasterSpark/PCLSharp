@@ -330,7 +330,7 @@
                                     HorizontalAlignment="Right"
                                     Margin="0,18,0,0">
                             <Button x:Name="PromptOkButton"
-                                    Content="确定"
+                                    Content="{Binding PrimaryButtonText}"
                                     IsDefault="True"
                                     MinWidth="96"
                                     Click="PromptOkButton_Click" />
@@ -339,6 +339,7 @@
                                     IsCancel="True"
                                     MinWidth="96"
                                     Margin="10,0,0,0"
+                                    Visibility="{Binding CancelVisibility}"
                                     Click="PromptCancelButton_Click" />
                         </StackPanel>
                     </Grid>

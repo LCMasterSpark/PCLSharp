@@ -5,6 +5,11 @@ namespace PCLrmkBYCSharp.Services;
 
 public interface IUserPromptService
 {
+    void Alert(string title, string message)
+    {
+        Confirm(title, message);
+    }
+
     bool Confirm(string title, string message);
 
     string? Prompt(string title, string message, string defaultValue);
@@ -14,36 +19,41 @@ public sealed class UserPromptService : IUserPromptService
 {
     public event EventHandler<UserPromptRequest>? PromptRequested;
 
+    public void Alert(string title, string message)
+    {
+        ShowPrompt(title, message, defaultValue: "", UserPromptKind.Message);
+    }
+
     public bool Confirm(string title, string message)
     {
-        return ShowPrompt(title, message, defaultValue: "", acceptsInput: false).Confirmed == true;
+        return ShowPrompt(title, message, defaultValue: "", UserPromptKind.Confirm).Confirmed == true;
     }
 
     public string? Prompt(string title, string message, string defaultValue)
     {
-        var result = ShowPrompt(title, message, defaultValue, acceptsInput: true);
+        var result = ShowPrompt(title, message, defaultValue, UserPromptKind.Input);
         return result.Confirmed == true ? result.InputText : null;
     }
 
-    private UserPromptRequest ShowPrompt(string title, string message, string defaultValue, bool acceptsInput)
+    private UserPromptRequest ShowPrompt(string title, string message, string defaultValue, UserPromptKind kind)
     {
         var dispatcher = Application.Current?.Dispatcher;
         if (dispatcher is null)
         {
-            return UserPromptRequest.CreateCompleted(title, message, defaultValue, acceptsInput, confirmed: false);
+            return UserPromptRequest.CreateCompleted(title, message, defaultValue, kind, confirmed: kind == UserPromptKind.Message);
         }
 
         return dispatcher.CheckAccess()
-            ? ShowPromptOnUiThread(title, message, defaultValue, acceptsInput)
-            : dispatcher.Invoke(() => ShowPromptOnUiThread(title, message, defaultValue, acceptsInput));
+            ? ShowPromptOnUiThread(title, message, defaultValue, kind)
+            : dispatcher.Invoke(() => ShowPromptOnUiThread(title, message, defaultValue, kind));
     }
 
-    private UserPromptRequest ShowPromptOnUiThread(string title, string message, string defaultValue, bool acceptsInput)
+    private UserPromptRequest ShowPromptOnUiThread(string title, string message, string defaultValue, UserPromptKind kind)
     {
-        var request = new UserPromptRequest(title, message, defaultValue, acceptsInput);
+        var request = new UserPromptRequest(title, message, defaultValue, kind);
         if (PromptRequested is null)
         {
-            request.Complete(false);
+            request.Complete(kind == UserPromptKind.Message);
             return request;
         }
 
@@ -66,14 +76,21 @@ public sealed class UserPromptService : IUserPromptService
     }
 }
 
+public enum UserPromptKind
+{
+    Message,
+    Confirm,
+    Input
+}
+
 public sealed class UserPromptRequest
 {
-    public UserPromptRequest(string title, string message, string inputText, bool acceptsInput)
+    public UserPromptRequest(string title, string message, string inputText, UserPromptKind kind)
     {
         Title = title;
         Message = message;
         InputText = inputText;
-        AcceptsInput = acceptsInput;
+        Kind = kind;
     }
 
     public event EventHandler? Completed;
@@ -84,9 +101,15 @@ public sealed class UserPromptRequest
 
     public string InputText { get; set; }
 
-    public bool AcceptsInput { get; }
+    public UserPromptKind Kind { get; }
+
+    public bool AcceptsInput => Kind == UserPromptKind.Input;
 
     public Visibility InputVisibility => AcceptsInput ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility CancelVisibility => Kind == UserPromptKind.Message ? Visibility.Collapsed : Visibility.Visible;
+
+    public string PrimaryButtonText => Kind == UserPromptKind.Message ? "知道了" : "确定";
 
     public bool IsCompleted { get; private set; }
 
@@ -104,9 +127,9 @@ public sealed class UserPromptRequest
         Completed?.Invoke(this, EventArgs.Empty);
     }
 
-    public static UserPromptRequest CreateCompleted(string title, string message, string inputText, bool acceptsInput, bool confirmed)
+    public static UserPromptRequest CreateCompleted(string title, string message, string inputText, UserPromptKind kind, bool confirmed)
     {
-        var request = new UserPromptRequest(title, message, inputText, acceptsInput);
+        var request = new UserPromptRequest(title, message, inputText, kind);
         request.Complete(confirmed);
         return request;
     }
