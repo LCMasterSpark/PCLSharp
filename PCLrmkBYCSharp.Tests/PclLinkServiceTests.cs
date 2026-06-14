@@ -573,19 +573,26 @@ public sealed class PclLinkServiceTests
         process.Start(plan);
         runner.Handle.Publish("new peer connection added remote_addr=10.0.0.2");
         var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        var files = new CaptureFileOpenService();
 
         var viewModel = new LinkPageViewModel(
             new PclLinkService(),
             settings,
             new NullLoggerService(),
             linkBackend: CreateLinkBackendService(),
-            linkProcess: process);
+            linkProcess: process,
+            files: files);
 
         Assert.Contains("PID", viewModel.LinkProcessStatusText, StringComparison.Ordinal);
         Assert.Contains("已连接节点", viewModel.LinkConnectionStatusText, StringComparison.Ordinal);
         Assert.Contains("10.0.0.2", viewModel.LinkConnectedPeersText, StringComparison.Ordinal);
         Assert.Contains("new peer connection added", viewModel.LinkProcessLogText, StringComparison.Ordinal);
         Assert.Contains(paths.LogsDirectory, viewModel.LinkProcessLogFileText, StringComparison.Ordinal);
+
+        viewModel.OpenCurrentLinkLogFileCommand.Execute(null);
+
+        Assert.Equal(process.Current.LogFilePath, files.LastFile);
+        Assert.Contains("已打开联机后端日志文件", viewModel.StatusMessage, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -719,6 +726,16 @@ public sealed class PclLinkServiceTests
         public void OpenFolder(string folderPath)
         {
             LastFolder = folderPath;
+        }
+    }
+
+    private sealed class CaptureFileOpenService : IFileOpenService
+    {
+        public string LastFile { get; private set; } = "";
+
+        public void OpenFile(string filePath)
+        {
+            LastFile = filePath;
         }
     }
 

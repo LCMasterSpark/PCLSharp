@@ -20,6 +20,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private readonly IClipboardService? _clipboard;
     private readonly IFolderOpenService? _folders;
     private readonly IAppPathService? _paths;
+    private readonly IFileOpenService? _files;
     private LinkBackendLaunchPlan? _currentPlan;
 
     public LinkPageViewModel(
@@ -33,7 +34,8 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         IUiDispatcherService? dispatcher = null,
         IClipboardService? clipboard = null,
         IFolderOpenService? folders = null,
-        IAppPathService? paths = null)
+        IAppPathService? paths = null,
+        IFileOpenService? files = null)
         : base(PageRoute.Link, "陶瓦联机", "Terracotta / EasyTier 联机入口")
     {
         _linkService = linkService;
@@ -47,6 +49,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         _clipboard = clipboard;
         _folders = folders;
         _paths = paths;
+        _files = files;
         if (_linkProcess is not null)
         {
             _linkProcess.SnapshotChanged += HandleProcessSnapshotChanged;
@@ -287,6 +290,34 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         {
             StatusMessage = "打开日志目录失败：" + ex.Message;
             _logger.Error(ex, "打开联机日志目录失败");
+        }
+    }
+
+    [RelayCommand]
+    private void OpenCurrentLinkLogFile()
+    {
+        if (_files is null)
+        {
+            ApplyProcessStatus("当前环境没有可用的文件打开服务。");
+            return;
+        }
+
+        var logFilePath = _linkProcess?.Current.LogFilePath ?? "";
+        if (string.IsNullOrWhiteSpace(logFilePath))
+        {
+            ApplyProcessStatus("当前还没有可打开的联机后端日志文件。");
+            return;
+        }
+
+        try
+        {
+            _files.OpenFile(logFilePath);
+            StatusMessage = "已打开联机后端日志文件。";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "打开联机后端日志文件失败：" + ex.Message;
+            _logger.Error(ex, "打开联机后端日志文件失败");
         }
     }
 

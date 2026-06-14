@@ -46,6 +46,7 @@ public sealed class NavigationService : INavigationService
         IAppUpdateCheckService updateCheck,
         IFeatureHubService featureHub,
         IFolderOpenService? folders = null,
+        IFileOpenService? files = null,
         IExternalUrlService? urls = null,
         ILaunchMemoryOptimizer? memoryOptimizer = null,
         ILoaderVersionService? loaderVersions = null,
@@ -56,6 +57,7 @@ public sealed class NavigationService : INavigationService
         IMicrosoftDeviceCodeStatusService? microsoftDeviceCodes = null)
     {
         folders ??= new FolderOpenService();
+        files ??= new FileOpenService();
         Pages =
         [
             new(PageRoute.Launch, "启动", "账号、版本与启动链路"),
@@ -91,7 +93,7 @@ public sealed class NavigationService : INavigationService
         {
             [PageRoute.Launch] = launchPage,
             [PageRoute.Download] = new DownloadPageViewModel(minecraftClientDownload, downloadManager, communityResourceSearch, communityResourceVersions, modpackInstall, loaderProcessorRunner, settings, minecraftDiscovery, fileDialogs, logger, rootFolders, selections, prompts, gameDirectories, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, folders, urls, dispatcher),
-            [PageRoute.Link] = new LinkPageViewModel(linkService, settings, logger, urls, linkBackend, fileDialogs, linkProcess, dispatcher, clipboard, folders, paths),
+            [PageRoute.Link] = new LinkPageViewModel(linkService, settings, logger, urls, linkBackend, fileDialogs, linkProcess, dispatcher, clipboard, folders, paths, files),
             [PageRoute.Instance] = new InstancePageViewModel(minecraftDiscovery, instanceManagement, launchFileCompleter, launchPipeline, downloadManager, modpackExport, settings, fileDialogs, prompts, logger, gameDirectories, rootFolders, selections, localModUpdateService: localModUpdates, folders: folders, dispatcher: dispatcher),
             [PageRoute.Setup] = new SetupPageViewModel(settings, paths, fileDialogs, logger),
             [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions, settings, fileDialogs, downloadManager, memoryOptimizer, prompts, updateCheck, featureHub, folders, clipboard)
