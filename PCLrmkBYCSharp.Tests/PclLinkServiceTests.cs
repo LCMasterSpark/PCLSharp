@@ -480,6 +480,76 @@ public sealed class PclLinkServiceTests
         Assert.Contains("计划参数", viewModel.BackendPlanText, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task LinkPageViewModelReloadsSettingsWhenNavigatedBack()
+    {
+        using var temp = new TempDirectory();
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        var linkService = new PclLinkService();
+        var inviteCode = linkService.BuildInviteCode(linkService.CreateHostInvite(25565));
+        var terracottaPath = Path.Combine(temp.Path, "terracotta.exe");
+        var easyTierPath = Path.Combine(temp.Path, "easytier-core.exe");
+        File.WriteAllText(terracottaPath, "");
+        File.WriteAllText(easyTierPath, "");
+        var viewModel = new LinkPageViewModel(
+            linkService,
+            settings,
+            new NullLoggerService(),
+            linkBackend: CreateLinkBackendService());
+
+        settings.Set(AppSettingKeys.LinkProvider, LinkProviderKind.EasyTier);
+        settings.Set(AppSettingKeys.LinkLatencyMode, LinkLatencyMode.LatencyFirst);
+        settings.Set(AppSettingKeys.LinkCustomPeer, "tcp://peer.example:11010");
+        settings.Set(AppSettingKeys.LinkLastInviteCode, inviteCode);
+        settings.Set(AppSettingKeys.LinkServerPort, 24444);
+        settings.Set(AppSettingKeys.LinkTerracottaExecutablePath, terracottaPath);
+        settings.Set(AppSettingKeys.LinkEasyTierExecutablePath, easyTierPath);
+
+        await viewModel.OnNavigatedToAsync();
+
+        Assert.Equal(LinkProviderKind.EasyTier, viewModel.SelectedProvider.Value);
+        Assert.Equal(LinkLatencyMode.LatencyFirst, viewModel.SelectedLatencyMode.Value);
+        Assert.Equal("tcp://peer.example:11010", viewModel.CustomPeer);
+        Assert.Equal(inviteCode, viewModel.InviteCodeInput);
+        Assert.Equal(24444, viewModel.ServerPort);
+        Assert.Equal(terracottaPath, viewModel.TerracottaExecutablePath);
+        Assert.Equal(easyTierPath, viewModel.EasyTierExecutablePath);
+        Assert.Contains("邀请码有效", viewModel.ParsedInviteSummary, StringComparison.Ordinal);
+        Assert.Contains("已恢复上次联机邀请码", viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LinkPageViewModelShowsAlreadyRunningBackendSnapshot()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "easytier.exe");
+        File.WriteAllText(executable, "");
+        var plan = CreateLinkBackendService().CreatePlan(
+            LinkRoomRole.Host,
+            LinkProviderKind.EasyTier,
+            new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0),
+            LinkLatencyMode.DirectFirst,
+            "",
+            executable);
+        var runner = new CaptureLinkProcessRunner();
+        var process = new LinkProcessService(runner, new NullLoggerService());
+        process.Start(plan);
+        runner.Handle.Publish("new peer connection added remote_addr=10.0.0.2");
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+
+        var viewModel = new LinkPageViewModel(
+            new PclLinkService(),
+            settings,
+            new NullLoggerService(),
+            linkBackend: CreateLinkBackendService(),
+            linkProcess: process);
+
+        Assert.Contains("PID", viewModel.LinkProcessStatusText, StringComparison.Ordinal);
+        Assert.Contains("已连接节点", viewModel.LinkConnectionStatusText, StringComparison.Ordinal);
+        Assert.Contains("10.0.0.2", viewModel.LinkConnectedPeersText, StringComparison.Ordinal);
+        Assert.Contains("new peer connection added", viewModel.LinkProcessLogText, StringComparison.Ordinal);
+    }
+
     private sealed class ExecutableFileDialogService(string executablePath) : IFileDialogService
     {
         public string? PickFolder(string title, string initialDirectory) => null;

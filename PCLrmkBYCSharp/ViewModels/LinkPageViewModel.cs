@@ -57,15 +57,12 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
             new LinkLatencyOption(LinkLatencyMode.LatencyFirst, "优先低延迟", "优先选择延迟更低的中继或路径。")
         ];
 
-        selectedProvider = ProviderOptions.First(item => item.Value == _settings.Get(AppSettingKeys.LinkProvider, LinkProviderKind.Terracotta));
-        selectedLatencyMode = LatencyOptions.First(item => item.Value == _settings.Get(AppSettingKeys.LinkLatencyMode, LinkLatencyMode.DirectFirst));
-        customPeer = _settings.Get(AppSettingKeys.LinkCustomPeer, "");
-        inviteCodeInput = _settings.Get(AppSettingKeys.LinkLastInviteCode, "");
-        serverPort = _settings.Get(AppSettingKeys.LinkServerPort, 25565);
-        terracottaExecutablePath = _settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, "");
-        easyTierExecutablePath = _settings.Get(AppSettingKeys.LinkEasyTierExecutablePath, "");
+        selectedProvider = GetProviderOption(_settings.Get(AppSettingKeys.LinkProvider, LinkProviderKind.Terracotta));
+        selectedLatencyMode = GetLatencyOption(_settings.Get(AppSettingKeys.LinkLatencyMode, LinkLatencyMode.DirectFirst));
+        LoadLinkSettingsFromStore();
         RefreshBackendStatus();
         RestoreSavedInviteCode();
+        RefreshProcessSnapshotFromService();
     }
 
     public IReadOnlyList<LinkProviderOption> ProviderOptions { get; }
@@ -124,6 +121,15 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private string linkProcessLogText = "联机后端输出会显示在这里。";
 
     public bool HasUrlService => _urls is not null;
+
+    public override Task OnNavigatedToAsync()
+    {
+        LoadLinkSettingsFromStore();
+        RefreshBackendStatus();
+        RestoreSavedInviteCode();
+        RefreshProcessSnapshotFromService();
+        return Task.CompletedTask;
+    }
 
     public async Task LoadInviteCodeAsync(string inviteCode)
     {
@@ -370,6 +376,39 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         StatusMessage = "上次联机邀请码无法识别：" + failureMessage;
     }
 
+    private void LoadLinkSettingsFromStore()
+    {
+        SelectedProvider = GetProviderOption(_settings.Get(AppSettingKeys.LinkProvider, LinkProviderKind.Terracotta));
+        SelectedLatencyMode = GetLatencyOption(_settings.Get(AppSettingKeys.LinkLatencyMode, LinkLatencyMode.DirectFirst));
+        CustomPeer = _settings.Get(AppSettingKeys.LinkCustomPeer, "");
+        InviteCodeInput = _settings.Get(AppSettingKeys.LinkLastInviteCode, "");
+        ServerPort = _settings.Get(AppSettingKeys.LinkServerPort, 25565);
+        TerracottaExecutablePath = _settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, "");
+        EasyTierExecutablePath = _settings.Get(AppSettingKeys.LinkEasyTierExecutablePath, "");
+    }
+
+    private void RefreshProcessSnapshotFromService()
+    {
+        if (_linkProcess is not null)
+        {
+            var snapshot = _linkProcess.Current;
+            var shouldUpdatePageStatus = snapshot.State != LinkProcessState.Stopped
+                || snapshot.RecentLogLines.Count > 0
+                || !string.IsNullOrWhiteSpace(snapshot.CommandPreview);
+            ApplyProcessSnapshot(snapshot, shouldUpdatePageStatus);
+        }
+    }
+
+    private LinkProviderOption GetProviderOption(LinkProviderKind provider)
+    {
+        return ProviderOptions.FirstOrDefault(item => item.Value == provider) ?? ProviderOptions[0];
+    }
+
+    private LinkLatencyOption GetLatencyOption(LinkLatencyMode latencyMode)
+    {
+        return LatencyOptions.FirstOrDefault(item => item.Value == latencyMode) ?? LatencyOptions[0];
+    }
+
     private bool TryBuildJoinPlanFromInvite(out string failureMessage)
     {
         var result = _linkService.ParseInviteCode(InviteCodeInput);
@@ -396,7 +435,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         _dispatcher.Invoke(() => ApplyProcessSnapshot(snapshot));
     }
 
-    private void ApplyProcessSnapshot(LinkProcessSnapshot snapshot)
+    private void ApplyProcessSnapshot(LinkProcessSnapshot snapshot, bool updateStatusMessage = true)
     {
         LinkProcessStatusText = snapshot.ProcessId is null
             ? snapshot.Message
@@ -413,7 +452,10 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         LinkProcessLogText = snapshot.RecentLogLines.Count == 0
             ? "暂无联机后端输出。"
             : string.Join(Environment.NewLine, snapshot.RecentLogLines);
-        StatusMessage = snapshot.Message;
+        if (updateStatusMessage)
+        {
+            StatusMessage = snapshot.Message;
+        }
     }
 
     private void ApplyProcessStatus(string message)
