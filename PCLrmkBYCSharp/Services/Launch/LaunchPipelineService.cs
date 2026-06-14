@@ -176,6 +176,7 @@ public sealed class LaunchPipelineService : ILaunchPipelineService
             arguments.SanitizedCommandLine,
             startInfo,
             missingFiles);
+        LogLaunchProfile(profile);
 
         return new LaunchResult(true, profile, [], null);
     }
@@ -736,6 +737,19 @@ public sealed class LaunchPipelineService : ILaunchPipelineService
 
         startInfo.EnvironmentVariables["appdata"] = MeloongCore.PathUtils.ToShortPath(request.MinecraftRootPath);
         return startInfo;
+    }
+
+    private void LogLaunchProfile(LaunchProfile profile)
+    {
+        var startInfo = profile.ProcessStartInfo;
+        _logger.Info("=================== 启动参数摘要 ===================");
+        _logger.Info("实例：" + profile.Instance.Name);
+        _logger.Info("游戏目录：" + startInfo.WorkingDirectory);
+        _logger.Info("Java：" + profile.Java.DisplayName + " | " + profile.Java.PathJava);
+        _logger.Info("appdata：" + startInfo.EnvironmentVariables["appdata"]);
+        _logger.Info("缺失文件：" + profile.MissingFiles.Count);
+        _logger.Info("命令：" + profile.SanitizedCommandLine);
+        _logger.Info("=================== 启动参数摘要结束 ===================");
     }
 
     private List<LaunchValidationIssue> ValidateRequest(LaunchRequest request)

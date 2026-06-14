@@ -1565,6 +1565,34 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public async Task LaunchPipelineLogsSanitizedLaunchProfileSummary()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "arguments": { "game": ["--username", "${auth_player_name}", "--accessToken", "${auth_access_token}"] },
+          "libraries": []
+        }
+        """, createJar: true);
+        var java = CreateJava(Path.Combine(temp.Path, "java", "bin", "java.exe"), 17);
+        var logger = new CaptureLoggerService();
+        var pipeline = CreatePipeline(new FakeJavaDiscoveryService([java]), new FakeProcessLauncher(), logger: logger);
+
+        var result = await pipeline.GenerateProfileAsync(CreateRequest(instance, temp.Path));
+
+        Assert.True(result.Success);
+        Assert.Contains(logger.Messages, message => message == "=================== 启动参数摘要 ===================");
+        Assert.Contains(logger.Messages, message => message == "实例：1.20.1");
+        Assert.Contains(logger.Messages, message => message.StartsWith("游戏目录：", StringComparison.Ordinal));
+        Assert.Contains(logger.Messages, message => message.StartsWith("Java：", StringComparison.Ordinal) && message.Contains("java.exe", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(logger.Messages, message => message.StartsWith("缺失文件：", StringComparison.Ordinal));
+        Assert.Contains(logger.Messages, message => message.StartsWith("命令：", StringComparison.Ordinal) && message.Contains("--accessToken ***", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task LaunchPipelineSkipsMissingFileBlockWhenVersionFileCheckIsDisabled()
     {
         using var temp = new TempDirectory();
@@ -3106,7 +3134,8 @@ public sealed class LaunchServicesTests
         IMinecraftGameDirectoryService? gameDirectories = null,
         ILaunchMemoryOptimizer? memoryOptimizer = null,
         IDownloadManagerService? downloadManager = null,
-        IGameProcessWatcher? gameProcessWatcher = null)
+        IGameProcessWatcher? gameProcessWatcher = null,
+        IAppLoggerService? logger = null)
     {
         return new LaunchPipelineService(
             javaDiscovery,
@@ -3123,7 +3152,7 @@ public sealed class LaunchServicesTests
             processLauncher,
             processConfigurator ?? new FakeLaunchProcessConfigurator(),
             gameProcessWatcher ?? new FakeGameProcessWatcher(),
-            new NullLoggerService(),
+            logger ?? new NullLoggerService(),
             gameWindow,
             launcherVisibility,
             windowTitle,
