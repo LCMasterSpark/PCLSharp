@@ -2485,10 +2485,49 @@ public sealed class LaunchServicesTests
         Assert.True(File.Exists(Path.Combine(nativesDirectory, "lwjgl.dll")));
         Assert.True(File.Exists(Path.Combine(nativesDirectory, "subdir", "helper.dll")));
         Assert.False(File.Exists(Path.Combine(nativesDirectory, "wrong-arch.dll")));
+        Assert.False(File.Exists(Path.Combine(nativesDirectory, "readme.txt")));
         Assert.False(File.Exists(Path.Combine(nativesDirectory, "skip", "ignored.dll")));
         Assert.False(File.Exists(Path.Combine(nativesDirectory, "MANIFEST.MF")));
         Assert.False(File.Exists(Path.Combine(temp.Path, "versions", "escape.dll")));
         Assert.False(File.Exists(Path.Combine(temp.Path, "escape.dll")));
+    }
+
+    [Fact]
+    public async Task NativesExtractorDeletesStaleNativeFilesLikeOldPcl()
+    {
+        using var temp = new TempDirectory();
+        var nativeClassifier = Environment.Is64BitOperatingSystem ? "natives-windows-64" : "natives-windows-32";
+        var nativeJarPath = Path.Combine(temp.Path, "libraries", "org", "lwjgl", "lwjgl", "3.3.1", $"lwjgl-3.3.1-{nativeClassifier}.jar");
+        CreateNativeJar(nativeJarPath);
+        var instance = WriteInstance(temp.Path, "1.20.1", $$"""
+        {
+          "id": "1.20.1",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": [
+            {
+              "name": "org.lwjgl:lwjgl:3.3.1",
+              "natives": { "windows": "natives-windows-${arch}" },
+              "downloads": {
+                "classifiers": {
+                  "{{nativeClassifier}}": {
+                    "path": "org/lwjgl/lwjgl/3.3.1/lwjgl-3.3.1-{{nativeClassifier}}.jar"
+                  }
+                }
+              }
+            }
+          ]
+        }
+        """);
+        var nativesDirectory = Path.Combine(instance.VersionPath, "1.20.1-natives");
+        Directory.CreateDirectory(nativesDirectory);
+        var staleFile = Path.Combine(nativesDirectory, "stale.dll");
+        File.WriteAllText(staleFile, "old");
+        var extractor = new NativesExtractor(new NullLoggerService());
+
+        await extractor.ExtractAsync(instance);
+
+        Assert.True(File.Exists(Path.Combine(nativesDirectory, "lwjgl.dll")));
+        Assert.False(File.Exists(staleFile));
     }
 
     [Fact]
@@ -3227,6 +3266,7 @@ public sealed class LaunchServicesTests
         using var archive = new ZipArchive(file, ZipArchiveMode.Create);
         WriteZipEntry(archive, rootDllName, "native");
         WriteZipEntry(archive, "subdir/helper.dll", "helper");
+        WriteZipEntry(archive, "readme.txt", "not a native");
         WriteZipEntry(archive, "skip/ignored.dll", "ignored");
         WriteZipEntry(archive, "META-INF/MANIFEST.MF", "manifest");
         WriteZipEntry(archive, "../escape.dll", "escape");

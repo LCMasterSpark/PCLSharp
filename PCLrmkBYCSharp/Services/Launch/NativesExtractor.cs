@@ -11,6 +11,7 @@ public sealed class NativesExtractor(IAppLoggerService logger) : INativesExtract
     {
         var nativesDirectory = Path.Combine(instance.VersionPath, $"{instance.Name}-natives");
         Directory.CreateDirectory(nativesDirectory);
+        var extractedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var document in LoadVersionDocuments(instance))
         {
             if (!document.Root.TryGetProperty("libraries", out var libraries) || libraries.ValueKind != JsonValueKind.Array)
@@ -26,12 +27,13 @@ public sealed class NativesExtractor(IAppLoggerService logger) : INativesExtract
                 {
                     if (File.Exists(nativeJar))
                     {
-                        ExtractJar(nativeJar, nativesDirectory, excludes);
+                        ExtractJar(nativeJar, nativesDirectory, excludes, extractedFiles);
                     }
                 }
             }
         }
 
+        DeleteStaleNativeFiles(nativesDirectory, extractedFiles);
         return Task.FromResult(nativesDirectory);
     }
 
@@ -117,14 +119,16 @@ public sealed class NativesExtractor(IAppLoggerService logger) : INativesExtract
         }
     }
 
-    private void ExtractJar(string jarPath, string nativesDirectory, IReadOnlyList<string> excludes)
+    private void ExtractJar(string jarPath, string nativesDirectory, IReadOnlyList<string> excludes, HashSet<string> extractedFiles)
     {
         try
         {
             using var archive = ZipFile.OpenRead(jarPath);
             foreach (var entry in archive.Entries)
             {
-                if (string.IsNullOrWhiteSpace(entry.Name) || IsExcluded(entry.FullName, excludes))
+                if (string.IsNullOrWhiteSpace(entry.Name)
+                    || IsExcluded(entry.FullName, excludes)
+                    || !entry.FullName.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -136,7 +140,14 @@ public sealed class NativesExtractor(IAppLoggerService logger) : INativesExtract
                     continue;
                 }
 
+                extractedFiles.Add(target);
                 Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                var targetInfo = new FileInfo(target);
+                if (targetInfo.Exists && targetInfo.Length == entry.Length)
+                {
+                    continue;
+                }
+
                 try
                 {
                     entry.ExtractToFile(target, overwrite: true);
@@ -150,6 +161,27 @@ public sealed class NativesExtractor(IAppLoggerService logger) : INativesExtract
         catch (InvalidDataException ex)
         {
             logger.Warn($"natives 文件不是有效压缩包，已跳过：{jarPath}，{ex.Message}");
+        }
+    }
+
+    private void DeleteStaleNativeFiles(string nativesDirectory, HashSet<string> extractedFiles)
+    {
+        foreach (var file in Directory.EnumerateFiles(nativesDirectory, "*", SearchOption.AllDirectories))
+        {
+            if (extractedFiles.Contains(Path.GetFullPath(file)))
+            {
+                continue;
+            }
+
+            try
+            {
+                File.Delete(file);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                logger.Warn($"删除多余 natives 文件时访问被拒绝，已跳过：{file}；{ex.Message}");
+                return;
+            }
         }
     }
 
