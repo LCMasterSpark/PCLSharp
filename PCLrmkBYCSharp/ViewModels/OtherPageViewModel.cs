@@ -33,6 +33,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private readonly IClipboardService? _clipboard;
     private int _doNotClickCount;
     private IReadOnlyList<HelpEntry> _allHelpEntries = [];
+    private CrashAnalysisSummary? _latestCrashAnalysis;
 
     [ObservableProperty]
     private string helpSearchText = "";
@@ -344,6 +345,59 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         }
     }
 
+    [RelayCommand]
+    private void OpenCrashReportFolder()
+    {
+        if (string.IsNullOrWhiteSpace(_latestCrashAnalysis?.LatestReportPath))
+        {
+            CrashAnalysisText = "尚未发现可打开的崩溃报告。";
+            return;
+        }
+
+        if (_folders is null)
+        {
+            CrashAnalysisText = "文件夹打开服务未初始化。";
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(_latestCrashAnalysis.LatestReportPath);
+        if (string.IsNullOrWhiteSpace(directory))
+        {
+            CrashAnalysisText = "崩溃报告路径无效：" + _latestCrashAnalysis.LatestReportPath;
+            return;
+        }
+
+        try
+        {
+            _folders.OpenFolder(directory);
+            CrashAnalysisText = BuildCrashAnalysisText(_latestCrashAnalysis) + "\n已打开报告目录。";
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "打开崩溃报告目录失败");
+            CrashAnalysisText = "打开崩溃报告目录失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void CopyCrashAnalysis()
+    {
+        if (string.IsNullOrWhiteSpace(_latestCrashAnalysis?.LatestReportPath))
+        {
+            CrashAnalysisText = "尚未发现可复制的崩溃诊断。";
+            return;
+        }
+
+        if (_clipboard is null)
+        {
+            CrashAnalysisText = "剪贴板服务未初始化。";
+            return;
+        }
+
+        _clipboard.SetText(BuildCrashAnalysisText(_latestCrashAnalysis));
+        CrashAnalysisText = BuildCrashAnalysisText(_latestCrashAnalysis) + "\n崩溃诊断已复制到剪贴板。";
+    }
+
     public override async Task OnNavigatedToAsync()
     {
         if (_help is null || _allHelpEntries.Count > 0)
@@ -438,9 +492,8 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         ExtensionPoints = _featureHub.GetExtensionPoints();
 
         var crash = _featureHub.AnalyzeCrashes();
-        CrashAnalysisText = string.IsNullOrWhiteSpace(crash.LatestReportPath)
-            ? crash.Status
-            : $"{crash.Status}\n崩溃描述：{crash.Title}\n疑似原因：{crash.SuspectedCause}\n建议：{crash.Suggestion}\n最近报告：{crash.LatestReportPath}\n报告数量：{crash.ReportCount}";
+        _latestCrashAnalysis = crash;
+        CrashAnalysisText = BuildCrashAnalysisText(crash);
 
         var account = _featureHub.GetAccountSummary();
         AccountCenterText = $"{account.Status}\n当前登录：{account.CurrentLoginType}\n显示名称：{account.CurrentDisplayName}\n缓存账号：{account.CachedAccountCount}";
@@ -671,6 +724,13 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         }
 
         return "download.file";
+    }
+
+    private static string BuildCrashAnalysisText(CrashAnalysisSummary crash)
+    {
+        return string.IsNullOrWhiteSpace(crash.LatestReportPath)
+            ? crash.Status
+            : $"{crash.Status}\n崩溃描述：{crash.Title}\n疑似原因：{crash.SuspectedCause}\n建议：{crash.Suggestion}\n最近报告：{crash.LatestReportPath}\n报告数量：{crash.ReportCount}";
     }
 
     private static string SanitizeFileName(string fileName)

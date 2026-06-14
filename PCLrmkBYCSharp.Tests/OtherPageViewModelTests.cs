@@ -1,6 +1,7 @@
 using PCLrmkBYCSharp.Models;
 using PCLrmkBYCSharp.Services;
 using PCLrmkBYCSharp.Services.Downloads;
+using PCLrmkBYCSharp.Services.FeatureHub;
 using PCLrmkBYCSharp.Services.Launch;
 using PCLrmkBYCSharp.ViewModels;
 
@@ -18,7 +19,9 @@ public sealed class OtherPageViewModelTests
         var helpService = new FakeHelpService();
         var folders = new CaptureFolderOpenService();
         var clipboard = new CaptureClipboardService();
-        var viewModel = new OtherPageViewModel(paths, helpService, new NullLoggerService(), actions, folders: folders, clipboard: clipboard);
+        var reportPath = System.IO.Path.Combine(temp.Path, ".minecraft", "crash-reports", "crash-test.txt");
+        var featureHub = new FakeFeatureHubService(reportPath);
+        var viewModel = new OtherPageViewModel(paths, helpService, new NullLoggerService(), actions, featureHub: featureHub, folders: folders, clipboard: clipboard);
 
         await viewModel.OnNavigatedToAsync();
         viewModel.HelpSearchText = "marker";
@@ -53,6 +56,17 @@ public sealed class OtherPageViewModelTests
         Assert.Contains(paths.LogsDirectory, clipboard.Text, StringComparison.Ordinal);
         Assert.Contains(paths.SettingsFilePath, clipboard.Text, StringComparison.Ordinal);
         Assert.Contains("诊断信息已复制", viewModel.DiagnosticsStatusText, StringComparison.Ordinal);
+
+        viewModel.OpenCrashReportFolderCommand.Execute(null);
+
+        Assert.Equal(System.IO.Path.GetDirectoryName(reportPath), folders.OpenedFolders.Last());
+        Assert.Contains("已打开报告目录", viewModel.CrashAnalysisText, StringComparison.Ordinal);
+
+        viewModel.CopyCrashAnalysisCommand.Execute(null);
+
+        Assert.Contains("疑似原因：Java 版本过旧", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains(reportPath, clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("崩溃诊断已复制", viewModel.CrashAnalysisText, StringComparison.Ordinal);
 
         var help = Assert.Single(viewModel.HelpResults);
         Assert.Equal("marker help", help.Title);
@@ -306,6 +320,31 @@ public sealed class OtherPageViewModelTests
             CallCount++;
             return Task.FromResult(new LaunchMemoryOptimizeResult(7));
         }
+    }
+
+    private sealed class FakeFeatureHubService(string reportPath) : IFeatureHubService
+    {
+        public IReadOnlyList<FeatureModuleSnapshot> GetModules() => [];
+
+        public IReadOnlyList<HomeFeedItem> GetHomeFeedItems() => [];
+
+        public CrashAnalysisSummary AnalyzeCrashes()
+        {
+            return new CrashAnalysisSummary(
+                "发现最近崩溃报告，已完成基础规则分析",
+                reportPath,
+                DateTimeOffset.Now,
+                1,
+                "Initializing game",
+                "Java 版本过旧",
+                "切换到该 Minecraft / 加载器要求的 Java 版本后重试。");
+        }
+
+        public AccountCenterSummary GetAccountSummary() => new("账号中心入口已预留", "Legacy", "Steve", 0);
+
+        public SkinCenterSummary GetSkinSummary() => new("读取设置", "随机", "未指定", false);
+
+        public IReadOnlyList<ExtensionPointInfo> GetExtensionPoints() => [];
     }
 
     private sealed class CaptureFolderOpenService : IFolderOpenService
