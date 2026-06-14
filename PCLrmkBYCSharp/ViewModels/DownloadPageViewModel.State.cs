@@ -83,7 +83,7 @@ public sealed partial class DownloadPageViewModel
 
     public IReadOnlyList<string> InstallModeOptions { get; } = ["原版安装", "加载器安装"];
 
-    public IReadOnlyList<string> VersionCategoryOptions { get; } = ["全部版本", "正式版", "快照版", "远古版"];
+    public IReadOnlyList<string> VersionCategoryOptions { get; } = ["推荐版本", "全部版本", "正式版", "快照版", "远古版"];
 
     public override async Task OnNavigatedToAsync()
     {
@@ -533,9 +533,18 @@ public sealed partial class DownloadPageViewModel
 
     public string DownloadInfoDetails => SelectedSection.Section switch
     {
-        DownloadSection.Install => $"分类：{SelectedVersionCategory}\n版本类型：{SelectedVersion?.TypeText ?? "未选择"}\n安装方式：{SelectedInstallMode}\n目标实例：{InstanceVersionSafeName}\n版本数：{VersionCount}\n列表会在启动器打开后自动预热一次，手动刷新仍可重新获取。",
+        DownloadSection.Install => $"分类：{SelectedVersionCategory}\n{SelectedVersionCategoryDescription}\n版本类型：{SelectedVersion?.TypeText ?? "未选择"}\n安装方式：{SelectedInstallMode}\n目标实例：{InstanceVersionSafeName}\n版本数：{VersionCount}\n列表会在启动器打开后自动预热一次，手动刷新仍可重新获取。",
         DownloadSection.Manager => $"{DownloadTaskOverviewText}\n文件：{DownloadedFileCountText}\n已接收：{DownloadedBytesText}\n当前任务：{SelectedDownloadTask?.Name ?? "未选择"}\n{SelectedDownloadTaskActionHint}",
         _ => $"{SelectedResourceDetail}\n{SelectedResourcePlatformText}\n{SelectedResourceGameVersionText}\n{SelectedResourceLoaderText}\n{SelectedResourceVersionSummary}\n{SelectedResourceDependencyText}\n{SelectedResourceDependencyListText}\n{SelectedResourceFileSummary}\n{SelectedResourceDownloadPlanText}\n{ResourceInstallTarget}"
+    };
+
+    public string SelectedVersionCategoryDescription => SelectedVersionCategory switch
+    {
+        "推荐版本" => "推荐版本会显示最新正式版和最新快照，适合快速选择。",
+        "正式版" => "正式版是稳定发布版本，适合日常游玩和整合包基础版本。",
+        "快照版" => "快照版用于体验开发中的 Minecraft 内容，可能不稳定。",
+        "远古版" => "远古版包含 Alpha / Beta 等旧版本，兼容性差异较大。",
+        _ => "全部版本会显示版本清单中的完整条目。"
     };
 
     private ResourcePrimaryFileState GetSelectedResourcePrimaryFileState()

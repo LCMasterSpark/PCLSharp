@@ -88,7 +88,7 @@ public sealed partial class DownloadPageViewModel : PageViewModelBase
     private string selectedInstallMode = "原版安装";
 
     [ObservableProperty]
-    private string selectedVersionCategory = "全部版本";
+    private string selectedVersionCategory = "推荐版本";
 
     [ObservableProperty]
     private CommunityResourceProject? selectedResourceProject;

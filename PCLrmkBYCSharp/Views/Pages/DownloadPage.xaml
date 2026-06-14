@@ -251,23 +251,25 @@
                                          SelectedValuePath="Title"
                                          SelectedValue="{Binding SelectedVersionCategory, Mode=TwoWay}"
                                          Margin="0,10,0,0"
+                                         MaxHeight="150"
                                          Background="Transparent"
                                          BorderThickness="0"
                                          ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                                         ScrollViewer.VerticalScrollBarVisibility="Disabled">
+                                         ScrollViewer.VerticalScrollBarVisibility="Auto">
                                     <ListBox.ItemsPanel>
                                         <ItemsPanelTemplate>
-                                            <UniformGrid Columns="4" />
+                                            <WrapPanel />
                                         </ItemsPanelTemplate>
                                     </ListBox.ItemsPanel>
                                     <ListBox.ItemContainerStyle>
                                         <Style TargetType="ListBoxItem" BasedOn="{StaticResource BaseListBoxItemStyle}">
-                                            <Setter Property="Margin" Value="0,0,8,0" />
+                                            <Setter Property="Margin" Value="0,0,8,8" />
                                         </Style>
                                     </ListBox.ItemContainerStyle>
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Border x:Name="CategoryCard"
+                                                    Width="136"
                                                     MinHeight="62"
                                                     Padding="10,8"
                                                     Background="{StaticResource AppPanelBrush}"

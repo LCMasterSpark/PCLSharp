@@ -128,6 +128,7 @@ public sealed partial class DownloadPageViewModel
         IEnumerable<MinecraftRemoteVersion> filtered = _allVersions;
         filtered = SelectedVersionCategory switch
         {
+            "推荐版本" => GetRecommendedVersions(),
             "正式版" => filtered.Where(version => string.Equals(version.Type, "release", StringComparison.OrdinalIgnoreCase)),
             "快照版" => filtered.Where(version => string.Equals(version.Type, "snapshot", StringComparison.OrdinalIgnoreCase)),
             "远古版" => filtered.Where(version =>
@@ -155,12 +156,27 @@ public sealed partial class DownloadPageViewModel
         var oldCount = _allVersions.Count(version =>
             string.Equals(version.Type, "old_alpha", StringComparison.OrdinalIgnoreCase)
             || string.Equals(version.Type, "old_beta", StringComparison.OrdinalIgnoreCase));
+        var recommendedCount = GetRecommendedVersions().Count();
 
         VersionCategoryItems.Clear();
+        VersionCategoryItems.Add(new DownloadVersionCategoryItem("推荐版本", "最新正式 / 快照", recommendedCount));
         VersionCategoryItems.Add(new DownloadVersionCategoryItem("全部版本", "完整版本列表", _allVersions.Count));
         VersionCategoryItems.Add(new DownloadVersionCategoryItem("正式版", "稳定发布版本", releaseCount));
         VersionCategoryItems.Add(new DownloadVersionCategoryItem("快照版", "每周测试版本", snapshotCount));
         VersionCategoryItems.Add(new DownloadVersionCategoryItem("远古版", "Alpha / Beta", oldCount));
+    }
+
+    private IReadOnlyList<MinecraftRemoteVersion> GetRecommendedVersions()
+    {
+        return _allVersions
+            .Where(version =>
+                string.Equals(version.Type, "release", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(version.Type, "snapshot", StringComparison.OrdinalIgnoreCase))
+            .GroupBy(version => string.Equals(version.Type, "release", StringComparison.OrdinalIgnoreCase) ? "release" : "snapshot")
+            .Select(group => group.OrderByDescending(version => version.ReleaseTime).First())
+            .OrderBy(version => string.Equals(version.Type, "release", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+            .ThenByDescending(version => version.ReleaseTime)
+            .ToList();
     }
 
     public async Task RefreshLoaderVersionsAsync()

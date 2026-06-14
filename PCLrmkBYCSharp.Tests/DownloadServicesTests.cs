@@ -1789,7 +1789,9 @@ public sealed class DownloadServicesTests
             Versions =
             [
                 new MinecraftRemoteVersion("1.20.4", "release", DateTimeOffset.Parse("2023-12-07T12:00:00+00:00"), "https://example/1.20.4.json", "test"),
+                new MinecraftRemoteVersion("1.19.4", "release", DateTimeOffset.Parse("2023-03-14T12:00:00+00:00"), "https://example/1.19.4.json", "test"),
                 new MinecraftRemoteVersion("24w01a", "snapshot", DateTimeOffset.Parse("2024-01-03T12:00:00+00:00"), "https://example/24w01a.json", "test"),
+                new MinecraftRemoteVersion("23w51b", "snapshot", DateTimeOffset.Parse("2023-12-20T12:00:00+00:00"), "https://example/23w51b.json", "test"),
                 new MinecraftRemoteVersion("a1.2.6", "old_alpha", DateTimeOffset.Parse("2010-12-03T12:00:00+00:00"), "https://example/a1.2.6.json", "test")
             ]
         };
@@ -1798,14 +1800,17 @@ public sealed class DownloadServicesTests
         await viewModel.RefreshVersionsAsync();
 
         Assert.Equal(
-            ["全部版本:3", "正式版:1", "快照版:1", "远古版:1"],
+            ["推荐版本:2", "全部版本:5", "正式版:2", "快照版:2", "远古版:1"],
             viewModel.VersionCategoryItems.Select(item => $"{item.Title}:{item.Count}").ToArray());
+        Assert.Equal(["1.20.4", "24w01a"], viewModel.Versions.Select(version => version.Id).ToArray());
+        Assert.Contains("最新正式版和最新快照", viewModel.DownloadInfoDetails);
+
         viewModel.SelectedVersionCategory = "正式版";
 
-        Assert.Equal(["1.20.4"], viewModel.Versions.Select(version => version.Id).ToArray());
+        Assert.Equal(["1.20.4", "1.19.4"], viewModel.Versions.Select(version => version.Id).ToArray());
 
         viewModel.SelectedVersionCategory = "快照版";
-        Assert.Equal(["24w01a"], viewModel.Versions.Select(version => version.Id).ToArray());
+        Assert.Equal(["24w01a", "23w51b"], viewModel.Versions.Select(version => version.Id).ToArray());
 
         viewModel.SelectedVersionCategory = "远古版";
         Assert.Equal(["a1.2.6"], viewModel.Versions.Select(version => version.Id).ToArray());

@@ -27,6 +27,7 @@ public sealed partial class DownloadPageViewModel
     partial void OnSelectedVersionCategoryChanged(string value)
     {
         ApplyVersionCategoryFilter(preserveSelection: true);
+        OnPropertyChanged(nameof(SelectedVersionCategoryDescription));
         StatusMessage = "原版版本分类：" + value;
         NotifyDownloadInfoChanged();
     }
