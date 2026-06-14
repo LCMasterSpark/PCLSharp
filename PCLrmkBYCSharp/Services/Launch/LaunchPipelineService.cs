@@ -278,7 +278,7 @@ public sealed class LaunchPipelineService
 
             SetStep("等待游戏窗口", LaunchStepStatus.Running, "正在监控游戏进程");
             var watchResult = await _watcher.WatchAsync(process, cancellationToken).ConfigureAwait(false);
-            if (watchResult.HasExited && watchResult.ExitCode != 0)
+            if (watchResult.HasExited && (watchResult.ExitCode != 0 || watchResult.IsEarlyExit))
             {
                 var issue = BuildEarlyGameExitIssue(profileResult.Profile, watchResult);
                 SetStep("等待游戏窗口", LaunchStepStatus.Failed, issue.Message);
