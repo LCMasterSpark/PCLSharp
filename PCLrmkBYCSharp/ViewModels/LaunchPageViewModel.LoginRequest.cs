@@ -104,9 +104,15 @@ public sealed partial class LaunchPageViewModel
             return;
         }
 
+        if (_clipboard is null)
+        {
+            StatusMessage = "当前环境没有可用的剪贴板服务。";
+            return;
+        }
+
         try
         {
-            Clipboard.SetText(MicrosoftDeviceCode);
+            _clipboard.SetText(MicrosoftDeviceCode);
             StatusMessage = "已复制微软登录代码";
         }
         catch (Exception ex)

@@ -101,6 +101,7 @@ public sealed class AppServices
         var helpActions = new HelpActionService(
             showMessage: (title, message) => prompts.Confirm(title, message),
             showHint: (message, _) => prompts.Confirm("提示", message),
+            setClipboardText: clipboard.SetText,
             settings: settings);
         var linkService = new PclLinkService();
         var linkBackend = new LinkBackendService(new LinkPortAllocator());
@@ -133,7 +134,7 @@ public sealed class AppServices
         var updateCheck = new AppUpdateCheckService(http);
         var featureHub = new FeatureHubService(paths, settings);
         var mojangProfiles = new MojangProfileService(http, settings, logger);
-        var microsoftDeviceCodes = new WpfMicrosoftDeviceCodePresenter();
+        var microsoftDeviceCodes = new WpfMicrosoftDeviceCodePresenter(clipboard);
         var microsoftLogin = new MicrosoftLoginService(http, settings, microsoftDeviceCodes);
         var yggdrasilLogin = new YggdrasilLoginService(http, settings, new WpfYggdrasilProfileSelector());
         var login = new LoginService(legacyLogin, microsoftLogin, yggdrasilLogin, settings, mojangProfiles);

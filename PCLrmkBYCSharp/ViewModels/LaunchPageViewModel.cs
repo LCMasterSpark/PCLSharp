@@ -42,6 +42,7 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
     private readonly IUiDispatcherService? _dispatcher;
     private readonly IFolderOpenService _folders;
     private readonly IMicrosoftDeviceCodeStatusService? _microsoftDeviceCodes;
+    private readonly IClipboardService? _clipboard;
     private readonly SynchronizationContext? _uiContext;
     private readonly object _instancesSync = new();
     private readonly object _minecraftRootFoldersSync = new();
@@ -80,7 +81,8 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
         IFolderOpenService? folders = null,
         ILoginService? loginService = null,
         IMicrosoftDeviceCodeStatusService? microsoftDeviceCodes = null,
-        IJavaSelectorService? javaSelector = null)
+        IJavaSelectorService? javaSelector = null,
+        IClipboardService? clipboard = null)
         : base(PageRoute.Launch, "启动", "登录、选择实例与 Java，然后按旧版流程启动")
     {
         _minecraftDiscovery = minecraftDiscovery;
@@ -100,6 +102,7 @@ public sealed partial class LaunchPageViewModel : PageViewModelBase
         _dispatcher = dispatcher;
         _folders = folders ?? new FolderOpenService();
         _microsoftDeviceCodes = microsoftDeviceCodes;
+        _clipboard = clipboard;
         _uiContext = SynchronizationContext.Current;
         EnableCollectionSynchronization();
 

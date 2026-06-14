@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using System.Windows;
 using PCLrmkBYCSharp.Models;
 
 namespace PCLrmkBYCSharp.Services;
@@ -57,7 +56,7 @@ public sealed class HelpActionService : IHelpActionService
         _startProcess = startProcess ?? StartProcessAsync;
         _downloadFile = downloadFile;
         _showMessage = showMessage ?? ((_, _) => { });
-        _setClipboardText = setClipboardText ?? Clipboard.SetText;
+        _setClipboardText = setClipboardText ?? (_ => { });
         _showHint = showHint ?? ((_, _) => { });
         _switchPage = switchPage;
         _settings = settings;

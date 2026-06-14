@@ -6,6 +6,13 @@ namespace PCLrmkBYCSharp.Services.Launch;
 
 public sealed class WpfMicrosoftDeviceCodePresenter : MicrosoftDeviceCodeStatusService
 {
+    private readonly IClipboardService _clipboard;
+
+    public WpfMicrosoftDeviceCodePresenter(IClipboardService? clipboard = null)
+    {
+        _clipboard = clipboard ?? new ClipboardService();
+    }
+
     public override async Task ShowAsync(MicrosoftDeviceCodeInfo info, CancellationToken cancellationToken = default)
     {
         await base.ShowAsync(info, cancellationToken).ConfigureAwait(false);
@@ -23,7 +30,7 @@ public sealed class WpfMicrosoftDeviceCodePresenter : MicrosoftDeviceCodeStatusS
         UpdateStatus(BuildStatusMessage(info, localResult));
     }
 
-    private static DeviceCodePresentationResult ShowCore(MicrosoftDeviceCodeInfo info, CancellationToken cancellationToken)
+    private DeviceCodePresentationResult ShowCore(MicrosoftDeviceCodeInfo info, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var opened = TryOpenWebsite(info.VerificationUri);
@@ -48,13 +55,13 @@ public sealed class WpfMicrosoftDeviceCodePresenter : MicrosoftDeviceCodeStatusS
         return false;
     }
 
-    private static bool TryCopyCode(string userCode)
+    private bool TryCopyCode(string userCode)
     {
         try
         {
             if (!string.IsNullOrWhiteSpace(userCode))
             {
-                Clipboard.SetText(userCode);
+                _clipboard.SetText(userCode);
                 return true;
             }
         }

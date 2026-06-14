@@ -2167,6 +2167,32 @@ public sealed class LaunchStage5BTests
     }
 
     [Fact]
+    public async Task LaunchPageCopiesMicrosoftDeviceCodeThroughClipboardService()
+    {
+        using var temp = new TempDirectory();
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        settings.Set(AppSettingKeys.LoginType, LoginType.Ms);
+        var deviceCodes = new MicrosoftDeviceCodeStatusService();
+        var clipboard = new CaptureClipboardService();
+        var viewModel = new LaunchPageViewModel(
+            new FakeMinecraftDiscoveryService(temp.Path, []),
+            new FakeJavaDiscoveryService([]),
+            new CaptureLaunchPipelineService(),
+            settings,
+            new NullFileDialogService(),
+            new LegacyLoginService(),
+            new NullLoggerService(),
+            microsoftDeviceCodes: deviceCodes,
+            clipboard: clipboard);
+
+        await deviceCodes.ShowAsync(new MicrosoftDeviceCodeInfo("ABCD-EFGH", "device", "https://microsoft.com/link", 900, 1, "OPEN WEB PAGE"));
+        viewModel.CopyMicrosoftDeviceCodeCommand.Execute(null);
+
+        Assert.Equal("ABCD-EFGH", clipboard.LastText);
+        Assert.Contains("已复制", viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task LaunchPageCanCancelMicrosoftDeviceCodeLogin()
     {
         using var temp = new TempDirectory();
@@ -4121,6 +4147,16 @@ public sealed class LaunchStage5BTests
                 new LaunchStepState("Done", LaunchStepStatus.Succeeded, "OK")
             ]);
             StepsChanged?.Invoke(this, _steps.ToArray());
+        }
+    }
+
+    private sealed class CaptureClipboardService : IClipboardService
+    {
+        public string LastText { get; private set; } = "";
+
+        public void SetText(string text)
+        {
+            LastText = text;
         }
     }
 

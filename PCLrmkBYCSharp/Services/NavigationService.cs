@@ -83,7 +83,8 @@ public sealed class NavigationService : INavigationService
             folders,
             loginService,
             microsoftDeviceCodes,
-            javaSelector);
+            javaSelector,
+            clipboard);
         helpActions.SetEventHandler(HelpActionService.EventLaunchGame, launchPage.ExecuteCustomLaunchEventAsync);
 
         _pages = new Dictionary<PageRoute, PageViewModelBase>
