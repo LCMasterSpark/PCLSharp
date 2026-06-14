@@ -48,7 +48,7 @@ public sealed class FeatureHubServiceTests
     }
 
     [Fact]
-    public void FeatureHubServiceFindsLatestCrashReport()
+    public void FeatureHubServiceFindsLatestCrashReportAndDiagnosesJavaMismatch()
     {
         using var temp = new TempDirectory();
         var paths = new TestAppPathService(temp.Path);
@@ -59,7 +59,12 @@ public sealed class FeatureHubServiceTests
         var oldReport = Path.Combine(crashReports, "crash-old.txt");
         var newReport = Path.Combine(crashReports, "crash-new.txt");
         File.WriteAllText(oldReport, "old");
-        File.WriteAllText(newReport, "new");
+        File.WriteAllText(newReport, """
+---- Minecraft Crash Report ----
+Description: Initializing game
+
+java.lang.UnsupportedClassVersionError: net/example/ExampleMod has been compiled by a more recent version of the Java Runtime
+""");
         File.SetLastWriteTimeUtc(oldReport, DateTime.UtcNow.AddDays(-2));
         File.SetLastWriteTimeUtc(newReport, DateTime.UtcNow.AddDays(-1));
         settings.Set(AppSettingKeys.MinecraftRootPath, minecraft);
@@ -70,6 +75,34 @@ public sealed class FeatureHubServiceTests
         Assert.Equal(2, summary.ReportCount);
         Assert.Equal(newReport, summary.LatestReportPath);
         Assert.Contains("发现", summary.Status, StringComparison.Ordinal);
+        Assert.Equal("Initializing game", summary.Title);
+        Assert.Equal("Java 版本过旧", summary.SuspectedCause);
+        Assert.Contains("切换", summary.Suggestion, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("java.lang.OutOfMemoryError: Java heap space", "内存不足")]
+    [InlineData("org.spongepowered.asm.mixin.transformer.throwables.MixinTransformerError", "Mixin 注入失败")]
+    [InlineData("net.minecraftforge.fml.loading.DuplicateModsFoundException: duplicate mod", "重复 Mod")]
+    [InlineData("java.lang.NoClassDefFoundError: com/example/Required", "缺少类或依赖")]
+    public void FeatureHubServiceMatchesCommonCrashRules(string errorLine, string expectedCause)
+    {
+        using var temp = new TempDirectory();
+        var paths = new TestAppPathService(temp.Path);
+        var settings = new AppSettingsService(paths);
+        var minecraft = Path.Combine(temp.Path, ".minecraft");
+        var crashReports = Path.Combine(minecraft, "crash-reports");
+        Directory.CreateDirectory(crashReports);
+        var report = Path.Combine(crashReports, "crash-rule.txt");
+        File.WriteAllText(report, "Description: Rendering screen" + Environment.NewLine + errorLine);
+        settings.Set(AppSettingKeys.MinecraftRootPath, minecraft);
+        var service = new FeatureHubService(paths, settings);
+
+        var summary = service.AnalyzeCrashes();
+
+        Assert.Equal("Rendering screen", summary.Title);
+        Assert.Equal(expectedCause, summary.SuspectedCause);
+        Assert.False(string.IsNullOrWhiteSpace(summary.Suggestion));
     }
 
     [Fact]

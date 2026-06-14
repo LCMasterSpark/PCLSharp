@@ -440,7 +440,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         var crash = _featureHub.AnalyzeCrashes();
         CrashAnalysisText = string.IsNullOrWhiteSpace(crash.LatestReportPath)
             ? crash.Status
-            : $"{crash.Status}\n最近报告：{crash.LatestReportPath}\n报告数量：{crash.ReportCount}";
+            : $"{crash.Status}\n崩溃描述：{crash.Title}\n疑似原因：{crash.SuspectedCause}\n建议：{crash.Suggestion}\n最近报告：{crash.LatestReportPath}\n报告数量：{crash.ReportCount}";
 
         var account = _featureHub.GetAccountSummary();
         AccountCenterText = $"{account.Status}\n当前登录：{account.CurrentLoginType}\n显示名称：{account.CurrentDisplayName}\n缓存账号：{account.CachedAccountCount}";

@@ -44,13 +44,22 @@ public sealed class FeatureHubService(IAppPathService paths, IAppSettingsService
             .ToList();
 
         var latest = reports.FirstOrDefault();
-        return latest is null
-            ? new CrashAnalysisSummary("未发现 Minecraft 崩溃报告", "", null, 0)
-            : new CrashAnalysisSummary(
-                "发现最近崩溃报告，后续会接入规则分析",
-                latest.FullName,
-                latest.LastWriteTime,
-                reports.Count);
+        if (latest is null)
+        {
+            return new CrashAnalysisSummary("未发现 Minecraft 崩溃报告", "", null, 0);
+        }
+
+        var text = TryReadCrashReport(latest.FullName);
+        var title = ExtractCrashTitle(text);
+        var diagnosis = DiagnoseCrash(text);
+        return new CrashAnalysisSummary(
+            "发现最近崩溃报告，已完成基础规则分析",
+            latest.FullName,
+            latest.LastWriteTime,
+            reports.Count,
+            title,
+            diagnosis.Cause,
+            diagnosis.Suggestion);
     }
 
     public AccountCenterSummary GetAccountSummary()
@@ -122,6 +131,80 @@ public sealed class FeatureHubService(IAppPathService paths, IAppSettingsService
         roots.Add(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), ".minecraft"));
         roots.Add(paths.AppDataDirectory);
         return roots.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private static string TryReadCrashReport(string path)
+    {
+        try
+        {
+            return File.ReadAllText(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return "读取崩溃报告失败：" + ex.Message;
+        }
+    }
+
+    private static string ExtractCrashTitle(string report)
+    {
+        using var reader = new StringReader(report);
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            var trimmed = line.Trim();
+            if (trimmed.StartsWith("Description:", StringComparison.OrdinalIgnoreCase))
+            {
+                var description = trimmed["Description:".Length..].Trim();
+                if (!string.IsNullOrWhiteSpace(description))
+                {
+                    return description;
+                }
+            }
+        }
+
+        return "未能读取崩溃描述";
+    }
+
+    private static (string Cause, string Suggestion) DiagnoseCrash(string report)
+    {
+        var text = report ?? "";
+        if (text.Contains("OutOfMemoryError", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("Java heap space", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("内存不足", "尝试提高最大内存，或减少高占用的光影、材质包与 Mod。");
+        }
+
+        if (text.Contains("UnsupportedClassVersionError", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("has been compiled by a more recent version of the Java Runtime", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("Java 版本过旧", "切换到该 Minecraft / 加载器要求的 Java 版本后重试。");
+        }
+
+        if (text.Contains("NoClassDefFoundError", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("ClassNotFoundException", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("缺少类或依赖", "检查 Mod 前置依赖、加载器版本和 Minecraft 版本是否匹配。");
+        }
+
+        if (text.Contains("MixinApplyError", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("MixinTransformerError", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("Mixin 注入失败", "优先检查最近新增或更新的 Mod，确认它们与当前加载器版本兼容。");
+        }
+
+        if (text.Contains("DuplicateModsFound", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("duplicate mod", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("重复 Mod", "删除重复安装的 Mod，保留一个版本后重新启动。");
+        }
+
+        if (text.Contains("AccessDeniedException", StringComparison.OrdinalIgnoreCase)
+            || text.Contains("另一个程序正在使用此文件", StringComparison.OrdinalIgnoreCase))
+        {
+            return ("文件被占用或权限不足", "关闭占用文件的程序，或将游戏目录移动到拥有写入权限的位置。");
+        }
+
+        return ("暂未匹配到明确规则", "保留最新崩溃报告并结合启动日志继续分析；可先尝试禁用最近新增的 Mod。");
     }
 
     private static int CountMicrosoftAccounts(string json)

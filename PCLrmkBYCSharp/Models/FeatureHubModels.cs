@@ -10,7 +10,10 @@ public sealed record CrashAnalysisSummary(
     string Status,
     string LatestReportPath,
     DateTimeOffset? LatestReportTime,
-    int ReportCount);
+    int ReportCount,
+    string Title = "",
+    string SuspectedCause = "",
+    string Suggestion = "");
 
 public sealed record AccountCenterSummary(
     string Status,
