@@ -96,7 +96,7 @@ public sealed class NavigationService : INavigationService
             [PageRoute.Link] = new LinkPageViewModel(linkService, settings, logger, urls, linkBackend, fileDialogs, linkProcess, dispatcher, clipboard, folders, paths, files),
             [PageRoute.Instance] = new InstancePageViewModel(minecraftDiscovery, instanceManagement, launchFileCompleter, launchPipeline, downloadManager, modpackExport, settings, fileDialogs, prompts, logger, gameDirectories, rootFolders, selections, localModUpdateService: localModUpdates, folders: folders, dispatcher: dispatcher),
             [PageRoute.Setup] = new SetupPageViewModel(settings, paths, fileDialogs, logger),
-            [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions, settings, fileDialogs, downloadManager, memoryOptimizer, prompts, updateCheck, featureHub, folders, files, clipboard)
+            [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions, settings, fileDialogs, downloadManager, memoryOptimizer, prompts, updateCheck, featureHub, folders, files, urls, clipboard)
         };
         CurrentPage = _pages[PageRoute.Launch];
     }

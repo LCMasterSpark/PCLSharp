@@ -206,6 +206,31 @@ public sealed class OtherPageViewModelTests
         Assert.Contains("下载完成", viewModel.CustomDownloadStatusText, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task UpdateCheckCanOpenLatestReleaseUrl()
+    {
+        var releaseUrl = "https://example.com/pcl-sharp/releases/v0.7pre";
+        var updateCheck = new FakeUpdateCheckService(new AppUpdateInfo(
+            "v0.6pre",
+            "v0.7pre",
+            "Plain Craft Launcher Sharp v0.7pre",
+            releaseUrl,
+            DateTimeOffset.Parse("2026-06-14T00:00:00Z"),
+            true,
+            "https://example.com/pcl-sharp/releases/latest"));
+        var urls = new CaptureExternalUrlService();
+        var viewModel = new OtherPageViewModel(updateCheck: updateCheck, urls: urls, logger: new NullLoggerService());
+
+        await viewModel.CheckUpdateCommand.ExecuteAsync(null);
+
+        Assert.Contains(releaseUrl, viewModel.UpdateStatusText, StringComparison.Ordinal);
+
+        viewModel.OpenLatestReleaseCommand.Execute(null);
+
+        Assert.Equal(releaseUrl, urls.LastUrl);
+        Assert.Contains(releaseUrl, viewModel.UpdateStatusText, StringComparison.Ordinal);
+    }
+
     private sealed class FakeHelpService : IHelpService
     {
         private static readonly IReadOnlyList<HelpEntry> Entries =
@@ -398,6 +423,24 @@ public sealed class OtherPageViewModelTests
         public void OpenFile(string filePath)
         {
             LastFile = filePath;
+        }
+    }
+
+    private sealed class FakeUpdateCheckService(AppUpdateInfo info) : IAppUpdateCheckService
+    {
+        public Task<AppUpdateInfo> CheckAsync(string? sourceUrl = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(info);
+        }
+    }
+
+    private sealed class CaptureExternalUrlService : IExternalUrlService
+    {
+        public string LastUrl { get; private set; } = "";
+
+        public void OpenUrl(string url)
+        {
+            LastUrl = url;
         }
     }
 

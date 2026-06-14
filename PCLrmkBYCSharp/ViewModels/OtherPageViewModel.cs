@@ -31,10 +31,12 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private readonly IFeatureHubService? _featureHub;
     private readonly IFolderOpenService? _folders;
     private readonly IFileOpenService? _files;
+    private readonly IExternalUrlService? _urls;
     private readonly IClipboardService? _clipboard;
     private int _doNotClickCount;
     private IReadOnlyList<HelpEntry> _allHelpEntries = [];
     private CrashAnalysisSummary? _latestCrashAnalysis;
+    private string _latestReleaseUrl = "";
 
     [ObservableProperty]
     private string helpSearchText = "";
@@ -122,6 +124,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         IFeatureHubService? featureHub = null,
         IFolderOpenService? folders = null,
         IFileOpenService? files = null,
+        IExternalUrlService? urls = null,
         IClipboardService? clipboard = null)
         : base(PageRoute.Other, "更多", "帮助、关于、诊断、反馈与维护工具")
     {
@@ -138,6 +141,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         _featureHub = featureHub;
         _folders = folders;
         _files = files;
+        _urls = urls;
         _clipboard = clipboard;
         RegisterHelpEventHandlers();
         var assembly = typeof(OtherPageViewModel).Assembly;
@@ -546,6 +550,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     {
         if (_updateCheck is null)
         {
+            _latestReleaseUrl = "";
             UpdateStatusText = "更新检查服务未初始化";
             return;
         }
@@ -554,15 +559,43 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         {
             UpdateStatusText = "正在检查更新...";
             var info = await _updateCheck.CheckAsync();
-            UpdateStatusText = info.IsUpdateAvailable
-                ? $"发现新版本：{info.LatestVersion}，当前版本：{info.CurrentVersion}"
-                : $"当前已是最新版本：{info.CurrentVersion}";
+            _latestReleaseUrl = info.ReleaseUrl;
+            var releaseText = string.IsNullOrWhiteSpace(info.ReleaseUrl) ? "未提供" : info.ReleaseUrl;
+            UpdateStatusText = $"{info.Summary}\n发布页：{releaseText}";
             FeatureHubStatusText = "更新检查完成";
         }
         catch (Exception ex)
         {
             _logger?.Error(ex, "检查更新失败");
+            _latestReleaseUrl = "";
             UpdateStatusText = "检查更新失败：" + ex.Message;
+        }
+    }
+
+    [RelayCommand]
+    private void OpenLatestRelease()
+    {
+        if (string.IsNullOrWhiteSpace(_latestReleaseUrl))
+        {
+            UpdateStatusText = "尚未发现可打开的发布页，请先检查更新。";
+            return;
+        }
+
+        if (_urls is null)
+        {
+            UpdateStatusText = "链接打开服务未初始化。";
+            return;
+        }
+
+        try
+        {
+            _urls.OpenUrl(_latestReleaseUrl);
+            UpdateStatusText += "\n已打开发布页。";
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "打开发布页失败");
+            UpdateStatusText = "打开发布页失败：" + ex.Message;
         }
     }
 
