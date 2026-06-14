@@ -53,7 +53,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         ];
         LatencyOptions =
         [
-            new LinkLatencyOption(LinkLatencyMode.DirectFirst, "优先直连", "更贴近旧 PCL 的默认体验，优先尝试直连。"),
+            new LinkLatencyOption(LinkLatencyMode.DirectFirst, "优先直连", "更贴近原 PCL 的默认体验，优先尝试直连。"),
             new LinkLatencyOption(LinkLatencyMode.LatencyFirst, "优先低延迟", "优先选择延迟更低的中继或路径。")
         ];
 
@@ -123,6 +123,12 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private string linkProcessLogText = "联机后端输出会显示在这里。";
 
     public bool HasUrlService => _urls is not null;
+
+    public async Task LoadInviteCodeAsync(string inviteCode)
+    {
+        InviteCodeInput = inviteCode?.Trim() ?? "";
+        await JoinRoomAsync();
+    }
 
     [RelayCommand]
     private void CopyInviteCode()

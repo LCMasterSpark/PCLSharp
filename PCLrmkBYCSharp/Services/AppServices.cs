@@ -5,6 +5,7 @@ using PCLrmkBYCSharp.Services.Downloads;
 using PCLrmkBYCSharp.Services.FeatureHub;
 using PCLrmkBYCSharp.Services.Launch;
 using PCLrmkBYCSharp.Services.Link;
+using PCLrmkBYCSharp.ViewModels;
 
 namespace PCLrmkBYCSharp.Services;
 
@@ -189,10 +190,24 @@ public sealed class AppServices
         });
         helpActions.SetEventHandler(HelpActionService.EventJoinRoom, async (eventData, cancellationToken) =>
         {
-            settings.Set(AppSettingKeys.LinkLastInviteCode, eventData.Trim());
+            var inviteCode = eventData.Trim();
+            settings.Set(AppSettingKeys.LinkLastInviteCode, inviteCode);
             await settings.SaveAsync(cancellationToken);
-            uiDispatcher.Invoke(() => navigation.Navigate(PageRoute.Link));
-            return new HelpActionResult(true, "已打开陶瓦联机页面");
+            Task? loadInviteTask = null;
+            uiDispatcher.Invoke(() =>
+            {
+                navigation.Navigate(PageRoute.Link);
+                if (navigation.CurrentPage is LinkPageViewModel linkPage)
+                {
+                    loadInviteTask = linkPage.LoadInviteCodeAsync(inviteCode);
+                }
+            });
+            if (loadInviteTask is not null)
+            {
+                await loadInviteTask;
+            }
+
+            return new HelpActionResult(true, "已打开陶瓦联机页面并载入邀请码");
         });
         helpActions.SetEventHandler(HelpActionService.EventImportModpack, (eventData, cancellationToken) =>
             OpenModpackDownloadPresetAsync(eventData, "已打开整合包导入入口", settings, navigation, uiDispatcher, cancellationToken));
