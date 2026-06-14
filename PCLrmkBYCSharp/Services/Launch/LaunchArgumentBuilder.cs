@@ -246,7 +246,11 @@ public sealed partial class LaunchArgumentBuilder(
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(request.ServerIp))
+        if (!string.IsNullOrWhiteSpace(request.ServerIp) && ShouldUseQuickPlayMultiplayer(request))
+        {
+            AddOptionWithValueIfMissing(args, "--quickPlayMultiplayer", "${quickPlayMultiplayer}");
+        }
+        else if (!string.IsNullOrWhiteSpace(request.ServerIp))
         {
             if (request.ServerIp.Contains(':', StringComparison.Ordinal))
             {
@@ -304,6 +308,17 @@ public sealed partial class LaunchArgumentBuilder(
         {
             args.Add(option);
         }
+    }
+
+    private static void AddOptionWithValueIfMissing(List<string> args, string option, string value)
+    {
+        if (ContainsOption(args, option))
+        {
+            return;
+        }
+
+        args.Add(option);
+        args.Add(value);
     }
 
     private static bool ContainsOption(IEnumerable<string> args, string option)
@@ -561,6 +576,11 @@ public sealed partial class LaunchArgumentBuilder(
             ["${clientid}"] = login.ClientToken,
             ["${auth_xuid}"] = "",
             ["${user_type}"] = "msa",
+            ["${quickPlayPath}"] = "",
+            ["${quickPlaySingleplayer}"] = "",
+            ["${quickPlayMultiplayer}"] = request.ServerIp.Trim(),
+            ["${quickPlayRealms}"] = "",
+            ["${path}"] = "",
             ["${version_type}"] = versionType,
             ["${resolution_width}"] = windowSize.Width.ToString(),
             ["${resolution_height}"] = windowSize.Height.ToString(),
@@ -590,6 +610,13 @@ public sealed partial class LaunchArgumentBuilder(
             2 or 3 => (Math.Max(100, request.WindowWidth), Math.Max(100, request.WindowHeight)),
             _ => (854, 480)
         };
+    }
+
+    private static bool ShouldUseQuickPlayMultiplayer(LaunchRequest request)
+    {
+        return !string.IsNullOrWhiteSpace(request.ServerIp)
+            && request.Instance?.Version.ReleaseTime is { } releaseTime
+            && releaseTime > new DateTimeOffset(2023, 4, 4, 0, 0, 0, TimeSpan.Zero);
     }
 
     private int GetMemoryMb(LaunchRequest request, JavaEntry java)
@@ -939,7 +966,11 @@ public sealed partial class LaunchArgumentBuilder(
 
     private static bool OptionCanLoseEmptyValue(string option)
     {
-        return string.Equals(option, "--versionType", StringComparison.OrdinalIgnoreCase);
+        return string.Equals(option, "--versionType", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(option, "--quickPlayPath", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(option, "--quickPlaySingleplayer", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(option, "--quickPlayMultiplayer", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(option, "--quickPlayRealms", StringComparison.OrdinalIgnoreCase);
     }
 
     private static IEnumerable<string> FixOptiFineTweaker(IEnumerable<string> args)
@@ -983,9 +1014,9 @@ public sealed partial class LaunchArgumentBuilder(
             return new LaunchRuleFeatures(
                 request.WindowType != 0 && request.WindowWidth > 0 && request.WindowHeight > 0,
                 false,
+                ShouldUseQuickPlayMultiplayer(request),
                 false,
-                false,
-                false,
+                ShouldUseQuickPlayMultiplayer(request),
                 false);
         }
 

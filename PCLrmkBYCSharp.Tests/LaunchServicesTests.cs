@@ -671,6 +671,70 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public void LaunchArgumentBuilderUsesQuickPlayMultiplayerForNewVersionServerEntry()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "type": "release",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "arguments": {
+            "game": [
+              "--username", "${auth_player_name}",
+              {
+                "rules": [{ "action": "allow", "features": { "has_quick_plays_support": true } }],
+                "value": ["--quickPlayPath", "${quickPlayPath}"]
+              },
+              {
+                "rules": [{ "action": "allow", "features": { "is_quick_play_multiplayer": true } }],
+                "value": ["--quickPlayMultiplayer", "${quickPlayMultiplayer}"]
+              }
+            ]
+          },
+          "libraries": []
+        }
+        """, createJar: true);
+        var builder = new LaunchArgumentBuilder();
+
+        var result = builder.Build(
+            CreateRequest(instance, temp.Path) with { ServerIp = "play.example.com:25566" },
+            CreateJava("C:\\Java17\\bin\\java.exe", 17),
+            new LegacyLoginService().CreateSession("Alex"));
+
+        Assert.Contains("--quickPlayMultiplayer play.example.com:25566", result.Arguments);
+        Assert.DoesNotContain("--quickPlayPath", result.Arguments, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("--server", result.Arguments, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("${quickPlay", result.Arguments, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LaunchArgumentBuilderKeepsLegacyServerArgumentsForOldVersions()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "1.12.2", """
+        {
+          "id": "1.12.2",
+          "type": "release",
+          "releaseTime": "2017-09-18T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "minecraftArguments": "--username ${auth_player_name}",
+          "libraries": []
+        }
+        """, createJar: true);
+        var builder = new LaunchArgumentBuilder();
+
+        var result = builder.Build(
+            CreateRequest(instance, temp.Path) with { ServerIp = "play.example.com:25566" },
+            CreateJava("C:\\Java8\\bin\\java.exe", 8),
+            new LegacyLoginService().CreateSession("Alex"));
+
+        Assert.Contains("--server play.example.com --port 25566", result.Arguments);
+        Assert.DoesNotContain("--quickPlayMultiplayer", result.Arguments, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void LaunchArgumentBuilderUsesDefaultResolutionForMaximizedWindowMode()
     {
         using var temp = new TempDirectory();
