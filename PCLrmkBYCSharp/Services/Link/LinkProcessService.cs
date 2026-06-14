@@ -173,6 +173,7 @@ public sealed class LinkProcessService : ILinkProcessService
             processId,
             message,
             commandPreview,
+            _linkLogFilePath ?? "",
             _recentLogLines.ToArray(),
             _connectedPeerCount,
             _connectedPeers.ToArray(),

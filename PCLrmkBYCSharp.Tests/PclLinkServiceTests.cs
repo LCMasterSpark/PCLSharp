@@ -313,6 +313,7 @@ public sealed class PclLinkServiceTests
 
         var logFile = Assert.Single(Directory.GetFiles(paths.LogsDirectory, "link-backend-*.log"));
         var content = File.ReadAllText(logFile);
+        Assert.Equal(logFile, service.Current.LogFilePath);
         Assert.Contains("联机后端日志已创建", content, StringComparison.Ordinal);
         Assert.Contains("启动命令", content, StringComparison.Ordinal);
         Assert.Contains("new peer connection added", content, StringComparison.Ordinal);
@@ -565,7 +566,8 @@ public sealed class PclLinkServiceTests
             "",
             executable);
         var runner = new CaptureLinkProcessRunner();
-        var process = new LinkProcessService(runner, new NullLoggerService());
+        var paths = new TestAppPathService(Path.Combine(temp.Path, "appdata"));
+        var process = new LinkProcessService(runner, new NullLoggerService(), paths);
         process.Start(plan);
         runner.Handle.Publish("new peer connection added remote_addr=10.0.0.2");
         var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
@@ -581,6 +583,7 @@ public sealed class PclLinkServiceTests
         Assert.Contains("已连接节点", viewModel.LinkConnectionStatusText, StringComparison.Ordinal);
         Assert.Contains("10.0.0.2", viewModel.LinkConnectedPeersText, StringComparison.Ordinal);
         Assert.Contains("new peer connection added", viewModel.LinkProcessLogText, StringComparison.Ordinal);
+        Assert.Contains(paths.LogsDirectory, viewModel.LinkProcessLogFileText, StringComparison.Ordinal);
     }
 
     [Fact]

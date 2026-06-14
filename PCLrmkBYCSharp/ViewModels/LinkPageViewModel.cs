@@ -126,6 +126,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     [ObservableProperty]
     private string linkProcessLogText = "联机后端输出会显示在这里。";
 
+    [ObservableProperty]
+    private string linkProcessLogFileText = "当前没有联机后端日志文件。";
+
     public bool HasUrlService => _urls is not null;
 
     public override Task OnNavigatedToAsync()
@@ -499,6 +502,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         LinkProcessLogText = snapshot.RecentLogLines.Count == 0
             ? "暂无联机后端输出。"
             : string.Join(Environment.NewLine, snapshot.RecentLogLines);
+        LinkProcessLogFileText = string.IsNullOrWhiteSpace(snapshot.LogFilePath)
+            ? "当前没有联机后端日志文件。"
+            : "日志文件：" + snapshot.LogFilePath;
         if (updateStatusMessage)
         {
             StatusMessage = snapshot.Message;
@@ -510,6 +516,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         LinkProcessStatusText = message;
         LinkConnectionStatusText = "联机后端未运行。";
         LinkConnectedPeersText = "暂无已连接节点。";
+        LinkProcessLogFileText = "当前没有联机后端日志文件。";
         StatusMessage = message;
     }
 
