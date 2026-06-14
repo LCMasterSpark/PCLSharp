@@ -280,7 +280,7 @@ public sealed class LaunchPipelineService
             var watchResult = await _watcher.WatchAsync(process, cancellationToken).ConfigureAwait(false);
             if (watchResult.HasExited && watchResult.ExitCode != 0)
             {
-                var issue = BuildEarlyGameExitIssue(watchResult);
+                var issue = BuildEarlyGameExitIssue(profileResult.Profile, watchResult);
                 SetStep("等待游戏窗口", LaunchStepStatus.Failed, issue.Message);
                 return new LaunchResult(false, profileResult.Profile, [issue], process);
             }
@@ -473,17 +473,21 @@ public sealed class LaunchPipelineService
             : $"{samplePrefix} {source.Count} 个文件：{sample}{unresolvable}";
     }
 
-    private static LaunchValidationIssue BuildEarlyGameExitIssue(GameProcessWatchResult watchResult)
+    private static LaunchValidationIssue BuildEarlyGameExitIssue(LaunchProfile profile, GameProcessWatchResult watchResult)
     {
-        var diagnosis = DiagnoseGameExit(watchResult);
+        var gameLogTail = ReadLatestGameLogTail(profile);
+        var combinedTail = watchResult.CombinedTail
+            .Concat(gameLogTail)
+            .Where(line => !string.IsNullOrWhiteSpace(line))
+            .ToArray();
+        var diagnosis = DiagnoseGameExit(combinedTail);
         var message = $"游戏进程很快退出，退出码：{watchResult.ExitCode}";
         if (!string.IsNullOrWhiteSpace(diagnosis))
         {
             message += "；" + diagnosis;
         }
 
-        var tail = watchResult.CombinedTail
-            .Where(line => !string.IsNullOrWhiteSpace(line))
+        var tail = combinedTail
             .TakeLast(3)
             .ToArray();
         if (tail.Length > 0)
@@ -494,9 +498,9 @@ public sealed class LaunchPipelineService
         return new LaunchValidationIssue("GameExitedEarly", message);
     }
 
-    private static string DiagnoseGameExit(GameProcessWatchResult watchResult)
+    private static string DiagnoseGameExit(IReadOnlyList<string> logTail)
     {
-        var text = string.Join('\n', watchResult.CombinedTail);
+        var text = string.Join('\n', logTail);
         if (string.IsNullOrWhiteSpace(text))
         {
             return "没有捕获到游戏输出，请查看最新日志文件";
@@ -569,6 +573,34 @@ public sealed class LaunchPipelineService
         }
 
         return "游戏自行退出，建议查看下方最近日志或完整日志文件";
+    }
+
+    private static IReadOnlyList<string> ReadLatestGameLogTail(LaunchProfile profile)
+    {
+        try
+        {
+            var gameDirectory = profile.ProcessStartInfo.WorkingDirectory;
+            if (string.IsNullOrWhiteSpace(gameDirectory))
+            {
+                gameDirectory = profile.Instance.VersionPath;
+            }
+
+            var latestLog = Path.Combine(gameDirectory, "logs", "latest.log");
+            if (!File.Exists(latestLog))
+            {
+                return [];
+            }
+
+            return File.ReadLines(latestLog)
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .TakeLast(30)
+                .Select(line => "latest.log: " + line)
+                .ToArray();
+        }
+        catch
+        {
+            return [];
+        }
     }
 
     private async Task<IReadOnlyList<JavaEntry>> GetJavaCandidatesAsync(LaunchRequest request, MinecraftInstance instance, CancellationToken cancellationToken)

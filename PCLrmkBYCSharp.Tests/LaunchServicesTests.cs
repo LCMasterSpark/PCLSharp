@@ -15,6 +15,40 @@ namespace PCLrmkBYCSharp.Tests;
 
 public sealed class LaunchServicesTests
 {
+    [Fact]
+    public async Task LaunchPipelineReadsLatestLogWhenGameExitsEarlyWithoutConsoleOutput()
+    {
+        using var temp = new TempDirectory();
+        CreateEmptyAssetIndex(temp.Path, "5");
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "assetIndex": { "id": "5" },
+          "libraries": []
+        }
+        """, createJar: true);
+        var logsDirectory = Path.Combine(instance.VersionPath, "logs");
+        Directory.CreateDirectory(logsDirectory);
+        File.WriteAllLines(Path.Combine(logsDirectory, "latest.log"), [
+            "[main/INFO]: Loading Minecraft",
+            "net.fabricmc.loader.impl.FormattedException: Incompatible mod set! Mod sodium requires fabric-api"
+        ]);
+        var java = CreateJava(Path.Combine(temp.Path, "java", "bin", "java.exe"), 17);
+        var launcher = new FakeProcessLauncher();
+        var watcher = new FakeGameProcessWatcher(GameProcessWatchResult.Exited(1, [], []));
+        var pipeline = CreatePipeline(new FakeJavaDiscoveryService([java]), launcher, gameProcessWatcher: watcher);
+
+        var result = await pipeline.LaunchAsync(CreateRequest(instance, temp.Path) with { StartProcess = true });
+
+        var issue = Assert.Single(result.Issues, issue => issue.Code == "GameExitedEarly");
+        Assert.False(result.Success);
+        Assert.Contains("latest.log:", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("Incompatible mod set", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("fabric-api", issue.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("java version \"1.8.0_321\"\r\nJava(TM) 64-Bit Server VM", 8, true)]
     [InlineData("openjdk version \"17.0.8\" 2023-07-18\r\nOpenJDK 64-Bit Server VM", 17, true)]
