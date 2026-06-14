@@ -1075,13 +1075,14 @@ public sealed class LaunchServicesTests
             }
             """, createJar: true);
             var settings = new AppSettingsService(new TestAppPathService(temp.Path));
-            var builder = new LaunchArgumentBuilder(settings);
+            var pureDirectory = @"C:\PCLSharpRuntime";
+            var builder = new LaunchArgumentBuilder(settings, pureDirectory: pureDirectory);
 
             var result = builder.Build(CreateRequest(instance, root), CreateJava("C:\\Java17\\bin\\java.exe", 17), new LegacyLoginService().CreateSession("Alex"));
 
-            Assert.Contains("-Doolloo.jlw.tmpdir=", result.Arguments);
+            Assert.Contains("-Doolloo.jlw.tmpdir=" + Path.GetFullPath(pureDirectory).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), result.Arguments);
             Assert.Contains("-jar", result.Arguments);
-            Assert.Contains("JavaWrapper.jar", result.Arguments);
+            Assert.Contains(Path.Combine(pureDirectory, "JavaWrapper.jar"), result.Arguments);
         }
         finally
         {
@@ -1201,13 +1202,16 @@ public sealed class LaunchServicesTests
             new ProcessStartInfo(java.PathJava),
             []);
 
-        var result = await new LaunchPatchService(new NullLoggerService(), source).PrepareAsync(profile);
+        var target = Path.Combine(temp.Path, "runtime");
+        var result = await new LaunchPatchService(new NullLoggerService(), source, target).PrepareAsync(profile);
 
         Assert.True(result.Success);
-        Assert.True(File.Exists(Path.Combine(instance.VersionPath, "JavaWrapper.jar")));
-        Assert.True(File.Exists(Path.Combine(instance.VersionPath, "LUA.jar")));
-        Assert.Equal("jlw", await File.ReadAllTextAsync(Path.Combine(instance.VersionPath, "JavaWrapper.jar")));
-        Assert.Equal("lua", await File.ReadAllTextAsync(Path.Combine(instance.VersionPath, "LUA.jar")));
+        Assert.True(File.Exists(Path.Combine(target, "JavaWrapper.jar")));
+        Assert.True(File.Exists(Path.Combine(target, "LUA.jar")));
+        Assert.False(File.Exists(Path.Combine(instance.VersionPath, "JavaWrapper.jar")));
+        Assert.False(File.Exists(Path.Combine(instance.VersionPath, "LUA.jar")));
+        Assert.Equal("jlw", await File.ReadAllTextAsync(Path.Combine(target, "JavaWrapper.jar")));
+        Assert.Equal("lua", await File.ReadAllTextAsync(Path.Combine(target, "LUA.jar")));
     }
 
     [Fact]
@@ -2261,17 +2265,20 @@ public sealed class LaunchServicesTests
         """);
         var http = new FakeLaunchHttpClient();
         http.Enqueue("""{"jarHash":"d41d8cd98f00b204e9800998ecf8427e"}""");
+        var pureDirectory = Path.Combine(temp.Path, "PCLRuntime");
         var completer = new LaunchFileCompleter(
             new DownloadSourceService(new AppSettingsService(new TestAppPathService(temp.Path))),
             new FileCheckService(new NullLoggerService()),
             new NullLoggerService(),
-            http);
+            http,
+            pureDirectory);
 
         var result = await completer.BuildCompletionPlanAsync(
             CreateRequest(instance, temp.Path) with { LoginType = LoginType.Nide, LoginServer = "00000000000000000000000000000000" },
             []);
 
         var download = Assert.Single(result.Downloads, file => file.LocalPath.EndsWith("nide8auth.jar", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(Path.Combine(pureDirectory, "nide8auth.jar"), download.LocalPath);
         Assert.Contains("https://login.mc-user.com:233/index/jar", download.Sources);
         Assert.Equal("d41d8cd98f00b204e9800998ecf8427e", download.Check.Hash);
         Assert.Contains(result.MissingFiles, file => file.EndsWith("nide8auth.jar", StringComparison.OrdinalIgnoreCase));
@@ -2295,17 +2302,20 @@ public sealed class LaunchServicesTests
         var http = new FakeLaunchHttpClient();
         var sha256 = new string('a', 64);
         http.Enqueue("{\"download_url\":\"https://authlib-injector.yushi.moe/artifact/1/authlib-injector.jar\",\"checksums\":{\"sha256\":\"" + sha256 + "\"}}");
+        var pureDirectory = Path.Combine(temp.Path, "PCLRuntime");
         var completer = new LaunchFileCompleter(
             new DownloadSourceService(new AppSettingsService(new TestAppPathService(temp.Path))),
             new FileCheckService(new NullLoggerService()),
             new NullLoggerService(),
-            http);
+            http,
+            pureDirectory);
 
         var result = await completer.BuildCompletionPlanAsync(
             CreateRequest(instance, temp.Path) with { LoginType = LoginType.Auth, LoginServer = "https://auth.example.com/api/yggdrasil" },
             []);
 
         var download = Assert.Single(result.Downloads, file => file.LocalPath.EndsWith("authlib-injector.jar", StringComparison.OrdinalIgnoreCase));
+        Assert.Equal(Path.Combine(pureDirectory, "authlib-injector.jar"), download.LocalPath);
         Assert.Contains("https://authlib-injector.yushi.moe/artifact/1/authlib-injector.jar", download.Sources);
         Assert.Contains("https://bmclapi2.bangbang93.com/mirrors/authlib-injector/artifact/1/authlib-injector.jar", download.Sources);
         Assert.Equal(sha256, download.Check.Hash);
@@ -2329,14 +2339,17 @@ public sealed class LaunchServicesTests
           "libraries": []
         }
         """);
-        await File.WriteAllBytesAsync(Path.Combine(instance.VersionPath, fileName), new byte[2048]);
+        var pureDirectory = Path.Combine(temp.Path, "PCLRuntime");
+        Directory.CreateDirectory(pureDirectory);
+        await File.WriteAllBytesAsync(Path.Combine(pureDirectory, fileName), new byte[2048]);
         var http = new FakeLaunchHttpClient();
         http.EnqueueException(new HttpRequestException("metadata offline"));
         var completer = new LaunchFileCompleter(
             new DownloadSourceService(new AppSettingsService(new TestAppPathService(temp.Path))),
             new FileCheckService(new NullLoggerService()),
             new NullLoggerService(),
-            http);
+            http,
+            pureDirectory);
 
         var result = await completer.BuildCompletionPlanAsync(
             CreateRequest(instance, temp.Path) with { LoginType = loginType, LoginServer = server },

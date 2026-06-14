@@ -145,11 +145,11 @@ public sealed class AppServices
         var microsoftLogin = new MicrosoftLoginService(http, settings, microsoftDeviceCodes);
         var yggdrasilLogin = new YggdrasilLoginService(http, settings, new WpfYggdrasilProfileSelector(prompts));
         var login = new LoginService(legacyLogin, microsoftLogin, yggdrasilLogin, settings, mojangProfiles);
-        var argumentBuilder = new LaunchArgumentBuilder(settings, gameDirectories, new SystemMemoryService());
-        var fileCompleter = new LaunchFileCompleter(downloadSources, fileChecker, logger, http);
+        var argumentBuilder = new LaunchArgumentBuilder(settings, gameDirectories, new SystemMemoryService(), paths.RuntimeDirectory);
+        var fileCompleter = new LaunchFileCompleter(downloadSources, fileChecker, logger, http, paths.RuntimeDirectory);
         var nativesExtractor = new NativesExtractor(logger);
         var preRun = new LaunchPreRunService(settings, logger, gameDirectories, paths);
-        var patches = new LaunchPatchService(logger);
+        var patches = new LaunchPatchService(logger, targetDirectory: paths.RuntimeDirectory);
         var customCommand = new CustomCommandService(settings, logger, gameDirectories: gameDirectories);
         var scriptExporter = new LaunchScriptExporter(settings);
         var processLauncher = new ProcessLauncher();

@@ -6,6 +6,8 @@ public interface IAppPathService
 
     string LogsDirectory { get; }
 
+    string RuntimeDirectory { get; }
+
     string SettingsFilePath { get; }
 
     void EnsureCreated();

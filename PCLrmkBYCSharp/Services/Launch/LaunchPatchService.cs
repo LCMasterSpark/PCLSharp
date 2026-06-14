@@ -3,9 +3,10 @@ using PCLrmkBYCSharp.Models;
 
 namespace PCLrmkBYCSharp.Services.Launch;
 
-public sealed class LaunchPatchService(IAppLoggerService logger, string? sourceDirectory = null) : ILaunchPatchService
+public sealed class LaunchPatchService(IAppLoggerService logger, string? sourceDirectory = null, string? targetDirectory = null) : ILaunchPatchService
 {
     private readonly string _sourceDirectory = sourceDirectory ?? Path.Combine(AppContext.BaseDirectory, "Resources", "Patches");
+    private readonly string? _targetDirectory = targetDirectory;
 
     public async Task<LaunchPatchPrepareResult> PrepareAsync(LaunchProfile profile, CancellationToken cancellationToken = default)
     {
@@ -15,14 +16,17 @@ public sealed class LaunchPatchService(IAppLoggerService logger, string? sourceD
             return LaunchPatchPrepareResult.Ok([]);
         }
 
-        Directory.CreateDirectory(profile.Instance.VersionPath);
+        var patchDirectory = string.IsNullOrWhiteSpace(_targetDirectory)
+            ? profile.Instance.VersionPath
+            : _targetDirectory;
+        Directory.CreateDirectory(patchDirectory);
         var prepared = new List<string>();
         var missing = new List<string>();
         foreach (var patch in required)
         {
             cancellationToken.ThrowIfCancellationRequested();
             var source = Path.Combine(_sourceDirectory, patch.SourceFileName);
-            var target = Path.Combine(profile.Instance.VersionPath, patch.TargetFileName);
+            var target = Path.Combine(patchDirectory, patch.TargetFileName);
             if (!File.Exists(source))
             {
                 if (File.Exists(target))

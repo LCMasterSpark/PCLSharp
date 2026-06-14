@@ -14,13 +14,15 @@ public sealed class LaunchFileCompleter : ILaunchFileCompleter
     private readonly IFileCheckService _checker;
     private readonly IAppLoggerService _logger;
     private readonly ILaunchHttpClient _http;
+    private readonly string? _pureDirectory;
 
-    public LaunchFileCompleter(IDownloadSourceService? sources = null, IFileCheckService? checker = null, IAppLoggerService? logger = null, ILaunchHttpClient? http = null)
+    public LaunchFileCompleter(IDownloadSourceService? sources = null, IFileCheckService? checker = null, IAppLoggerService? logger = null, ILaunchHttpClient? http = null, string? pureDirectory = null)
     {
         _logger = logger ?? new SilentLoggerService();
         _checker = checker ?? new FileCheckService(_logger);
         _sources = sources ?? new OfficialFirstDownloadSourceService();
         _http = http ?? new LaunchHttpClient();
+        _pureDirectory = pureDirectory;
     }
 
     public async Task<IReadOnlyList<string>> CheckMissingFilesAsync(LaunchRequest request, IReadOnlyList<string> argumentMissingFiles, CancellationToken cancellationToken = default)
@@ -60,16 +62,24 @@ public sealed class LaunchFileCompleter : ILaunchFileCompleter
 
         if (request.LoginType == LoginType.Nide)
         {
-            var target = Path.Combine(request.Instance.VersionPath, "nide8auth.jar");
+            var target = Path.Combine(ResolvePureDirectory(request), "nide8auth.jar");
             var hash = await TryGetNideJarHashAsync(request.LoginServer, cancellationToken).ConfigureAwait(false);
             AddAgentDownload(target, string.IsNullOrWhiteSpace(hash) ? [] : ["https://login.mc-user.com:233/index/jar"], hash, downloads, missing);
         }
         else if (request.LoginType == LoginType.Auth)
         {
-            var target = Path.Combine(request.Instance.VersionPath, "authlib-injector.jar");
+            var target = Path.Combine(ResolvePureDirectory(request), "authlib-injector.jar");
             var info = await TryGetAuthlibInjectorDownloadAsync(cancellationToken).ConfigureAwait(false);
             AddAgentDownload(target, info.Sources, info.Hash, downloads, missing);
         }
+    }
+
+    private string ResolvePureDirectory(LaunchRequest request)
+    {
+        var path = string.IsNullOrWhiteSpace(_pureDirectory)
+            ? request.Instance!.VersionPath
+            : _pureDirectory;
+        return Path.GetFullPath(path);
     }
 
     private void AddAgentDownload(string target, IReadOnlyList<string> sources, string? hash, List<DownloadFile> downloads, HashSet<string> missing)

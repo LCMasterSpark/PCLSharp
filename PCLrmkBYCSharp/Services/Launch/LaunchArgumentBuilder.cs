@@ -11,7 +11,8 @@ namespace PCLrmkBYCSharp.Services.Launch;
 public sealed partial class LaunchArgumentBuilder(
     IAppSettingsService? settings = null,
     IMinecraftGameDirectoryService? gameDirectories = null,
-    ISystemMemoryService? systemMemory = null) : ILaunchArgumentBuilder
+    ISystemMemoryService? systemMemory = null,
+    string? pureDirectory = null) : ILaunchArgumentBuilder
 {
     public LaunchArgumentBuildResult Build(LaunchRequest request, JavaEntry java, LoginSession login)
     {
@@ -574,6 +575,7 @@ public sealed partial class LaunchArgumentBuilder(
     {
         var instance = request.Instance!;
         var gameDirectory = ResolveGameDirectory(request);
+        var purePath = ResolvePureDirectory();
         var versionType = GetInstanceSettingOnly(instance.Name, AppSettingKeys.VersionArgumentInfo, "");
         if (string.IsNullOrWhiteSpace(versionType))
         {
@@ -588,7 +590,7 @@ public sealed partial class LaunchArgumentBuilder(
             ["${natives_directory}"] = ToPclLaunchPath(nativesDirectory),
             ["${library_directory}"] = ToPclLaunchPath(Path.Combine(instance.RootPath, "libraries")),
             ["${libraries_directory}"] = ToPclLaunchPath(Path.Combine(instance.RootPath, "libraries")),
-            ["${pure_directory}"] = ToPclLaunchPath(instance.VersionPath),
+            ["${pure_directory}"] = ToPclLaunchPath(purePath),
             ["${launcher_name}"] = "PCL",
             ["${launcher_version}"] = "0",
             ["${classpath_separator}"] = ";",
@@ -622,6 +624,14 @@ public sealed partial class LaunchArgumentBuilder(
     private static string ToPclLaunchPath(string path, bool keepFileName = false)
     {
         return MeloongCore.PathUtils.ToShortPath(path, keepFileName);
+    }
+
+    private string ResolvePureDirectory()
+    {
+        var path = string.IsNullOrWhiteSpace(pureDirectory)
+            ? Path.Combine(AppContext.BaseDirectory, "PCL")
+            : pureDirectory;
+        return Path.GetFullPath(path).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
     }
 
     private string ResolveGameDirectory(LaunchRequest request)

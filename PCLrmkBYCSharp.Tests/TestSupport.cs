@@ -28,6 +28,7 @@ internal sealed class TestAppPathService : IAppPathService
     {
         AppDataDirectory = root;
         LogsDirectory = System.IO.Path.Combine(root, "Logs");
+        RuntimeDirectory = System.IO.Path.Combine(root, "PCL");
         SettingsFilePath = System.IO.Path.Combine(root, "settings.json");
     }
 
@@ -35,12 +36,15 @@ internal sealed class TestAppPathService : IAppPathService
 
     public string LogsDirectory { get; }
 
+    public string RuntimeDirectory { get; }
+
     public string SettingsFilePath { get; }
 
     public void EnsureCreated()
     {
         Directory.CreateDirectory(AppDataDirectory);
         Directory.CreateDirectory(LogsDirectory);
+        Directory.CreateDirectory(RuntimeDirectory);
     }
 }
 
