@@ -32,7 +32,7 @@ public sealed partial class LaunchArgumentBuilder(
         args.Add(GetString(root, "mainClass"));
         args.AddRange(BuildGameArguments(request, roots));
 
-        var replaced = DeduplicateArguments(args)
+        var replaced = args
             .Where(arg => !string.IsNullOrWhiteSpace(arg))
             .Select(arg => ReplaceTokens(arg, replacements))
             .ToList();
@@ -163,7 +163,7 @@ public sealed partial class LaunchArgumentBuilder(
             args.Add("${pure_directory}\\JavaWrapper.jar");
         }
 
-        return DeduplicateArguments(args);
+        return DeduplicateJvmArguments(args);
     }
 
     private static IEnumerable<string> BuildLoggingArguments(string rootPath, IReadOnlyList<JsonElement> roots)
@@ -269,7 +269,7 @@ public sealed partial class LaunchArgumentBuilder(
             }
         }
 
-        return DeduplicateArguments(FixOptiFineTweaker(args));
+        return DeduplicateGameArguments(FixOptiFineTweaker(args));
     }
 
     private bool ShouldUseJavaLaunchWrapper(LaunchRequest request, JavaEntry java, string customJvmArgs)
@@ -954,35 +954,96 @@ public sealed partial class LaunchArgumentBuilder(
         }
     }
 
-    private static List<string> DeduplicateArguments(IEnumerable<string> args)
+    private static List<string> DeduplicateJvmArguments(IEnumerable<string> args)
+    {
+        return DeduplicateArguments(args, isJvmArgs: true);
+    }
+
+    private static List<string> DeduplicateGameArguments(IEnumerable<string> args)
+    {
+        return DeduplicateArguments(args, isJvmArgs: false);
+    }
+
+    private static List<string> DeduplicateArguments(IEnumerable<string> args, bool isJvmArgs)
     {
         var result = new List<string>();
-        var seenSingle = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var arg in args.Where(arg => !string.IsNullOrWhiteSpace(arg)))
+        var normalized = args
+            .Where(arg => !string.IsNullOrWhiteSpace(arg))
+            .ToList();
+
+        for (var i = 0; i < normalized.Count;)
         {
-            if (arg.StartsWith("-Xmx", StringComparison.OrdinalIgnoreCase))
+            var key = normalized[i];
+            if (!LooksLikeOptionWithSeparateValue(normalized, i))
             {
-                result.RemoveAll(item => item.StartsWith("-Xmx", StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (arg.StartsWith("-D", StringComparison.Ordinal) || arg.StartsWith("-XX:", StringComparison.Ordinal))
-            {
-                var key = arg.Split('=', 2)[0];
-                result.RemoveAll(item => item.StartsWith(key, StringComparison.OrdinalIgnoreCase));
-            }
-
-            if (!arg.Contains('=') && (arg.StartsWith("-D", StringComparison.Ordinal) || arg.StartsWith("-XX:", StringComparison.Ordinal)))
-            {
-                if (!seenSingle.Add(arg))
+                i++;
+                if (result.Contains(key, StringComparer.OrdinalIgnoreCase))
                 {
                     continue;
                 }
+
+                result.Add(key);
+                continue;
             }
 
-            result.Add(arg);
+            var value = normalized[i + 1];
+            i += 2;
+            var handled = false;
+            for (var existing = 0; existing < result.Count - 1; existing++)
+            {
+                if (!string.Equals(result[existing], key, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                if (!isJvmArgs && !string.Equals(key, "--tweakClass", StringComparison.OrdinalIgnoreCase))
+                {
+                    result[existing + 1] = value;
+                    handled = true;
+                    break;
+                }
+
+                if (string.Equals(result[existing + 1], value, StringComparison.OrdinalIgnoreCase))
+                {
+                    handled = true;
+                    break;
+                }
+            }
+
+            if (!handled)
+            {
+                result.Add(key);
+                result.Add(value);
+            }
         }
 
         return result;
+    }
+
+    private static bool LooksLikeOptionWithSeparateValue(IReadOnlyList<string> args, int index)
+    {
+        if (index + 1 >= args.Count)
+        {
+            return false;
+        }
+
+        var key = args[index];
+        var value = args[index + 1];
+        if (!key.StartsWith("-", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!value.StartsWith("-", StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return double.TryParse(
+            value,
+            NumberStyles.Float,
+            CultureInfo.InvariantCulture,
+            out _);
     }
 
     private static IEnumerable<string> RemoveEmptyValueOptions(IReadOnlyList<string> args)

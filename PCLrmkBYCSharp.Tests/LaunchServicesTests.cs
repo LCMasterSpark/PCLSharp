@@ -360,6 +360,34 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public void LaunchArgumentBuilderLetsLaterGameOptionsOverrideEarlierValuesLikeOldPcl()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "type": "release",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "arguments": {
+            "jvm": ["-cp", "${classpath}"],
+            "game": ["--username", "${auth_player_name}", "--width", "854", "--height", "480"]
+          },
+          "libraries": []
+        }
+        """);
+        var request = CreateRequest(instance, temp.Path) with { ExtraGameArgs = "--width 1280 --height 720" };
+        var builder = new LaunchArgumentBuilder();
+
+        var result = builder.Build(request, CreateJava("C:\\Java17\\bin\\java.exe", 17), new LegacyLoginService().CreateSession("Alex"));
+
+        Assert.Contains("--width 1280", result.Arguments);
+        Assert.Contains("--height 720", result.Arguments);
+        Assert.DoesNotContain("--width 854", result.Arguments);
+        Assert.DoesNotContain("--height 480", result.Arguments);
+    }
+
+    [Fact]
     public void LaunchArgumentBuilderAddsVersionLoggingConfigArgument()
     {
         using var temp = new TempDirectory();

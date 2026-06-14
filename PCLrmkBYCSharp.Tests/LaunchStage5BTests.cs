@@ -890,7 +890,7 @@ public sealed class LaunchStage5BTests
         Assert.Contains("-Dwindows=true", result.Arguments);
         Assert.DoesNotContain("-Dlinux=true", result.Arguments);
         Assert.Contains("--server mc.example --port 25566", result.Arguments);
-        Assert.DoesNotContain("-Dfoo=1", result.Arguments);
+        Assert.Contains("-Dfoo=1", result.Arguments);
         Assert.Contains("-Dfoo=2", result.Arguments);
     }
 
