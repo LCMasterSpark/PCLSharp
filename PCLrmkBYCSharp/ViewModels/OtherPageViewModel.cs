@@ -69,6 +69,9 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private string toolboxStatusText = "百宝箱已就绪";
 
     [ObservableProperty]
+    private string featureVoteStatusText = "新功能投票已就绪，可复制模板后整理为 PCL Sharp 自身的功能提案。";
+
+    [ObservableProperty]
     private string echoCaveText = "反复点击这里可以查看 PCL Sharp 开发与重构过程中的留言。";
 
     [ObservableProperty]
@@ -227,6 +230,16 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         new("体验建议", "侧边栏、分页、按钮位置和列表密度会持续按实际截图调整。")
     ];
 
+    public IReadOnlyList<PageStatusCard> FeatureVoteItems { get; } =
+    [
+        new("启动链路", "登录、补全、启动参数、崩溃诊断与启动后行为。"),
+        new("下载系统", "原版、加载器、Mod、整合包、资源包与依赖联动。"),
+        new("实例管理", "版本选择、实例设置、Mod 管理、导入导出与隔离。"),
+        new("联机", "陶瓦联机、EasyTier 高级模式、节点、日志与异常恢复。"),
+        new("界面体验", "布局、提示框、动效、暗色主题、图标和列表交互。"),
+        new("更多工具", "百宝箱、诊断、账号中心、皮肤中心和扩展点目录。")
+    ];
+
     public IReadOnlyList<AboutLink> AboutLinks { get; }
 
     public IReadOnlyList<OtherSectionOption> OtherSections { get; } =
@@ -235,8 +248,9 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         new(1, "帮助", "搜索并打开内置帮助条目"),
         new(2, "百宝箱", "诊断、维护与快捷工具"),
         new(3, "反馈", "问题反馈与重构建议"),
-        new(4, "实验与规划", "更新、崩溃、账号、皮肤与扩展"),
-        new(5, "关于与鸣谢", "项目说明、版权与感谢名单")
+        new(4, "新功能投票", "整理功能优先级与提案模板"),
+        new(5, "实验与规划", "更新、崩溃、账号、皮肤与扩展"),
+        new(6, "关于与鸣谢", "项目说明、版权与感谢名单")
     ];
 
     public bool IsOverviewSectionSelected => SelectedOtherSection == 0;
@@ -247,9 +261,11 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
 
     public bool IsFeedbackSectionSelected => SelectedOtherSection == 3;
 
-    public bool IsFeatureHubSectionSelected => SelectedOtherSection == 4;
+    public bool IsFeatureVoteSectionSelected => SelectedOtherSection == 4;
 
-    public bool IsAboutSectionSelected => SelectedOtherSection == 5;
+    public bool IsFeatureHubSectionSelected => SelectedOtherSection == 5;
+
+    public bool IsAboutSectionSelected => SelectedOtherSection == 6;
 
     public string SelectedHelpPreview
     {
@@ -541,8 +557,57 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         OnPropertyChanged(nameof(IsHelpSectionSelected));
         OnPropertyChanged(nameof(IsToolBoxSectionSelected));
         OnPropertyChanged(nameof(IsFeedbackSectionSelected));
+        OnPropertyChanged(nameof(IsFeatureVoteSectionSelected));
         OnPropertyChanged(nameof(IsFeatureHubSectionSelected));
         OnPropertyChanged(nameof(IsAboutSectionSelected));
+    }
+
+    [RelayCommand]
+    private void CopyFeatureVoteTemplate()
+    {
+        if (_clipboard is null)
+        {
+            FeatureVoteStatusText = "剪贴板服务未初始化。";
+            return;
+        }
+
+        var lines = new[]
+        {
+            "Plain Craft Launcher Sharp 新功能投票提案",
+            "",
+            "功能名称：",
+            "归属分类：启动链路 / 下载系统 / 实例管理 / 联机 / 界面体验 / 更多工具",
+            "优先级：高 / 中 / 低",
+            "原版 PCL 对应行为：",
+            "当前 PCL Sharp 差距：",
+            "希望的交互体验：",
+            "复现截图或日志：",
+            "补充说明："
+        };
+        _clipboard.SetText(string.Join(Environment.NewLine, lines));
+        FeatureVoteStatusText = "新功能投票模板已复制到剪贴板。";
+    }
+
+    [RelayCommand]
+    private void OpenFeatureVoteReference()
+    {
+        const string referenceUrl = "https://github.com/Hex-Dragon/PCL2/discussions";
+        if (_urls is null)
+        {
+            FeatureVoteStatusText = "链接打开服务未初始化。";
+            return;
+        }
+
+        try
+        {
+            _urls.OpenUrl(referenceUrl);
+            FeatureVoteStatusText = "已打开原版 PCL discussions，可作为投票与提案形式参考。";
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "打开新功能投票参考失败");
+            FeatureVoteStatusText = "打开投票参考失败：" + ex.Message;
+        }
     }
 
     [RelayCommand]

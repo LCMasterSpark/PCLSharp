@@ -22,7 +22,8 @@ public sealed class OtherPageViewModelTests
         var reportPath = System.IO.Path.Combine(temp.Path, ".minecraft", "crash-reports", "crash-test.txt");
         var featureHub = new FakeFeatureHubService(reportPath);
         var files = new CaptureFileOpenService();
-        var viewModel = new OtherPageViewModel(paths, helpService, new NullLoggerService(), actions, featureHub: featureHub, folders: folders, files: files, clipboard: clipboard);
+        var urls = new CaptureExternalUrlService();
+        var viewModel = new OtherPageViewModel(paths, helpService, new NullLoggerService(), actions, featureHub: featureHub, folders: folders, files: files, urls: urls, clipboard: clipboard);
 
         await viewModel.OnNavigatedToAsync();
         viewModel.HelpSearchText = "marker";
@@ -38,8 +39,10 @@ public sealed class OtherPageViewModelTests
         Assert.Contains(viewModel.AboutLinks, link => link.Title == "MC 百科" && link.Url == "https://www.mcmod.cn");
         Assert.Contains(viewModel.OtherSections, section => section.DisplayName == "百宝箱");
         Assert.Contains(viewModel.OtherSections, section => section.DisplayName == "反馈");
+        Assert.Contains(viewModel.OtherSections, section => section.DisplayName == "新功能投票");
         Assert.Contains(viewModel.ToolBoxItems, item => item.Title == "今日人品");
         Assert.Contains(viewModel.ToolBoxItems, item => item.Title == "下载自定义文件");
+        Assert.Contains(viewModel.FeatureVoteItems, item => item.Title == "联机");
 
         viewModel.OpenLogsFolderCommand.Execute(null);
 
@@ -97,6 +100,17 @@ public sealed class OtherPageViewModelTests
         Assert.Contains("基础接入", clipboard.Text, StringComparison.Ordinal);
         Assert.Contains("诊断规则", clipboard.Text, StringComparison.Ordinal);
         Assert.Contains("已复制 2 个扩展点目录项", viewModel.ExtensionPointText, StringComparison.Ordinal);
+
+        viewModel.CopyFeatureVoteTemplateCommand.Execute(null);
+
+        Assert.Contains("Plain Craft Launcher Sharp 新功能投票提案", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("当前 PCL Sharp 差距", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("新功能投票模板已复制", viewModel.FeatureVoteStatusText, StringComparison.Ordinal);
+
+        viewModel.OpenFeatureVoteReferenceCommand.Execute(null);
+
+        Assert.Equal("https://github.com/Hex-Dragon/PCL2/discussions", urls.LastUrl);
+        Assert.Contains("已打开原版 PCL discussions", viewModel.FeatureVoteStatusText, StringComparison.Ordinal);
 
         var help = Assert.Single(viewModel.HelpResults);
         Assert.Equal("marker help", help.Title);

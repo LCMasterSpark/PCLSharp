@@ -187,6 +187,83 @@
                     <Grid.Style>
                         <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
                             <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsFeatureVoteSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="新功能投票"
+                                           FontSize="22"
+                                           FontWeight="SemiBold" />
+                                <TextBlock Text="按原版 PCL 的思路收集功能优先级，但提案内容面向 PCL Sharp 自身：先说明原版行为，再说明当前差距和期望交互。"
+                                           Margin="0,7,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                                <TextBlock Text="{Binding FeatureVoteStatusText}"
+                                           Margin="0,8,0,0"
+                                           Foreground="{StaticResource AppAccentBrush}"
+                                           TextWrapping="Wrap" />
+                            </StackPanel>
+                            <UniformGrid Grid.Column="2"
+                                         Columns="2"
+                                         Width="250"
+                                         VerticalAlignment="Center">
+                                <Button MinHeight="34"
+                                        Margin="0,0,6,0"
+                                        Command="{Binding CopyFeatureVoteTemplateCommand}"
+                                        Content="复制模板" />
+                                <Button MinHeight="34"
+                                        Margin="6,0,0,0"
+                                        Command="{Binding OpenFeatureVoteReferenceCommand}"
+                                        Content="打开参考" />
+                            </UniformGrid>
+                        </Grid>
+                    </Border>
+
+                    <ItemsControl Grid.Row="2"
+                                  ItemsSource="{Binding FeatureVoteItems}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="3" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,0,12,12"
+                                        MinHeight="124"
+                                        Style="{StaticResource CardBorderStyle}">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontSize="16"
+                                                   FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Description}"
+                                                   Margin="0,10,0,0"
+                                                   Style="{StaticResource MutedTextStyle}" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsFeatureHubSectionSelected}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>
