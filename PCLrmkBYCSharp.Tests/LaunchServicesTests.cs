@@ -49,6 +49,47 @@ public sealed class LaunchServicesTests
         Assert.Contains("fabric-api", issue.Message, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task LaunchPipelineReadsLatestCrashReportWhenGameExitsEarlyWithoutConsoleOutput()
+    {
+        using var temp = new TempDirectory();
+        CreateEmptyAssetIndex(temp.Path, "5");
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "assetIndex": { "id": "5" },
+          "libraries": []
+        }
+        """, createJar: true);
+        var crashReports = Path.Combine(instance.VersionPath, "crash-reports");
+        Directory.CreateDirectory(crashReports);
+        var oldReport = Path.Combine(crashReports, "crash-2026-01-01_00.00.00-client.txt");
+        var newReport = Path.Combine(crashReports, "crash-2026-01-02_00.00.00-client.txt");
+        File.WriteAllLines(oldReport, ["java.lang.OutOfMemoryError: stale report"]);
+        File.WriteAllLines(newReport, [
+            "---- Minecraft Crash Report ----",
+            "Description: Initializing game",
+            "java.lang.OutOfMemoryError: Java heap space"
+        ]);
+        File.SetLastWriteTimeUtc(oldReport, DateTime.UtcNow.AddMinutes(-10));
+        File.SetLastWriteTimeUtc(newReport, DateTime.UtcNow);
+        var java = CreateJava(Path.Combine(temp.Path, "java", "bin", "java.exe"), 17);
+        var launcher = new FakeProcessLauncher();
+        var watcher = new FakeGameProcessWatcher(GameProcessWatchResult.Exited(1, [], []));
+        var pipeline = CreatePipeline(new FakeJavaDiscoveryService([java]), launcher, gameProcessWatcher: watcher);
+
+        var result = await pipeline.LaunchAsync(CreateRequest(instance, temp.Path) with { StartProcess = true });
+
+        var issue = Assert.Single(result.Issues, issue => issue.Code == "GameExitedEarly");
+        Assert.False(result.Success);
+        Assert.Contains("crash-report:", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("Java heap space", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("游戏内存不足", issue.Message, StringComparison.Ordinal);
+        Assert.DoesNotContain("stale report", issue.Message, StringComparison.Ordinal);
+    }
+
     [Theory]
     [InlineData("java version \"1.8.0_321\"\r\nJava(TM) 64-Bit Server VM", 8, true)]
     [InlineData("openjdk version \"17.0.8\" 2023-07-18\r\nOpenJDK 64-Bit Server VM", 17, true)]

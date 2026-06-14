@@ -476,8 +476,10 @@ public sealed class LaunchPipelineService
     private static LaunchValidationIssue BuildEarlyGameExitIssue(LaunchProfile profile, GameProcessWatchResult watchResult)
     {
         var gameLogTail = ReadLatestGameLogTail(profile);
+        var crashReportTail = ReadLatestCrashReportTail(profile);
         var combinedTail = watchResult.CombinedTail
             .Concat(gameLogTail)
+            .Concat(crashReportTail)
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .ToArray();
         var diagnosis = DiagnoseGameExit(combinedTail);
@@ -595,6 +597,43 @@ public sealed class LaunchPipelineService
                 .Where(line => !string.IsNullOrWhiteSpace(line))
                 .TakeLast(30)
                 .Select(line => "latest.log: " + line)
+                .ToArray();
+        }
+        catch
+        {
+            return [];
+        }
+    }
+
+    private static IReadOnlyList<string> ReadLatestCrashReportTail(LaunchProfile profile)
+    {
+        try
+        {
+            var gameDirectory = profile.ProcessStartInfo.WorkingDirectory;
+            if (string.IsNullOrWhiteSpace(gameDirectory))
+            {
+                gameDirectory = profile.Instance.VersionPath;
+            }
+
+            var crashReportDirectory = Path.Combine(gameDirectory, "crash-reports");
+            if (!Directory.Exists(crashReportDirectory))
+            {
+                return [];
+            }
+
+            var latestReport = Directory.EnumerateFiles(crashReportDirectory, "*.txt", SearchOption.TopDirectoryOnly)
+                .Select(path => new FileInfo(path))
+                .OrderByDescending(file => file.LastWriteTimeUtc)
+                .FirstOrDefault();
+            if (latestReport is null || !latestReport.Exists)
+            {
+                return [];
+            }
+
+            return File.ReadLines(latestReport.FullName)
+                .Where(line => !string.IsNullOrWhiteSpace(line))
+                .TakeLast(30)
+                .Select(line => "crash-report: " + line)
                 .ToArray();
         }
         catch
