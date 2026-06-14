@@ -138,7 +138,7 @@ public sealed class AppServices
         var mojangProfiles = new MojangProfileService(http, settings, logger);
         var microsoftDeviceCodes = new WpfMicrosoftDeviceCodePresenter(clipboard);
         var microsoftLogin = new MicrosoftLoginService(http, settings, microsoftDeviceCodes);
-        var yggdrasilLogin = new YggdrasilLoginService(http, settings, new WpfYggdrasilProfileSelector());
+        var yggdrasilLogin = new YggdrasilLoginService(http, settings, new WpfYggdrasilProfileSelector(prompts));
         var login = new LoginService(legacyLogin, microsoftLogin, yggdrasilLogin, settings, mojangProfiles);
         var argumentBuilder = new LaunchArgumentBuilder(settings, gameDirectories, new SystemMemoryService());
         var fileCompleter = new LaunchFileCompleter(downloadSources, fileChecker, logger, http);

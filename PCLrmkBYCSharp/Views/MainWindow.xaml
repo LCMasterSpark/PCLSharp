@@ -297,6 +297,7 @@
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
                         <TextBlock Text="{Binding Title}"
@@ -313,8 +314,21 @@
                                    Foreground="{StaticResource AppMutedTextBrush}"
                                    TextWrapping="Wrap" />
 
-                        <TextBox x:Name="PromptInputBox"
+                        <ListBox x:Name="PromptChoiceList"
                                  Grid.Row="2"
+                                 ItemsSource="{Binding Choices}"
+                                 SelectedIndex="{Binding SelectedChoiceIndex, Mode=TwoWay}"
+                                 Visibility="{Binding ChoiceVisibility}"
+                                 Margin="0,16,0,0"
+                                 MinHeight="110"
+                                 MaxHeight="240"
+                                 Padding="4"
+                                 Background="{StaticResource AppCardBrush}"
+                                 BorderBrush="{StaticResource AppBorderBrush}"
+                                 BorderThickness="1" />
+
+                        <TextBox x:Name="PromptInputBox"
+                                 Grid.Row="3"
                                  Text="{Binding InputText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                                  Visibility="{Binding InputVisibility}"
                                  Margin="0,16,0,0"
@@ -325,7 +339,7 @@
                                  BorderBrush="{StaticResource AppBorderBrush}"
                                  BorderThickness="1" />
 
-                        <StackPanel Grid.Row="3"
+                        <StackPanel Grid.Row="4"
                                     Orientation="Horizontal"
                                     HorizontalAlignment="Right"
                                     Margin="0,18,0,0">

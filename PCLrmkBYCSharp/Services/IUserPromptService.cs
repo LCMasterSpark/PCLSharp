@@ -13,6 +13,23 @@ public interface IUserPromptService
     bool Confirm(string title, string message);
 
     string? Prompt(string title, string message, string defaultValue);
+
+    int? Select(string title, string message, IReadOnlyList<string> options, int defaultIndex = 0)
+    {
+        if (options.Count == 0)
+        {
+            return null;
+        }
+
+        var safeIndex = Math.Clamp(defaultIndex, 0, options.Count - 1);
+        var indexedOptions = options
+            .Select((option, index) => $"{index + 1}. {option}")
+            .ToArray();
+        var input = Prompt(title, message + "\n\n" + string.Join("\n", indexedOptions), (safeIndex + 1).ToString());
+        return int.TryParse(input, out var selected) && selected >= 1 && selected <= options.Count
+            ? selected - 1
+            : null;
+    }
 }
 
 public sealed class UserPromptService : IUserPromptService
@@ -35,22 +52,42 @@ public sealed class UserPromptService : IUserPromptService
         return result.Confirmed == true ? result.InputText : null;
     }
 
-    private UserPromptRequest ShowPrompt(string title, string message, string defaultValue, UserPromptKind kind)
+    public int? Select(string title, string message, IReadOnlyList<string> options, int defaultIndex = 0)
+    {
+        var result = ShowPrompt(title, message, defaultValue: "", UserPromptKind.Choice, options, defaultIndex);
+        return result.Confirmed == true && result.SelectedChoiceIndex >= 0 && result.SelectedChoiceIndex < options.Count
+            ? result.SelectedChoiceIndex
+            : null;
+    }
+
+    private UserPromptRequest ShowPrompt(
+        string title,
+        string message,
+        string defaultValue,
+        UserPromptKind kind,
+        IReadOnlyList<string>? choices = null,
+        int selectedChoiceIndex = 0)
     {
         var dispatcher = Application.Current?.Dispatcher;
         if (dispatcher is null)
         {
-            return UserPromptRequest.CreateCompleted(title, message, defaultValue, kind, confirmed: kind == UserPromptKind.Message);
+            return UserPromptRequest.CreateCompleted(title, message, defaultValue, kind, confirmed: kind == UserPromptKind.Message, choices, selectedChoiceIndex);
         }
 
         return dispatcher.CheckAccess()
-            ? ShowPromptOnUiThread(title, message, defaultValue, kind)
-            : dispatcher.Invoke(() => ShowPromptOnUiThread(title, message, defaultValue, kind));
+            ? ShowPromptOnUiThread(title, message, defaultValue, kind, choices, selectedChoiceIndex)
+            : dispatcher.Invoke(() => ShowPromptOnUiThread(title, message, defaultValue, kind, choices, selectedChoiceIndex));
     }
 
-    private UserPromptRequest ShowPromptOnUiThread(string title, string message, string defaultValue, UserPromptKind kind)
+    private UserPromptRequest ShowPromptOnUiThread(
+        string title,
+        string message,
+        string defaultValue,
+        UserPromptKind kind,
+        IReadOnlyList<string>? choices,
+        int selectedChoiceIndex)
     {
-        var request = new UserPromptRequest(title, message, defaultValue, kind);
+        var request = new UserPromptRequest(title, message, defaultValue, kind, choices, selectedChoiceIndex);
         if (PromptRequested is null)
         {
             request.Complete(kind == UserPromptKind.Message);
@@ -80,17 +117,26 @@ public enum UserPromptKind
 {
     Message,
     Confirm,
-    Input
+    Input,
+    Choice
 }
 
 public sealed class UserPromptRequest
 {
-    public UserPromptRequest(string title, string message, string inputText, UserPromptKind kind)
+    public UserPromptRequest(
+        string title,
+        string message,
+        string inputText,
+        UserPromptKind kind,
+        IReadOnlyList<string>? choices = null,
+        int selectedChoiceIndex = 0)
     {
         Title = title;
         Message = message;
         InputText = inputText;
         Kind = kind;
+        Choices = choices ?? [];
+        SelectedChoiceIndex = Choices.Count == 0 ? -1 : Math.Clamp(selectedChoiceIndex, 0, Choices.Count - 1);
     }
 
     public event EventHandler? Completed;
@@ -103,9 +149,17 @@ public sealed class UserPromptRequest
 
     public UserPromptKind Kind { get; }
 
+    public IReadOnlyList<string> Choices { get; }
+
+    public int SelectedChoiceIndex { get; set; }
+
     public bool AcceptsInput => Kind == UserPromptKind.Input;
 
+    public bool AcceptsChoice => Kind == UserPromptKind.Choice && Choices.Count > 0;
+
     public Visibility InputVisibility => AcceptsInput ? Visibility.Visible : Visibility.Collapsed;
+
+    public Visibility ChoiceVisibility => AcceptsChoice ? Visibility.Visible : Visibility.Collapsed;
 
     public Visibility CancelVisibility => Kind == UserPromptKind.Message ? Visibility.Collapsed : Visibility.Visible;
 
@@ -127,9 +181,16 @@ public sealed class UserPromptRequest
         Completed?.Invoke(this, EventArgs.Empty);
     }
 
-    public static UserPromptRequest CreateCompleted(string title, string message, string inputText, UserPromptKind kind, bool confirmed)
+    public static UserPromptRequest CreateCompleted(
+        string title,
+        string message,
+        string inputText,
+        UserPromptKind kind,
+        bool confirmed,
+        IReadOnlyList<string>? choices = null,
+        int selectedChoiceIndex = 0)
     {
-        var request = new UserPromptRequest(title, message, inputText, kind);
+        var request = new UserPromptRequest(title, message, inputText, kind, choices, selectedChoiceIndex);
         request.Complete(confirmed);
         return request;
     }

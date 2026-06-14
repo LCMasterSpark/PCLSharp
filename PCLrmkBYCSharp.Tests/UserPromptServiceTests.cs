@@ -88,4 +88,26 @@ public sealed class UserPromptServiceTests
         Assert.Equal("确定", request.PrimaryButtonText);
         Assert.Equal("默认", request.InputText);
     }
+
+    [Fact]
+    public void ChoicePromptShowsListAndCancelButton()
+    {
+        var request = UserPromptRequest.CreateCompleted(
+            "选择角色",
+            "请选择本次启动使用的角色。",
+            "",
+            UserPromptKind.Choice,
+            confirmed: true,
+            choices: ["Alex", "Steve"],
+            selectedChoiceIndex: 1);
+
+        Assert.Equal(UserPromptKind.Choice, request.Kind);
+        Assert.False(request.AcceptsInput);
+        Assert.True(request.AcceptsChoice);
+        Assert.Equal(Visibility.Collapsed, request.InputVisibility);
+        Assert.Equal(Visibility.Visible, request.ChoiceVisibility);
+        Assert.Equal(Visibility.Visible, request.CancelVisibility);
+        Assert.Equal(1, request.SelectedChoiceIndex);
+        Assert.Equal("Steve", request.Choices[request.SelectedChoiceIndex]);
+    }
 }

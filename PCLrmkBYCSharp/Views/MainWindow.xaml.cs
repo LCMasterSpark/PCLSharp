@@ -95,10 +95,15 @@ public partial class MainWindow : Window
         PromptOverlay.Visibility = Visibility.Visible;
         PromptOverlay.Focus();
         PromptInputBox.Visibility = request.InputVisibility;
+        PromptChoiceList.Visibility = request.ChoiceVisibility;
         if (request.AcceptsInput)
         {
             PromptInputBox.Focus();
             PromptInputBox.SelectAll();
+        }
+        else if (request.AcceptsChoice)
+        {
+            PromptChoiceList.Focus();
         }
         else
         {
