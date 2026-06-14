@@ -114,5 +114,13 @@ java.lang.UnsupportedClassVersionError: net/example/ExampleMod has been compiled
 
         Assert.NotEmpty(service.GetHomeFeedItems());
         Assert.Contains(service.GetExtensionPoints(), item => item.Name == "联机后端");
+        Assert.Contains(service.GetHomeFeedItems(), item =>
+            item.Title == "联机入口基础可用"
+            && item.Description.Contains("进程启动", StringComparison.Ordinal)
+            && item.Description.Contains("日志采集", StringComparison.Ordinal));
+        Assert.Contains(service.GetExtensionPoints(), item =>
+            item.Name == "联机后端"
+            && item.Status == "基础接入"
+            && item.Description.Contains("独立日志", StringComparison.Ordinal));
     }
 }

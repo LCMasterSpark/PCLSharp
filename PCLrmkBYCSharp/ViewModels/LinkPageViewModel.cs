@@ -57,7 +57,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
 
         ProviderOptions =
         [
-            new LinkProviderOption(LinkProviderKind.Terracotta, "陶瓦联机", "面向 Minecraft 的联机方案，基于 EasyTier，后续优先接入。"),
+            new LinkProviderOption(LinkProviderKind.Terracotta, "陶瓦联机", "面向 Minecraft 的联机方案，基于 EasyTier，优先做成接近原版 PCL 的易用体验。"),
             new LinkProviderOption(LinkProviderKind.EasyTier, "EasyTier", "保留底层 VPN 模式，适合手动节点和高级配置。")
         ];
         LatencyOptions =
@@ -106,10 +106,10 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private string shareText = "生成房间后会在这里显示可复制的邀请码。";
 
     [ObservableProperty]
-    private string parsedInviteSummary = "输入 PCL 邀请码后可先验证格式；真正启动联机进程会在后续阶段接入。";
+    private string parsedInviteSummary = "输入 PCL 邀请码后可验证格式，并生成加入房间的联机启动计划。";
 
     [ObservableProperty]
-    private string statusMessage = "已保留陶瓦联机 / EasyTier 的接入位置；当前会检测后端二进制、生成启动计划并采集后端日志。";
+    private string statusMessage = "陶瓦联机 / EasyTier 已接入后端检测、启动计划、进程启动和日志采集。";
 
     [ObservableProperty]
     private string backendStatusText = "";

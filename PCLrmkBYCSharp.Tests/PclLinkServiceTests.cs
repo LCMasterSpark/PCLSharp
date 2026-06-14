@@ -596,6 +596,24 @@ public sealed class PclLinkServiceTests
     }
 
     [Fact]
+    public void LinkPageViewModelInitialTextReflectsStartedBackendCapability()
+    {
+        using var temp = new TempDirectory();
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+
+        var viewModel = new LinkPageViewModel(
+            new PclLinkService(),
+            settings,
+            new NullLoggerService(),
+            linkBackend: CreateLinkBackendService());
+
+        Assert.Contains("进程启动", viewModel.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("日志采集", viewModel.StatusMessage, StringComparison.Ordinal);
+        Assert.DoesNotContain("后续阶段接入", viewModel.ParsedInviteSummary, StringComparison.Ordinal);
+        Assert.Contains("启动计划", viewModel.ParsedInviteSummary, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task LinkPageViewModelRetriesBackendAfterFailure()
     {
         using var temp = new TempDirectory();
