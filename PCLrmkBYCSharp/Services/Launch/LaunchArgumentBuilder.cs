@@ -585,20 +585,20 @@ public sealed partial class LaunchArgumentBuilder(
         var windowSize = ResolveWindowSize(request);
         return new Dictionary<string, string>(StringComparer.Ordinal)
         {
-            ["${natives_directory}"] = nativesDirectory,
-            ["${library_directory}"] = Path.Combine(instance.RootPath, "libraries"),
-            ["${libraries_directory}"] = Path.Combine(instance.RootPath, "libraries"),
-            ["${pure_directory}"] = instance.VersionPath.TrimEnd(Path.DirectorySeparatorChar),
+            ["${natives_directory}"] = ToPclLaunchPath(nativesDirectory),
+            ["${library_directory}"] = ToPclLaunchPath(Path.Combine(instance.RootPath, "libraries")),
+            ["${libraries_directory}"] = ToPclLaunchPath(Path.Combine(instance.RootPath, "libraries")),
+            ["${pure_directory}"] = ToPclLaunchPath(instance.VersionPath),
             ["${launcher_name}"] = "PCL",
             ["${launcher_version}"] = "0",
             ["${classpath_separator}"] = ";",
             ["${version_name}"] = instance.Name,
-            ["${game_directory}"] = gameDirectory.TrimEnd(Path.DirectorySeparatorChar),
-            ["${assets_root}"] = Path.Combine(instance.RootPath, "assets"),
+            ["${game_directory}"] = ToPclLaunchPath(gameDirectory),
+            ["${assets_root}"] = ToPclLaunchPath(Path.Combine(instance.RootPath, "assets")),
             ["${assets_index_name}"] = GetAssetsIndex(roots),
-            ["${game_assets}"] = Path.Combine(instance.RootPath, "assets", "virtual", "legacy"),
+            ["${game_assets}"] = ToPclLaunchPath(Path.Combine(instance.RootPath, "assets", "virtual", "legacy")),
             ["${user_properties}"] = string.IsNullOrWhiteSpace(login.ProfileJson) ? "{}" : login.ProfileJson,
-            ["${primary_jar}"] = Path.Combine(instance.VersionPath, instance.Name + ".jar"),
+            ["${primary_jar}"] = ToPclLaunchPath(Path.Combine(instance.VersionPath, instance.Name + ".jar"), keepFileName: true),
             ["${auth_player_name}"] = login.UserName,
             ["${auth_uuid}"] = login.Uuid,
             ["${auth_access_token}"] = login.AccessToken,
@@ -615,8 +615,13 @@ public sealed partial class LaunchArgumentBuilder(
             ["${version_type}"] = versionType,
             ["${resolution_width}"] = windowSize.Width.ToString(),
             ["${resolution_height}"] = windowSize.Height.ToString(),
-            ["${classpath}"] = string.Join(";", classpath)
+            ["${classpath}"] = string.Join(";", classpath.Select(path => ToPclLaunchPath(path, keepFileName: true)))
         };
+    }
+
+    private static string ToPclLaunchPath(string path, bool keepFileName = false)
+    {
+        return MeloongCore.PathUtils.ToShortPath(path, keepFileName);
     }
 
     private string ResolveGameDirectory(LaunchRequest request)

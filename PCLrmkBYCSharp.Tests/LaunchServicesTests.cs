@@ -1680,6 +1680,7 @@ public sealed class LaunchServicesTests
         Assert.Equal(instance.VersionPath, launcher.LastStartInfo?.WorkingDirectory);
         Assert.False(launcher.LastStartInfo?.UseShellExecute);
         Assert.True(launcher.LastStartInfo?.RedirectStandardError);
+        Assert.Equal(MeloongCore.PathUtils.ToShortPath(temp.Path), launcher.LastStartInfo?.EnvironmentVariables["appdata"]);
     }
 
     [Fact]
