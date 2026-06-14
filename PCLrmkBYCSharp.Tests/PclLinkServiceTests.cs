@@ -418,6 +418,27 @@ public sealed class PclLinkServiceTests
         Assert.Equal(inviteCode, settings.Get(AppSettingKeys.LinkLastInviteCode, ""));
     }
 
+    [Fact]
+    public void LinkPageViewModelRestoresSavedInviteCodeAndBuildsJoinPlan()
+    {
+        using var temp = new TempDirectory();
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        var linkService = new PclLinkService();
+        var inviteCode = linkService.BuildInviteCode(linkService.CreateHostInvite(25565));
+        settings.Set(AppSettingKeys.LinkLastInviteCode, inviteCode);
+
+        var viewModel = new LinkPageViewModel(
+            linkService,
+            settings,
+            new NullLoggerService(),
+            linkBackend: CreateLinkBackendService());
+
+        Assert.Equal(inviteCode, viewModel.InviteCodeInput);
+        Assert.Contains("邀请码有效", viewModel.ParsedInviteSummary, StringComparison.Ordinal);
+        Assert.Contains("已恢复上次联机邀请码", viewModel.StatusMessage, StringComparison.Ordinal);
+        Assert.Contains("计划参数", viewModel.BackendPlanText, StringComparison.Ordinal);
+    }
+
     private sealed class ExecutableFileDialogService(string executablePath) : IFileDialogService
     {
         public string? PickFolder(string title, string initialDirectory) => null;

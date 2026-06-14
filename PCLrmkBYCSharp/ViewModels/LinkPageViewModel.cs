@@ -65,6 +65,7 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         terracottaExecutablePath = _settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, "");
         easyTierExecutablePath = _settings.Get(AppSettingKeys.LinkEasyTierExecutablePath, "");
         RefreshBackendStatus();
+        RestoreSavedInviteCode();
     }
 
     public IReadOnlyList<LinkProviderOption> ProviderOptions { get; }
@@ -175,16 +176,13 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     [RelayCommand]
     private async Task ValidateInviteAsync()
     {
-        var result = _linkService.ParseInviteCode(InviteCodeInput);
-        if (!result.Success || result.Invite is null)
+        if (!TryBuildJoinPlanFromInvite(out var failureMessage))
         {
-            ParsedInviteSummary = result.Message;
-            StatusMessage = "邀请码校验失败：" + result.Message;
+            ParsedInviteSummary = failureMessage;
+            StatusMessage = "邀请码校验失败：" + failureMessage;
             return;
         }
 
-        ParsedInviteSummary = $"邀请码有效。端口：{result.Invite.ServerPort}，网络：{result.Invite.NetworkName}，协议版本：{result.Invite.Version}";
-        UpdateBackendPlan(LinkRoomRole.Joiner, result.Invite);
         StatusMessage = "邀请码可识别，已生成加入房间的联机启动计划。";
         await SaveLinkSettingsAsync();
     }
@@ -329,6 +327,38 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         BackendPlanText = plan.CanStart
             ? plan.Summary + Environment.NewLine + "后端已就绪，计划参数：" + Environment.NewLine + options
             : plan.Summary + Environment.NewLine + "暂不能启动：" + plan.BlockReason + Environment.NewLine + "计划参数：" + Environment.NewLine + options;
+    }
+
+    private void RestoreSavedInviteCode()
+    {
+        if (string.IsNullOrWhiteSpace(InviteCodeInput))
+        {
+            return;
+        }
+
+        if (TryBuildJoinPlanFromInvite(out var failureMessage))
+        {
+            StatusMessage = "已恢复上次联机邀请码，联机启动计划已生成。";
+            return;
+        }
+
+        ParsedInviteSummary = failureMessage;
+        StatusMessage = "上次联机邀请码无法识别：" + failureMessage;
+    }
+
+    private bool TryBuildJoinPlanFromInvite(out string failureMessage)
+    {
+        var result = _linkService.ParseInviteCode(InviteCodeInput);
+        if (!result.Success || result.Invite is null)
+        {
+            failureMessage = result.Message;
+            return false;
+        }
+
+        failureMessage = "";
+        ParsedInviteSummary = $"邀请码有效。端口：{result.Invite.ServerPort}，网络：{result.Invite.NetworkName}，协议版本：{result.Invite.Version}";
+        UpdateBackendPlan(LinkRoomRole.Joiner, result.Invite);
+        return true;
     }
 
     private void HandleProcessSnapshotChanged(object? sender, LinkProcessSnapshot snapshot)
