@@ -252,8 +252,25 @@ public sealed partial class LaunchPageViewModel
         }
 
         RefreshJavaEntryOptions(imported.PathJava);
+        var importedOption = FindJavaOption(imported);
+        if (importedOption is not null && !importedOption.IsCompatible)
+        {
+            StatusMessage = $"涓嶈兘涓哄綋鍓嶇増鏈€夋嫨 {importedOption.DisplayName}锛氶渶瑕?{importedOption.RequirementText}";
+            _isSyncingJavaOptionSelection = true;
+            try
+            {
+                SelectedJavaOption = FindJavaOption(SelectedJava);
+            }
+            finally
+            {
+                _isSyncingJavaOptionSelection = false;
+            }
+
+            return;
+        }
 
         SelectedJava = imported;
+        SelectedJavaOption = importedOption;
         _settings.Set(AppSettingKeys.LaunchArgumentJavaSelect, imported.ToPclSettingJson());
         await _settings.SaveAsync();
     }
