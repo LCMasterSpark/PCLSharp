@@ -67,6 +67,11 @@ public sealed class LinkBackendService : ILinkBackendService
             return new LinkBackendStatus(provider, LinkBackendReadiness.MissingExecutable, displayName, normalizedPath, "未找到联机后端可执行文件。");
         }
 
+        if (!IsExpectedExecutableName(provider, normalizedPath))
+        {
+            return new LinkBackendStatus(provider, LinkBackendReadiness.InvalidExecutablePath, displayName, normalizedPath, $"{displayName} 后端文件名不匹配，请重新选择正确的 .exe 文件。");
+        }
+
         return new LinkBackendStatus(provider, LinkBackendReadiness.Ready, displayName, normalizedPath, displayName + " 后端已就绪。");
     }
 
@@ -275,6 +280,15 @@ public sealed class LinkBackendService : ILinkBackendService
             LinkProviderKind.EasyTier => "EasyTier",
             _ => provider.ToString()
         };
+    }
+
+    private static bool IsExpectedExecutableName(LinkProviderKind provider, string executablePath)
+    {
+        var fileName = Path.GetFileName(executablePath);
+        var names = provider == LinkProviderKind.Terracotta
+            ? TerracottaExecutableNames
+            : EasyTierExecutableNames;
+        return names.Contains(fileName, StringComparer.OrdinalIgnoreCase);
     }
 
     private static string NormalizeExecutablePath(string? executablePath)

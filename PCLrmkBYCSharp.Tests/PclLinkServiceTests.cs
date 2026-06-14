@@ -83,6 +83,42 @@ public sealed class PclLinkServiceTests
     }
 
     [Fact]
+    public void LinkBackendServiceRejectsExecutableForDifferentProvider()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "java.exe");
+        File.WriteAllText(executable, "");
+        var service = CreateLinkBackendService();
+
+        var status = service.GetStatus(LinkProviderKind.Terracotta, executable);
+        var invite = new LinkInviteInfo(25565, "P63DD-ABCDE", "SECRET", 2, 0);
+        var plan = service.CreatePlan(LinkRoomRole.Host, LinkProviderKind.Terracotta, invite, LinkLatencyMode.DirectFirst, "", executable);
+
+        Assert.False(status.CanStart);
+        Assert.Equal(LinkBackendReadiness.InvalidExecutablePath, status.Readiness);
+        Assert.Contains("文件名不匹配", status.Message, StringComparison.Ordinal);
+        Assert.False(plan.CanStart);
+        Assert.Equal("", plan.ProcessArguments);
+    }
+
+    [Theory]
+    [InlineData("easytier-core.exe")]
+    [InlineData("easytier.exe")]
+    [InlineData("easytier-cli.exe")]
+    public void LinkBackendServiceAcceptsKnownEasyTierExecutableNames(string executableName)
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, executableName);
+        File.WriteAllText(executable, "");
+        var service = CreateLinkBackendService();
+
+        var status = service.GetStatus(LinkProviderKind.EasyTier, executable);
+
+        Assert.True(status.CanStart);
+        Assert.Equal(LinkBackendReadiness.Ready, status.Readiness);
+    }
+
+    [Fact]
     public void LinkBackendServiceFindsExecutableInCommonSubdirectories()
     {
         using var temp = new TempDirectory();
