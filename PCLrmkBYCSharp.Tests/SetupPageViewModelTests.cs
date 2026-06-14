@@ -197,6 +197,31 @@ public sealed class SetupPageViewModelTests
     }
 
     [Fact]
+    public void SaveSettingsAppliesThemeImmediately()
+    {
+        using var temp = new TempDirectory();
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        var theme = new CaptureThemeService();
+        var viewModel = new SetupPageViewModel(
+            settings,
+            new TestAppPathService(temp.Path),
+            new NullFileDialogService(),
+            new NullLoggerService(),
+            theme)
+        {
+            UiScalePercent = 120,
+            AccessibilityHighContrast = true
+        };
+
+        viewModel.SaveSettingsCommand.Execute(null);
+
+        Assert.Equal(1, theme.ApplyCount);
+        Assert.Same(settings, theme.LastSettings);
+        Assert.Equal(120, settings.Get(AppSettingKeys.UiScalePercent, 100));
+        Assert.True(settings.Get(AppSettingKeys.AccessibilityHighContrast, false));
+    }
+
+    [Fact]
     public void SaveSettingsPersistsOldPclDownloadSettings()
     {
         using var temp = new TempDirectory();
@@ -400,6 +425,24 @@ public sealed class SetupPageViewModelTests
         public string? PickSaveFile(string title, string initialDirectory, string defaultFileName, string filter)
         {
             return null;
+        }
+    }
+
+    private sealed class CaptureThemeService : IUiThemeService
+    {
+        public int ApplyCount { get; private set; }
+
+        public IAppSettingsService? LastSettings { get; private set; }
+
+        public void Apply(IAppSettingsService settings)
+        {
+            ApplyCount++;
+            LastSettings = settings;
+        }
+
+        public void Apply(System.Windows.ResourceDictionary resources, IAppSettingsService settings)
+        {
+            Apply(settings);
         }
     }
 

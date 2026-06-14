@@ -28,6 +28,7 @@ public partial class App : Application
             _services.Logger.Initialize();
             _services.Logger.Info("应用启动");
             await _services.Settings.LoadAsync();
+            _services.Theme.Apply(_services.Settings);
 
             var viewModel = new MainWindowViewModel(
                 _services.Navigation,

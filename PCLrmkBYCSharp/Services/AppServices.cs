@@ -28,6 +28,7 @@ public sealed class AppServices
         ILaunchPipelineService launchPipeline,
         IAppExitGuardService exitGuard,
         UserPromptService prompts,
+        IUiThemeService theme,
         INavigationService navigation)
     {
         Paths = paths;
@@ -46,6 +47,7 @@ public sealed class AppServices
         LaunchPipeline = launchPipeline;
         ExitGuard = exitGuard;
         Prompts = prompts;
+        Theme = theme;
         Navigation = navigation;
     }
 
@@ -81,6 +83,8 @@ public sealed class AppServices
 
     public UserPromptService Prompts { get; }
 
+    public IUiThemeService Theme { get; }
+
     public INavigationService Navigation { get; }
 
     public static AppServices Create(Dispatcher dispatcher)
@@ -95,6 +99,7 @@ public sealed class AppServices
         var clipboard = new ClipboardService();
         var prompts = new UserPromptService();
         var settings = new AppSettingsService(paths);
+        var theme = new UiThemeService();
         var help = new HelpService(logger, customHelpDirectories:
         [
             Path.Combine(AppContext.BaseDirectory, "PCL", "Help"),
@@ -177,7 +182,7 @@ public sealed class AppServices
             gameDirectories,
             settings,
             memoryOptimizer);
-        var navigation = new NavigationService(settings, paths, fileDialogs, minecraftDiscovery, instanceManagement, gameDirectories, rootFolders, selections, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, modpackExport, loaderProcessorRunner, fileCompleter, localModUpdates, javaDiscovery, javaSelector, launchPipeline, legacyLogin, login, prompts, uiDispatcher, logger, help, helpActions, linkService, linkBackend, linkProcess, clipboard, updateCheck, featureHub, folders, files, urls, memoryOptimizer, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, microsoftDeviceCodes);
+        var navigation = new NavigationService(settings, paths, fileDialogs, minecraftDiscovery, instanceManagement, gameDirectories, rootFolders, selections, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, modpackExport, loaderProcessorRunner, fileCompleter, localModUpdates, javaDiscovery, javaSelector, launchPipeline, legacyLogin, login, prompts, uiDispatcher, logger, help, helpActions, linkService, linkBackend, linkProcess, clipboard, updateCheck, featureHub, folders, files, urls, memoryOptimizer, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, microsoftDeviceCodes, theme);
         helpActions.SetEventHandler(HelpActionService.EventSwitchPage, (eventData, cancellationToken) =>
         {
             if (!HelpActionService.TryMapOldPclPageRoute(eventData.Split('|', StringSplitOptions.TrimEntries).FirstOrDefault() ?? "", out var route, out var message))
@@ -216,7 +221,7 @@ public sealed class AppServices
             OpenModpackDownloadPresetAsync(eventData, "已打开整合包安装入口", settings, navigation, uiDispatcher, cancellationToken));
         helpActions.SetEventHandler(HelpActionService.EventCheckUpdate, (eventData, cancellationToken) =>
             CheckAppUpdateAsync(eventData, updateCheck, cancellationToken));
-        return new AppServices(paths, logger, uiDispatcher, fileDialogs, settings, minecraftDiscovery, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, loaderProcessorRunner, javaDiscovery, launchPipeline, exitGuard, prompts, navigation);
+        return new AppServices(paths, logger, uiDispatcher, fileDialogs, settings, minecraftDiscovery, downloadManager, minecraftClientDownload, communityResourceSearch, communityResourceVersions, modpackInstall, loaderProcessorRunner, javaDiscovery, launchPipeline, exitGuard, prompts, theme, navigation);
     }
 
     private static async Task<HelpActionResult> OpenModpackDownloadPresetAsync(

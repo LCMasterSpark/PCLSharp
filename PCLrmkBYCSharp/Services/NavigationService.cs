@@ -54,7 +54,8 @@ public sealed class NavigationService : INavigationService
         IQuiltLoaderInstallService? quiltLoaderInstall = null,
         IForgeLoaderInstallService? forgeLoaderInstall = null,
         INeoForgeLoaderInstallService? neoForgeLoaderInstall = null,
-        IMicrosoftDeviceCodeStatusService? microsoftDeviceCodes = null)
+        IMicrosoftDeviceCodeStatusService? microsoftDeviceCodes = null,
+        IUiThemeService? theme = null)
     {
         folders ??= new FolderOpenService();
         files ??= new FileOpenService();
@@ -95,7 +96,7 @@ public sealed class NavigationService : INavigationService
             [PageRoute.Download] = new DownloadPageViewModel(minecraftClientDownload, downloadManager, communityResourceSearch, communityResourceVersions, modpackInstall, loaderProcessorRunner, settings, minecraftDiscovery, fileDialogs, logger, rootFolders, selections, prompts, gameDirectories, loaderVersions, fabricLoaderInstall, quiltLoaderInstall, forgeLoaderInstall, neoForgeLoaderInstall, folders, urls, dispatcher),
             [PageRoute.Link] = new LinkPageViewModel(linkService, settings, logger, urls, linkBackend, fileDialogs, linkProcess, dispatcher, clipboard, folders, paths, files),
             [PageRoute.Instance] = new InstancePageViewModel(minecraftDiscovery, instanceManagement, launchFileCompleter, launchPipeline, downloadManager, modpackExport, settings, fileDialogs, prompts, logger, gameDirectories, rootFolders, selections, localModUpdateService: localModUpdates, folders: folders, dispatcher: dispatcher),
-            [PageRoute.Setup] = new SetupPageViewModel(settings, paths, fileDialogs, logger),
+            [PageRoute.Setup] = new SetupPageViewModel(settings, paths, fileDialogs, logger, theme),
             [PageRoute.Other] = new OtherPageViewModel(paths, help, logger, helpActions, settings, fileDialogs, downloadManager, memoryOptimizer, prompts, updateCheck, featureHub, folders, files, urls, clipboard)
         };
         CurrentPage = _pages[PageRoute.Launch];

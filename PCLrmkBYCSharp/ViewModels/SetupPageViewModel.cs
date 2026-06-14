@@ -32,6 +32,7 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     private readonly IAppPathService _paths;
     private readonly IFileDialogService _fileDialogs;
     private readonly IAppLoggerService _logger;
+    private readonly IUiThemeService? _theme;
 
     [ObservableProperty]
     private int selectedSetupSection;
@@ -268,13 +269,15 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         IAppSettingsService settings,
         IAppPathService paths,
         IFileDialogService fileDialogs,
-        IAppLoggerService logger)
+        IAppLoggerService logger,
+        IUiThemeService? uiTheme = null)
         : base(PageRoute.Setup, "设置", "全局配置、界面、Minecraft 路径与系统状态")
     {
         _settings = settings;
         _paths = paths;
         _fileDialogs = fileDialogs;
         _logger = logger;
+        _theme = uiTheme;
 
         theme = _settings.Get(AppSettingKeys.Theme, "VS2022Dark");
         language = _settings.Get(AppSettingKeys.Language, "zh-CN");
@@ -782,6 +785,7 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         _settings.Set(AppSettingKeys.LinkTerracottaExecutablePath, LinkTerracottaExecutablePath);
         _settings.Set(AppSettingKeys.LinkEasyTierExecutablePath, LinkEasyTierExecutablePath);
         _settings.SaveAsync().GetAwaiter().GetResult();
+        _theme?.Apply(_settings);
         StatusMessage = "设置已保存";
         _logger.Info("设置页保存设置");
         RefreshComputedProperties();
