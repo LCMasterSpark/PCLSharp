@@ -16,7 +16,7 @@ public sealed class SetupPageViewModelTests
             new NullFileDialogService(),
             new NullLoggerService());
 
-        Assert.Equal([0, 1, 2, 3, 4, 5], viewModel.SetupSections.Select(section => section.Value));
+        Assert.Equal([0, 1, 2, 3, 4, 5, 6], viewModel.SetupSections.Select(section => section.Value));
         Assert.True(viewModel.IsGeneralSectionSelected);
         Assert.False(viewModel.IsDownloadSectionSelected);
 
@@ -47,6 +47,11 @@ public sealed class SetupPageViewModelTests
 
         Assert.True(viewModel.IsAdvancedSectionSelected);
         Assert.False(viewModel.IsLaunchSectionSelected);
+
+        viewModel.SelectedSetupSection = 6;
+
+        Assert.True(viewModel.IsLinkSectionSelected);
+        Assert.False(viewModel.IsAdvancedSectionSelected);
     }
 
     [Fact]
@@ -54,10 +59,15 @@ public sealed class SetupPageViewModelTests
     {
         var option = new SetupPageViewModel.IntOption(1, "优先使用官方源");
         var section = new SetupPageViewModel.SetupSectionOption(2, "启动", "Java、窗口、内存与 GC");
+        var provider = new SetupPageViewModel.LinkProviderOption(LinkProviderKind.Terracotta, "陶瓦联机", "默认联机方案");
+        var latency = new SetupPageViewModel.LinkLatencyOption(LinkLatencyMode.DirectFirst, "优先直连", "默认路径策略");
 
         Assert.Equal(option.DisplayName, option.ToString());
         Assert.Equal(section.DisplayName, section.ToString());
+        Assert.Equal(provider.DisplayName, provider.ToString());
+        Assert.Equal(latency.DisplayName, latency.ToString());
         Assert.DoesNotContain(nameof(SetupPageViewModel.IntOption), option.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(nameof(LinkProviderKind), provider.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -245,6 +255,66 @@ public sealed class SetupPageViewModelTests
     }
 
     [Fact]
+    public void SaveSettingsPersistsLinkSettings()
+    {
+        using var temp = new TempDirectory();
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        var viewModel = new SetupPageViewModel(
+            settings,
+            new TestAppPathService(temp.Path),
+            new NullFileDialogService(),
+            new NullLoggerService())
+        {
+            LinkProvider = LinkProviderKind.EasyTier,
+            LinkLatencyMode = LinkLatencyMode.LatencyFirst,
+            LinkCustomPeer = "tcp://peer.example:11010",
+            LinkServerPort = 70000,
+            LinkTerracottaExecutablePath = "D:\\Tools\\terracotta.exe",
+            LinkEasyTierExecutablePath = "D:\\Tools\\easytier-core.exe"
+        };
+
+        Assert.Equal([LinkProviderKind.Terracotta, LinkProviderKind.EasyTier], viewModel.LinkProviderOptions.Select(option => option.Value));
+        Assert.Equal([LinkLatencyMode.DirectFirst, LinkLatencyMode.LatencyFirst], viewModel.LinkLatencyOptions.Select(option => option.Value));
+
+        viewModel.SaveSettingsCommand.Execute(null);
+
+        Assert.Equal(LinkProviderKind.EasyTier, settings.Get(AppSettingKeys.LinkProvider, LinkProviderKind.Terracotta));
+        Assert.Equal(LinkLatencyMode.LatencyFirst, settings.Get(AppSettingKeys.LinkLatencyMode, LinkLatencyMode.DirectFirst));
+        Assert.Equal("tcp://peer.example:11010", settings.Get(AppSettingKeys.LinkCustomPeer, ""));
+        Assert.Equal(65535, settings.Get(AppSettingKeys.LinkServerPort, 25565));
+        Assert.Equal("D:\\Tools\\terracotta.exe", settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, ""));
+        Assert.Equal("D:\\Tools\\easytier-core.exe", settings.Get(AppSettingKeys.LinkEasyTierExecutablePath, ""));
+    }
+
+    [Fact]
+    public void BrowseLinkExecutablesPersistBackendPaths()
+    {
+        using var temp = new TempDirectory();
+        var terracottaPath = Path.Combine(temp.Path, "Terracotta", "terracotta.exe");
+        var easyTierPath = Path.Combine(temp.Path, "EasyTier", "easytier-core.exe");
+        Directory.CreateDirectory(Path.GetDirectoryName(terracottaPath)!);
+        Directory.CreateDirectory(Path.GetDirectoryName(easyTierPath)!);
+        File.WriteAllText(terracottaPath, "");
+        File.WriteAllText(easyTierPath, "");
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        var fileDialogs = new LinkExecutableDialogService(terracottaPath, easyTierPath);
+        var viewModel = new SetupPageViewModel(
+            settings,
+            new TestAppPathService(temp.Path),
+            fileDialogs,
+            new NullLoggerService());
+
+        viewModel.BrowseLinkTerracottaExecutableCommand.Execute(null);
+        viewModel.BrowseLinkEasyTierExecutableCommand.Execute(null);
+
+        Assert.Equal(terracottaPath, viewModel.LinkTerracottaExecutablePath);
+        Assert.Equal(easyTierPath, viewModel.LinkEasyTierExecutablePath);
+        Assert.Equal(terracottaPath, settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, ""));
+        Assert.Equal(easyTierPath, settings.Get(AppSettingKeys.LinkEasyTierExecutablePath, ""));
+        Assert.Equal(["选择 Terracotta 可执行文件", "选择 EasyTier 可执行文件"], fileDialogs.Titles);
+    }
+
+    [Fact]
     public void BrowseLaunchJavaPersistsGlobalJavaPath()
     {
         using var temp = new TempDirectory();
@@ -310,6 +380,49 @@ public sealed class SetupPageViewModelTests
         {
             LastInitialDirectory = initialDirectory;
             return javaPath;
+        }
+
+        public string? PickSkinFile(string initialDirectory)
+        {
+            return null;
+        }
+
+        public string? PickModpackFile(string initialDirectory)
+        {
+            return null;
+        }
+
+        public IReadOnlyList<string> PickModFiles(string initialDirectory)
+        {
+            return [];
+        }
+
+        public string? PickSaveFile(string title, string initialDirectory, string defaultFileName, string filter)
+        {
+            return null;
+        }
+    }
+
+    private sealed class LinkExecutableDialogService(string terracottaPath, string easyTierPath) : IFileDialogService
+    {
+        private int index;
+
+        public List<string> Titles { get; } = [];
+
+        public string? PickFolder(string title, string initialDirectory)
+        {
+            return null;
+        }
+
+        public string? PickJavaExecutable(string initialDirectory)
+        {
+            return null;
+        }
+
+        public string? PickExecutable(string title, string initialDirectory, string filter = "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*")
+        {
+            Titles.Add(title);
+            return index++ == 0 ? terracottaPath : easyTierPath;
         }
 
         public string? PickSkinFile(string initialDirectory)

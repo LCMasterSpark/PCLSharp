@@ -18,6 +18,16 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         public override string ToString() => DisplayName;
     }
 
+    public sealed record LinkProviderOption(LinkProviderKind Value, string DisplayName, string Description)
+    {
+        public override string ToString() => DisplayName;
+    }
+
+    public sealed record LinkLatencyOption(LinkLatencyMode Value, string DisplayName, string Description)
+    {
+        public override string ToString() => DisplayName;
+    }
+
     private readonly IAppSettingsService _settings;
     private readonly IAppPathService _paths;
     private readonly IFileDialogService _fileDialogs;
@@ -234,6 +244,24 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     private bool toolDownloadIgnoreQuilt;
 
     [ObservableProperty]
+    private LinkProviderKind linkProvider;
+
+    [ObservableProperty]
+    private LinkLatencyMode linkLatencyMode;
+
+    [ObservableProperty]
+    private string linkCustomPeer;
+
+    [ObservableProperty]
+    private int linkServerPort;
+
+    [ObservableProperty]
+    private string linkTerracottaExecutablePath;
+
+    [ObservableProperty]
+    private string linkEasyTierExecutablePath;
+
+    [ObservableProperty]
     private string statusMessage = "设置系统已就绪";
 
     public SetupPageViewModel(
@@ -317,10 +345,18 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         toolDownloadTranslateV2 = _settings.Get(AppSettingKeys.ToolDownloadTranslateV2, 1);
         toolModLocalNameStyle = _settings.Get(AppSettingKeys.ToolModLocalNameStyle, 0);
         toolDownloadIgnoreQuilt = _settings.Get(AppSettingKeys.ToolDownloadIgnoreQuilt, false);
+        linkProvider = _settings.Get(AppSettingKeys.LinkProvider, LinkProviderKind.Terracotta);
+        linkLatencyMode = _settings.Get(AppSettingKeys.LinkLatencyMode, LinkLatencyMode.DirectFirst);
+        linkCustomPeer = _settings.Get(AppSettingKeys.LinkCustomPeer, "");
+        linkServerPort = _settings.Get(AppSettingKeys.LinkServerPort, 25565);
+        linkTerracottaExecutablePath = _settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, "");
+        linkEasyTierExecutablePath = _settings.Get(AppSettingKeys.LinkEasyTierExecutablePath, "");
         SaveSettingsCommand = new RelayCommand(SaveSettings);
         ResetLastRouteCommand = new RelayCommand(ResetLastRoute);
         BrowseMinecraftRootCommand = new RelayCommand(BrowseMinecraftRoot);
         BrowseLaunchJavaCommand = new RelayCommand(BrowseLaunchJava);
+        BrowseLinkTerracottaExecutableCommand = new RelayCommand(() => BrowseLinkExecutable(LinkProviderKind.Terracotta));
+        BrowseLinkEasyTierExecutableCommand = new RelayCommand(() => BrowseLinkExecutable(LinkProviderKind.EasyTier));
     }
 
     public IReadOnlyList<string> ThemeOptions { get; } = ["VS2022Dark"];
@@ -385,7 +421,8 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         new(2, "辅助功能", "文字、动画、焦点与确认"),
         new(3, "下载", "下载源与资源管理"),
         new(4, "启动", "Java、窗口、内存与 GC"),
-        new(5, "高级", "参数、自定义命令与兼容开关")
+        new(5, "高级", "参数、自定义命令与兼容开关"),
+        new(6, "联机", "陶瓦联机、EasyTier 与节点")
     ];
 
     public bool IsGeneralSectionSelected => SelectedSetupSection == 0;
@@ -399,6 +436,8 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     public bool IsLaunchSectionSelected => SelectedSetupSection == 4;
 
     public bool IsAdvancedSectionSelected => SelectedSetupSection == 5;
+
+    public bool IsLinkSectionSelected => SelectedSetupSection == 6;
 
     public IReadOnlyList<IntOption> LaunchWindowTypeOptions { get; } =
     [
@@ -485,6 +524,18 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         new(1, "标题显示文件名，详情显示译名")
     ];
 
+    public IReadOnlyList<LinkProviderOption> LinkProviderOptions { get; } =
+    [
+        new(LinkProviderKind.Terracotta, "陶瓦联机 Terracotta", "面向 Minecraft 的联机方案，优先做成原版 PCL 的易用体验。"),
+        new(LinkProviderKind.EasyTier, "EasyTier 高级模式", "保留底层组网能力，适合自定义节点和更细的网络配置。")
+    ];
+
+    public IReadOnlyList<LinkLatencyOption> LinkLatencyOptions { get; } =
+    [
+        new(LinkLatencyMode.DirectFirst, "优先直连", "优先尝试点对点直连，失败后再使用中继或备用路径。"),
+        new(LinkLatencyMode.LatencyFirst, "优先低延迟", "优先选择延迟更低的节点或路径，适合跨地区联机。")
+    ];
+
     public IRelayCommand SaveSettingsCommand { get; }
 
     public IRelayCommand ResetLastRouteCommand { get; }
@@ -492,6 +543,10 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
     public IRelayCommand BrowseMinecraftRootCommand { get; }
 
     public IRelayCommand BrowseLaunchJavaCommand { get; }
+
+    public IRelayCommand BrowseLinkTerracottaExecutableCommand { get; }
+
+    public IRelayCommand BrowseLinkEasyTierExecutableCommand { get; }
 
     public string SettingsFilePath => _paths.SettingsFilePath;
 
@@ -509,6 +564,7 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         OnPropertyChanged(nameof(IsDownloadSectionSelected));
         OnPropertyChanged(nameof(IsLaunchSectionSelected));
         OnPropertyChanged(nameof(IsAdvancedSectionSelected));
+        OnPropertyChanged(nameof(IsLinkSectionSelected));
     }
 
     public override Task OnNavigatedToAsync()
@@ -582,6 +638,12 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         ToolDownloadTranslateV2 = _settings.Get(AppSettingKeys.ToolDownloadTranslateV2, 1);
         ToolModLocalNameStyle = _settings.Get(AppSettingKeys.ToolModLocalNameStyle, 0);
         ToolDownloadIgnoreQuilt = _settings.Get(AppSettingKeys.ToolDownloadIgnoreQuilt, false);
+        LinkProvider = _settings.Get(AppSettingKeys.LinkProvider, LinkProviderKind.Terracotta);
+        LinkLatencyMode = _settings.Get(AppSettingKeys.LinkLatencyMode, LinkLatencyMode.DirectFirst);
+        LinkCustomPeer = _settings.Get(AppSettingKeys.LinkCustomPeer, "");
+        LinkServerPort = _settings.Get(AppSettingKeys.LinkServerPort, 25565);
+        LinkTerracottaExecutablePath = _settings.Get(AppSettingKeys.LinkTerracottaExecutablePath, "");
+        LinkEasyTierExecutablePath = _settings.Get(AppSettingKeys.LinkEasyTierExecutablePath, "");
         RefreshComputedProperties();
         return Task.CompletedTask;
     }
@@ -610,6 +672,35 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         }
 
         LaunchArgumentJavaSelect = selected;
+        SaveSettings();
+    }
+
+    private void BrowseLinkExecutable(LinkProviderKind provider)
+    {
+        var currentPath = provider == LinkProviderKind.Terracotta
+            ? LinkTerracottaExecutablePath
+            : LinkEasyTierExecutablePath;
+        var initialDirectory = File.Exists(currentPath)
+            ? Path.GetDirectoryName(currentPath) ?? ""
+            : "";
+        var title = provider == LinkProviderKind.Terracotta
+            ? "选择 Terracotta 可执行文件"
+            : "选择 EasyTier 可执行文件";
+        var selected = _fileDialogs.PickExecutable(title, initialDirectory, "可执行文件 (*.exe)|*.exe|所有文件 (*.*)|*.*");
+        if (selected is null)
+        {
+            return;
+        }
+
+        if (provider == LinkProviderKind.Terracotta)
+        {
+            LinkTerracottaExecutablePath = selected;
+        }
+        else
+        {
+            LinkEasyTierExecutablePath = selected;
+        }
+
         SaveSettings();
     }
 
@@ -684,6 +775,12 @@ public sealed partial class SetupPageViewModel : PageViewModelBase
         _settings.Set(AppSettingKeys.ToolDownloadTranslateV2, ToolDownloadTranslateV2);
         _settings.Set(AppSettingKeys.ToolModLocalNameStyle, ToolModLocalNameStyle);
         _settings.Set(AppSettingKeys.ToolDownloadIgnoreQuilt, ToolDownloadIgnoreQuilt);
+        _settings.Set(AppSettingKeys.LinkProvider, LinkProvider);
+        _settings.Set(AppSettingKeys.LinkLatencyMode, LinkLatencyMode);
+        _settings.Set(AppSettingKeys.LinkCustomPeer, LinkCustomPeer);
+        _settings.Set(AppSettingKeys.LinkServerPort, Math.Clamp(LinkServerPort, 1, 65535));
+        _settings.Set(AppSettingKeys.LinkTerracottaExecutablePath, LinkTerracottaExecutablePath);
+        _settings.Set(AppSettingKeys.LinkEasyTierExecutablePath, LinkEasyTierExecutablePath);
         _settings.SaveAsync().GetAwaiter().GetResult();
         StatusMessage = "设置已保存";
         _logger.Info("设置页保存设置");

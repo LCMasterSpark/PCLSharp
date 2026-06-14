@@ -896,6 +896,115 @@
                         </StackPanel>
                     </Border>
                 </Grid>
+
+                <Grid>
+                    <Grid.Style>
+                        <Style TargetType="Grid" BasedOn="{StaticResource SectionPanelStyle}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLinkSectionSelected}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="1.05*" />
+                        <ColumnDefinition Width="16" />
+                        <ColumnDefinition Width="1.25*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="16" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <Border Style="{StaticResource CardBorderStyle}">
+                        <StackPanel>
+                            <TextBlock Text="联机方案" Style="{StaticResource SectionTitleStyle}" />
+                            <TextBlock Text="默认联机方式" Style="{StaticResource LabelTextStyle}" />
+                            <ComboBox ItemsSource="{Binding LinkProviderOptions}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Value"
+                                      SelectedValue="{Binding LinkProvider, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="路径策略" Margin="0,14,0,6" FontWeight="SemiBold" />
+                            <ComboBox ItemsSource="{Binding LinkLatencyOptions}"
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedValuePath="Value"
+                                      SelectedValue="{Binding LinkLatencyMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="陶瓦联机优先提供接近原版 PCL 的创建/加入房间体验；EasyTier 作为高级底层模式保留。"
+                                       Margin="0,14,0,0"
+                                       LineHeight="21"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </StackPanel>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="14" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="14" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="12" />
+                                <ColumnDefinition Width="150" />
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.ColumnSpan="3" Text="后端程序" Style="{StaticResource SectionTitleStyle}" />
+                            <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+                                <TextBlock Text="Terracotta 可执行文件" Style="{StaticResource LabelTextStyle}" />
+                                <TextBox Text="{Binding LinkTerracottaExecutablePath, UpdateSourceTrigger=PropertyChanged}"
+                                         IsReadOnly="True" />
+                            </StackPanel>
+                            <Button Grid.Row="1"
+                                    Grid.Column="2"
+                                    Margin="0,24,0,0"
+                                    Command="{Binding BrowseLinkTerracottaExecutableCommand}"
+                                    Content="选择文件" />
+
+                            <StackPanel Grid.Row="3" Grid.ColumnSpan="2">
+                                <TextBlock Text="EasyTier 可执行文件" Style="{StaticResource LabelTextStyle}" />
+                                <TextBox Text="{Binding LinkEasyTierExecutablePath, UpdateSourceTrigger=PropertyChanged}"
+                                         IsReadOnly="True" />
+                            </StackPanel>
+                            <Button Grid.Row="3"
+                                    Grid.Column="2"
+                                    Margin="0,24,0,0"
+                                    Command="{Binding BrowseLinkEasyTierExecutableCommand}"
+                                    Content="选择文件" />
+
+                            <TextBlock Grid.Row="5"
+                                       Grid.ColumnSpan="3"
+                                       Text="这些路径会被联机页复用；联机页仍可自动查找或临时选择文件。"
+                                       Style="{StaticResource MutedTextStyle}" />
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="2" Grid.ColumnSpan="3" Style="{StaticResource CardBorderStyle}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="180" />
+                                <ColumnDefinition Width="16" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="游戏端口" Style="{StaticResource LabelTextStyle}" />
+                                <TextBox Text="{Binding LinkServerPort, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="自定义节点或中继" Style="{StaticResource LabelTextStyle}" />
+                                <TextBox Text="{Binding LinkCustomPeer, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="留空时使用联机服务默认节点；填写时会作为高级连接计划的一部分保存。"
+                                           Margin="0,8,0,0"
+                                           Style="{StaticResource MutedTextStyle}" />
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
             </Grid>
         </Grid>
 
