@@ -44,6 +44,8 @@ public sealed class LaunchServicesTests
 
         var issue = Assert.Single(result.Issues, issue => issue.Code == "GameExitedEarly");
         Assert.False(result.Success);
+        Assert.Contains("Java：JDK 17", issue.Message, StringComparison.Ordinal);
+        Assert.Contains("游戏目录：" + instance.VersionPath, issue.Message, StringComparison.Ordinal);
         Assert.Contains("latest.log:", issue.Message, StringComparison.Ordinal);
         Assert.Contains("Incompatible mod set", issue.Message, StringComparison.Ordinal);
         Assert.Contains("fabric-api", issue.Message, StringComparison.Ordinal);

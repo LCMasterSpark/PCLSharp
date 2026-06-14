@@ -498,7 +498,7 @@ public sealed class LaunchPipelineService : ILaunchPipelineService
             .Where(line => !string.IsNullOrWhiteSpace(line))
             .ToArray();
         var diagnosis = DiagnoseGameExit(combinedTail);
-        var message = $"游戏进程很快退出，退出码：{watchResult.ExitCode}";
+        var message = $"游戏进程很快退出，退出码：{watchResult.ExitCode}；Java：{profile.Java.DisplayName}；游戏目录：{profile.ProcessStartInfo.WorkingDirectory}";
         if (!string.IsNullOrWhiteSpace(diagnosis))
         {
             message += "；" + diagnosis;
