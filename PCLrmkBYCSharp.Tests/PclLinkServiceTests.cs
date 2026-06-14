@@ -550,6 +550,55 @@ public sealed class PclLinkServiceTests
         Assert.Contains("new peer connection added", viewModel.LinkProcessLogText, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task LinkPageViewModelRetriesBackendAfterFailure()
+    {
+        using var temp = new TempDirectory();
+        var executable = Path.Combine(temp.Path, "easytier.exe");
+        File.WriteAllText(executable, "");
+        var settings = new AppSettingsService(new TestAppPathService(Path.Combine(temp.Path, "appdata")));
+        settings.Set(AppSettingKeys.LinkProvider, LinkProviderKind.EasyTier);
+        settings.Set(AppSettingKeys.LinkEasyTierExecutablePath, executable);
+        var runner = new CaptureLinkProcessRunner();
+        var process = new LinkProcessService(runner, new NullLoggerService());
+        var viewModel = new LinkPageViewModel(
+            new PclLinkService(),
+            settings,
+            new NullLoggerService(),
+            linkBackend: CreateLinkBackendService(),
+            linkProcess: process);
+
+        await viewModel.CreateRoomCommand.ExecuteAsync(null);
+        viewModel.StartBackendCommand.Execute(null);
+        runner.Handle.PublishExited(7);
+        viewModel.RetryBackendCommand.Execute(null);
+
+        Assert.Equal(2, runner.StartCount);
+        Assert.Contains("PID", viewModel.LinkProcessStatusText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void LinkPageViewModelOpensAppLogDirectory()
+    {
+        using var temp = new TempDirectory();
+        var paths = new TestAppPathService(Path.Combine(temp.Path, "appdata"));
+        var folders = new CaptureFolderOpenService();
+        var settings = new AppSettingsService(paths);
+        var viewModel = new LinkPageViewModel(
+            new PclLinkService(),
+            settings,
+            new NullLoggerService(),
+            linkBackend: CreateLinkBackendService(),
+            folders: folders,
+            paths: paths);
+
+        viewModel.OpenLinkLogsCommand.Execute(null);
+
+        Assert.Equal(paths.LogsDirectory, folders.LastFolder);
+        Assert.True(Directory.Exists(paths.LogsDirectory));
+        Assert.Contains("已打开", viewModel.StatusMessage, StringComparison.Ordinal);
+    }
+
     private sealed class ExecutableFileDialogService(string executablePath) : IFileDialogService
     {
         public string? PickFolder(string title, string initialDirectory) => null;
@@ -625,6 +674,16 @@ public sealed class PclLinkServiceTests
         }
     }
 
+    private sealed class CaptureFolderOpenService : IFolderOpenService
+    {
+        public string LastFolder { get; private set; } = "";
+
+        public void OpenFolder(string folderPath)
+        {
+            LastFolder = folderPath;
+        }
+    }
+
     private sealed class FailingLinkPortAllocator : ILinkPortAllocator
     {
         public LinkPortAllocation Allocate(int minecraftPort)
@@ -635,7 +694,7 @@ public sealed class PclLinkServiceTests
 
     private sealed class CaptureLinkProcessRunner : ILinkProcessRunner
     {
-        public CaptureLinkProcessHandle Handle { get; } = new();
+        public CaptureLinkProcessHandle Handle { get; private set; } = new();
 
         public ProcessStartInfo? LastStartInfo { get; private set; }
 
@@ -645,6 +704,7 @@ public sealed class PclLinkServiceTests
         {
             StartCount++;
             LastStartInfo = startInfo;
+            Handle = new CaptureLinkProcessHandle();
             return Handle;
         }
     }

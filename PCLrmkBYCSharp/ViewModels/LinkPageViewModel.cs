@@ -18,6 +18,8 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
     private readonly ILinkProcessService? _linkProcess;
     private readonly IUiDispatcherService? _dispatcher;
     private readonly IClipboardService? _clipboard;
+    private readonly IFolderOpenService? _folders;
+    private readonly IAppPathService? _paths;
     private LinkBackendLaunchPlan? _currentPlan;
 
     public LinkPageViewModel(
@@ -29,7 +31,9 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         IFileDialogService? fileDialogs = null,
         ILinkProcessService? linkProcess = null,
         IUiDispatcherService? dispatcher = null,
-        IClipboardService? clipboard = null)
+        IClipboardService? clipboard = null,
+        IFolderOpenService? folders = null,
+        IAppPathService? paths = null)
         : base(PageRoute.Link, "陶瓦联机", "Terracotta / EasyTier 联机入口")
     {
         _linkService = linkService;
@@ -41,6 +45,8 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         _linkProcess = linkProcess;
         _dispatcher = dispatcher;
         _clipboard = clipboard;
+        _folders = folders;
+        _paths = paths;
         if (_linkProcess is not null)
         {
             _linkProcess.SnapshotChanged += HandleProcessSnapshotChanged;
@@ -235,6 +241,47 @@ public sealed partial class LinkPageViewModel : PageViewModelBase
         }
 
         ApplyProcessSnapshot(_linkProcess.Stop());
+    }
+
+    [RelayCommand]
+    private void RetryBackend()
+    {
+        if (_currentPlan is null)
+        {
+            ApplyProcessStatus("请先创建房间或验证邀请码，生成联机启动计划。");
+            return;
+        }
+
+        if (_linkProcess is not null && _linkProcess.Current.State == LinkProcessState.Running)
+        {
+            ApplyProcessStatus("联机后端仍在运行，无需重试。");
+            RefreshProcessSnapshotFromService();
+            return;
+        }
+
+        StartBackend();
+    }
+
+    [RelayCommand]
+    private void OpenLinkLogs()
+    {
+        if (_folders is null || _paths is null)
+        {
+            ApplyProcessStatus("当前环境没有可用的日志目录打开服务。");
+            return;
+        }
+
+        try
+        {
+            _paths.EnsureCreated();
+            _folders.OpenFolder(_paths.LogsDirectory);
+            StatusMessage = "已打开 PCL Sharp 日志目录。";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "打开日志目录失败：" + ex.Message;
+            _logger.Error(ex, "打开联机日志目录失败");
+        }
     }
 
     [RelayCommand]
