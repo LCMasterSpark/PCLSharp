@@ -162,6 +162,23 @@
                             <TextBlock Style="{StaticResource MutedTextStyle}"
                                        LineHeight="21"
                                        Text="更多页现在按原版思路拆成独立分页：帮助用于检索内置 Help，百宝箱承载维护工具，反馈用于记录差异与问题，关于与鸣谢单独说明 PCL Sharp 的实验定位和引用关系。" />
+                            <UniformGrid Columns="3" Margin="0,16,0,0">
+                                <Button Margin="0,0,10,0"
+                                        MinHeight="34"
+                                        Command="{Binding OpenLogsFolderCommand}"
+                                        Content="打开日志目录" />
+                                <Button Margin="0,0,10,0"
+                                        MinHeight="34"
+                                        Command="{Binding OpenSettingsFolderCommand}"
+                                        Content="打开设置目录" />
+                                <Button MinHeight="34"
+                                        Command="{Binding CopyDiagnosticsCommand}"
+                                        Content="复制诊断信息" />
+                            </UniformGrid>
+                            <TextBlock Text="{Binding DiagnosticsStatusText}"
+                                       Margin="0,10,0,0"
+                                       Foreground="{StaticResource AppAccentBrush}"
+                                       TextWrapping="Wrap" />
                         </StackPanel>
                     </Border>
                 </Grid>

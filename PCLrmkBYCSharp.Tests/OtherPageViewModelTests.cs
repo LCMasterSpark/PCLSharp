@@ -16,7 +16,9 @@ public sealed class OtherPageViewModelTests
 
         var actions = new FakeHelpActionService();
         var helpService = new FakeHelpService();
-        var viewModel = new OtherPageViewModel(paths, helpService, new NullLoggerService(), actions);
+        var folders = new CaptureFolderOpenService();
+        var clipboard = new CaptureClipboardService();
+        var viewModel = new OtherPageViewModel(paths, helpService, new NullLoggerService(), actions, folders: folders, clipboard: clipboard);
 
         await viewModel.OnNavigatedToAsync();
         viewModel.HelpSearchText = "marker";
@@ -34,6 +36,24 @@ public sealed class OtherPageViewModelTests
         Assert.Contains(viewModel.OtherSections, section => section.DisplayName == "反馈");
         Assert.Contains(viewModel.ToolBoxItems, item => item.Title == "今日人品");
         Assert.Contains(viewModel.ToolBoxItems, item => item.Title == "下载自定义文件");
+
+        viewModel.OpenLogsFolderCommand.Execute(null);
+
+        Assert.Equal(paths.LogsDirectory, folders.OpenedFolders.Last());
+        Assert.Contains("已打开日志目录", viewModel.DiagnosticsStatusText, StringComparison.Ordinal);
+
+        viewModel.OpenSettingsFolderCommand.Execute(null);
+
+        Assert.Equal(System.IO.Path.GetDirectoryName(paths.SettingsFilePath), folders.OpenedFolders.Last());
+        Assert.Contains("已打开设置目录", viewModel.DiagnosticsStatusText, StringComparison.Ordinal);
+
+        viewModel.CopyDiagnosticsCommand.Execute(null);
+
+        Assert.Contains("Plain Craft Launcher Sharp 诊断信息", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains(paths.LogsDirectory, clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains(paths.SettingsFilePath, clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("诊断信息已复制", viewModel.DiagnosticsStatusText, StringComparison.Ordinal);
+
         var help = Assert.Single(viewModel.HelpResults);
         Assert.Equal("marker help", help.Title);
         Assert.Contains("marker help", viewModel.SelectedHelpPreview, StringComparison.Ordinal);
@@ -285,6 +305,26 @@ public sealed class OtherPageViewModelTests
         {
             CallCount++;
             return Task.FromResult(new LaunchMemoryOptimizeResult(7));
+        }
+    }
+
+    private sealed class CaptureFolderOpenService : IFolderOpenService
+    {
+        public List<string> OpenedFolders { get; } = [];
+
+        public void OpenFolder(string folderPath)
+        {
+            OpenedFolders.Add(folderPath);
+        }
+    }
+
+    private sealed class CaptureClipboardService : IClipboardService
+    {
+        public string Text { get; private set; } = "";
+
+        public void SetText(string text)
+        {
+            Text = text;
         }
     }
 }

@@ -21,6 +21,7 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private readonly IHelpService? _help;
     private readonly IAppLoggerService? _logger;
     private readonly IHelpActionService? _helpActions;
+    private readonly IAppPathService? _paths;
     private readonly IAppSettingsService? _settings;
     private readonly IFileDialogService? _fileDialogs;
     private readonly IDownloadManagerService? _downloadManager;
@@ -28,6 +29,8 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
     private readonly IUserPromptService? _prompts;
     private readonly IAppUpdateCheckService? _updateCheck;
     private readonly IFeatureHubService? _featureHub;
+    private readonly IFolderOpenService? _folders;
+    private readonly IClipboardService? _clipboard;
     private int _doNotClickCount;
     private IReadOnlyList<HelpEntry> _allHelpEntries = [];
 
@@ -51,6 +54,9 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
 
     [ObservableProperty]
     private string aboutActionStatusText = "";
+
+    [ObservableProperty]
+    private string diagnosticsStatusText = "诊断工具已就绪";
 
     [ObservableProperty]
     private int selectedOtherSection;
@@ -111,12 +117,15 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         ILaunchMemoryOptimizer? memoryOptimizer = null,
         IUserPromptService? prompts = null,
         IAppUpdateCheckService? updateCheck = null,
-        IFeatureHubService? featureHub = null)
+        IFeatureHubService? featureHub = null,
+        IFolderOpenService? folders = null,
+        IClipboardService? clipboard = null)
         : base(PageRoute.Other, "更多", "帮助、关于、诊断、反馈与维护工具")
     {
         _help = help;
         _logger = logger;
         _helpActions = helpActions;
+        _paths = paths;
         _settings = settings;
         _fileDialogs = fileDialogs;
         _downloadManager = downloadManager;
@@ -124,6 +133,8 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         _prompts = prompts;
         _updateCheck = updateCheck;
         _featureHub = featureHub;
+        _folders = folders;
+        _clipboard = clipboard;
         RegisterHelpEventHandlers();
         var assembly = typeof(OtherPageViewModel).Assembly;
         var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
@@ -261,6 +272,75 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
             }
 
             return string.Join(Environment.NewLine, lines.Where(line => !string.IsNullOrWhiteSpace(line)));
+        }
+    }
+
+    [RelayCommand]
+    private void OpenLogsFolder()
+    {
+        if (_paths is null || _folders is null)
+        {
+            DiagnosticsStatusText = "日志目录服务未初始化";
+            return;
+        }
+
+        OpenDiagnosticsFolder(_paths.LogsDirectory, "日志目录");
+    }
+
+    [RelayCommand]
+    private void OpenSettingsFolder()
+    {
+        if (_paths is null || _folders is null)
+        {
+            DiagnosticsStatusText = "设置目录服务未初始化";
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(_paths.SettingsFilePath) ?? _paths.AppDataDirectory;
+        OpenDiagnosticsFolder(directory, "设置目录");
+    }
+
+    [RelayCommand]
+    private void CopyDiagnostics()
+    {
+        if (_clipboard is null)
+        {
+            DiagnosticsStatusText = "剪贴板服务未初始化";
+            return;
+        }
+
+        var assembly = typeof(OtherPageViewModel).Assembly;
+        var version = assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion
+            ?? assembly.GetName().Version?.ToString()
+            ?? "未知";
+        var lines = new[]
+        {
+            "Plain Craft Launcher Sharp 诊断信息",
+            "版本：" + version,
+            ".NET：" + Environment.Version,
+            "系统：" + Environment.OSVersion.VersionString,
+            "架构：" + RuntimeInformation.ProcessArchitecture,
+            "日志目录：" + (_paths?.LogsDirectory ?? "未初始化"),
+            "设置文件：" + (_paths?.SettingsFilePath ?? "未初始化"),
+            "Minecraft 根目录：" + GetMinecraftRootPath()
+        };
+
+        _clipboard.SetText(string.Join(Environment.NewLine, lines));
+        DiagnosticsStatusText = "诊断信息已复制到剪贴板";
+    }
+
+    private void OpenDiagnosticsFolder(string folderPath, string displayName)
+    {
+        try
+        {
+            Directory.CreateDirectory(folderPath);
+            _folders!.OpenFolder(folderPath);
+            DiagnosticsStatusText = "已打开" + displayName + "：" + folderPath;
+        }
+        catch (Exception ex)
+        {
+            _logger?.Error(ex, "打开" + displayName + "失败");
+            DiagnosticsStatusText = "打开" + displayName + "失败：" + ex.Message;
         }
     }
 
