@@ -364,6 +364,12 @@
                                                    Margin="0,8,0,0"
                                                    LineHeight="20"
                                                    Style="{StaticResource MutedTextStyle}" />
+                                        <Button Margin="0,12,0,0"
+                                                MinHeight="32"
+                                                HorizontalAlignment="Left"
+                                                MinWidth="130"
+                                                Command="{Binding CopySkinSummaryCommand}"
+                                                Content="复制皮肤摘要" />
                                     </StackPanel>
                                 </Border>
 

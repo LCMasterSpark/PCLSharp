@@ -447,6 +447,25 @@ public sealed partial class OtherPageViewModel : PageViewModelBase
         AccountCenterText += "\n账号摘要已复制到剪贴板。";
     }
 
+    [RelayCommand]
+    private void CopySkinSummary()
+    {
+        if (_clipboard is null)
+        {
+            SkinCenterText = "剪贴板服务未初始化。";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SkinCenterText))
+        {
+            SkinCenterText = "皮肤中心还没有可复制的摘要。";
+            return;
+        }
+
+        _clipboard.SetText("Plain Craft Launcher Sharp 皮肤摘要" + Environment.NewLine + SkinCenterText);
+        SkinCenterText += "\n皮肤摘要已复制到剪贴板。";
+    }
+
     public override async Task OnNavigatedToAsync()
     {
         if (_help is null || _allHelpEntries.Count > 0)

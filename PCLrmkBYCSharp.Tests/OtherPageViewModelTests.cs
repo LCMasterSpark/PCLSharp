@@ -82,6 +82,14 @@ public sealed class OtherPageViewModelTests
         Assert.Contains("缓存账号：0", clipboard.Text, StringComparison.Ordinal);
         Assert.Contains("账号摘要已复制", viewModel.AccountCenterText, StringComparison.Ordinal);
 
+        viewModel.CopySkinSummaryCommand.Execute(null);
+
+        Assert.Contains("Plain Craft Launcher Sharp 皮肤摘要", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("皮肤模式：随机", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("皮肤标识：未指定", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("Slim：否", clipboard.Text, StringComparison.Ordinal);
+        Assert.Contains("皮肤摘要已复制", viewModel.SkinCenterText, StringComparison.Ordinal);
+
         var help = Assert.Single(viewModel.HelpResults);
         Assert.Equal("marker help", help.Title);
         Assert.Contains("marker help", viewModel.SelectedHelpPreview, StringComparison.Ordinal);
