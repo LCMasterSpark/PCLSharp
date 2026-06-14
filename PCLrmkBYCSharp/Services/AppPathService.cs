@@ -10,7 +10,10 @@ public sealed class AppPathService : IAppPathService
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "Plain Craft Launcher Sharp");
         LogsDirectory = Path.Combine(AppDataDirectory, "Logs");
-        RuntimeDirectory = Path.Combine(AppDataDirectory, "PCL");
+        RuntimeDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "PCLSharp",
+            "Runtime");
         SettingsFilePath = Path.Combine(AppDataDirectory, "settings.json");
     }
 
