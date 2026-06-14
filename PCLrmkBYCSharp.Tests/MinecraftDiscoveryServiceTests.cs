@@ -58,6 +58,36 @@ public sealed class MinecraftDiscoveryServiceTests
     }
 
     [Fact]
+    public async Task ScanAsyncHonorsOldPclSetupVersionMetadata()
+    {
+        using var temp = new TempDirectory();
+        WriteVersionJson(temp.Path, "Skyblock Burgeria v3.0", """
+        {
+          "id": "Skyblock Burgeria v3.0",
+          "type": "release",
+          "releaseTime": "2023-06-12T13:25:51+00:00",
+          "mainClass": "cpw.mods.bootstraplauncher.BootstrapLauncher",
+          "libraries": []
+        }
+        """);
+        var setupPath = Path.Combine(temp.Path, "versions", "Skyblock Burgeria v3.0", "PCL", "Setup.ini");
+        Directory.CreateDirectory(Path.GetDirectoryName(setupPath)!);
+        await File.WriteAllLinesAsync(setupPath, [
+            "VersionVanillaName:1.20.1",
+            "VersionForge:47.2.32"
+        ]);
+        var service = new MinecraftDiscoveryService();
+
+        var instance = Assert.Single(await service.ScanAsync(temp.Path));
+        var requirement = new JavaSelectorService().GetRequirement(instance);
+
+        Assert.Equal("1.20.1", instance.Version.VanillaVersion);
+        Assert.True(instance.Version.HasForge);
+        Assert.Equal("Forge", instance.LoaderSummary);
+        Assert.Equal("Java 17", requirement.DisplayText);
+    }
+
+    [Fact]
     public void MinecraftInstanceUsesOriginalPclImageResourcePathsForVersionIcons()
     {
         var release = CreateInstance("release");

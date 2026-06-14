@@ -24,4 +24,9 @@ public interface IMinecraftInstanceManagementService
 public sealed record MinecraftInstanceMetadata(
     bool IsStar,
     MinecraftInstanceDisplayType DisplayType,
-    string CustomInfo);
+    string CustomInfo,
+    string VanillaVersion = "",
+    string ForgeVersion = "",
+    string FabricVersion = "",
+    string NeoForgeVersion = "",
+    string OptiFineVersion = "");

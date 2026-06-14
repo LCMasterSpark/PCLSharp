@@ -151,6 +151,7 @@ public sealed partial class MinecraftDiscoveryService : IMinecraftDiscoveryServi
         string errorMessage)
     {
         var metadata = _instanceManagement.ReadMetadata(versionPath);
+        version = ApplyMetadata(version, metadata);
         return new MinecraftInstance(
             name,
             NormalizeRoot(rootPath),
@@ -162,6 +163,20 @@ public sealed partial class MinecraftDiscoveryService : IMinecraftDiscoveryServi
             metadata.IsStar,
             metadata.DisplayType,
             metadata.CustomInfo);
+    }
+
+    private static MinecraftVersionInfo ApplyMetadata(MinecraftVersionInfo version, MinecraftInstanceMetadata metadata)
+    {
+        return version with
+        {
+            VanillaVersion = string.IsNullOrWhiteSpace(metadata.VanillaVersion)
+                ? version.VanillaVersion
+                : metadata.VanillaVersion,
+            HasForge = version.HasForge || !string.IsNullOrWhiteSpace(metadata.ForgeVersion),
+            HasFabric = version.HasFabric || !string.IsNullOrWhiteSpace(metadata.FabricVersion),
+            HasNeoForge = version.HasNeoForge || !string.IsNullOrWhiteSpace(metadata.NeoForgeVersion),
+            HasOptiFine = version.HasOptiFine || !string.IsNullOrWhiteSpace(metadata.OptiFineVersion)
+        };
     }
 
     private static string NormalizeRoot(string? rootPath)

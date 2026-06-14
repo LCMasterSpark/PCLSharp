@@ -10,6 +10,11 @@ public sealed class MinecraftInstanceManagementService : IMinecraftInstanceManag
     private const string IsStarKey = "IsStar";
     private const string DisplayTypeKey = "DisplayType";
     private const string CustomInfoKey = "CustomInfo";
+    private const string VersionVanillaNameKey = "VersionVanillaName";
+    private const string VersionForgeKey = "VersionForge";
+    private const string VersionFabricKey = "VersionFabric";
+    private const string VersionNeoForgeKey = "VersionNeoForge";
+    private const string VersionOptiFineKey = "VersionOptiFine";
 
     public MinecraftInstanceMetadata ReadMetadata(string versionPath)
     {
@@ -17,7 +22,12 @@ public sealed class MinecraftInstanceManagementService : IMinecraftInstanceManag
         return new MinecraftInstanceMetadata(
             TryReadBool(values, IsStarKey),
             TryReadDisplayType(values, DisplayTypeKey),
-            values.GetValueOrDefault(CustomInfoKey, ""));
+            values.GetValueOrDefault(CustomInfoKey, ""),
+            values.GetValueOrDefault(VersionVanillaNameKey, ""),
+            values.GetValueOrDefault(VersionForgeKey, ""),
+            values.GetValueOrDefault(VersionFabricKey, ""),
+            values.GetValueOrDefault(VersionNeoForgeKey, ""),
+            values.GetValueOrDefault(VersionOptiFineKey, ""));
     }
 
     public void SetStar(MinecraftInstance instance, bool isStar)
