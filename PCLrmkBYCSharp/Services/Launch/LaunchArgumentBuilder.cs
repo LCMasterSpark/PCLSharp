@@ -484,7 +484,7 @@ public sealed partial class LaunchArgumentBuilder(
             }
         }
 
-        var jarPath = Path.Combine(instance.VersionPath, $"{instance.Name}.jar");
+        var jarPath = ResolveMainJarPath(instance, roots);
         classpath.Add(jarPath);
         if (!File.Exists(jarPath))
         {
@@ -492,6 +492,37 @@ public sealed partial class LaunchArgumentBuilder(
         }
 
         return classpath;
+    }
+
+    private static string ResolveMainJarPath(MinecraftInstance instance, IReadOnlyList<JsonElement> roots)
+    {
+        if (roots.Count == 0)
+        {
+            return Path.Combine(instance.VersionPath, $"{instance.Name}.jar");
+        }
+
+        var root = roots[0];
+        var requiredJar = GetString(root, "jar");
+        if (!string.IsNullOrWhiteSpace(requiredJar))
+        {
+            return GetVersionJarPath(instance.RootPath, requiredJar);
+        }
+
+        if ((instance.Version.HasForge || instance.Version.HasNeoForge) && JavaSelectorService.ParseMinecraftVersion(instance.Version.VanillaVersion).Major >= 17)
+        {
+            return Path.Combine(instance.VersionPath, $"{instance.Name}.jar");
+        }
+
+        var deepestRoot = roots[^1];
+        var deepestName = GetString(deepestRoot, "id");
+        return string.IsNullOrWhiteSpace(deepestName)
+            ? Path.Combine(instance.VersionPath, $"{instance.Name}.jar")
+            : GetVersionJarPath(instance.RootPath, deepestName);
+    }
+
+    private static string GetVersionJarPath(string rootPath, string versionName)
+    {
+        return Path.Combine(rootPath, "versions", versionName, $"{versionName}.jar");
     }
 
     private static bool CheckLibraryRules(JsonElement library)

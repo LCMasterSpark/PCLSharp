@@ -793,6 +793,107 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public void LaunchArgumentBuilderUsesDeepestInheritedMainJarForNormalInheritedVersions()
+    {
+        using var temp = new TempDirectory();
+        WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var child = WriteInstance(temp.Path, "Fabric Child", """
+        {
+          "id": "Fabric Child",
+          "inheritsFrom": "1.20.1",
+          "mainClass": "net.fabricmc.loader.impl.launch.knot.KnotClient",
+          "libraries": [{ "name": "net.fabricmc:fabric-loader:0.15.0" }]
+        }
+        """, createJar: true);
+        var builder = new LaunchArgumentBuilder();
+
+        var result = builder.Build(CreateRequest(child, temp.Path), CreateJava("C:\\Java17\\bin\\java.exe", 17), new LegacyLoginService().CreateSession("Alex"));
+
+        var inheritedJar = Path.Combine(temp.Path, "versions", "1.20.1", "1.20.1.jar");
+        var childJar = Path.Combine(temp.Path, "versions", "Fabric Child", "Fabric Child.jar");
+        Assert.Contains(inheritedJar, result.Arguments);
+        Assert.DoesNotContain(childJar, result.Arguments);
+    }
+
+    [Fact]
+    public void LaunchArgumentBuilderKeepsCurrentMainJarForModernForgeLikeVersions()
+    {
+        using var temp = new TempDirectory();
+        WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var child = WriteInstance(temp.Path, "Forge Child", """
+        {
+          "id": "Forge Child",
+          "inheritsFrom": "1.20.1",
+          "mainClass": "cpw.mods.bootstraplauncher.BootstrapLauncher",
+          "libraries": [{ "name": "net.minecraftforge:forge:1.20.1-47.2.0" }]
+        }
+        """, createJar: true);
+        var builder = new LaunchArgumentBuilder();
+
+        var result = builder.Build(CreateRequest(child, temp.Path), CreateJava("C:\\Java17\\bin\\java.exe", 17), new LegacyLoginService().CreateSession("Alex"));
+
+        var inheritedJar = Path.Combine(temp.Path, "versions", "1.20.1", "1.20.1.jar");
+        var childJar = Path.Combine(temp.Path, "versions", "Forge Child", "Forge Child.jar");
+        Assert.Contains(childJar, result.Arguments);
+        Assert.DoesNotContain(inheritedJar, result.Arguments);
+    }
+
+    [Fact]
+    public void LaunchArgumentBuilderUsesExplicitJarFieldBeforeInheritance()
+    {
+        using var temp = new TempDirectory();
+        WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        WriteInstance(temp.Path, "Custom Jar", """
+        {
+          "id": "Custom Jar",
+          "releaseTime": "2023-06-12T12:00:00+00:00",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var child = WriteInstance(temp.Path, "Child Uses Jar", """
+        {
+          "id": "Child Uses Jar",
+          "inheritsFrom": "1.20.1",
+          "jar": "Custom Jar",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """, createJar: true);
+        var builder = new LaunchArgumentBuilder();
+
+        var result = builder.Build(CreateRequest(child, temp.Path), CreateJava("C:\\Java17\\bin\\java.exe", 17), new LegacyLoginService().CreateSession("Alex"));
+
+        var customJar = Path.Combine(temp.Path, "versions", "Custom Jar", "Custom Jar.jar");
+        var inheritedJar = Path.Combine(temp.Path, "versions", "1.20.1", "1.20.1.jar");
+        var childJar = Path.Combine(temp.Path, "versions", "Child Uses Jar", "Child Uses Jar.jar");
+        Assert.Contains(customJar, result.Arguments);
+        Assert.DoesNotContain(inheritedJar, result.Arguments);
+        Assert.DoesNotContain(childJar, result.Arguments);
+    }
+
+    [Fact]
     public void LaunchArgumentBuilderRemovesEmptyVersionTypeOption()
     {
         using var temp = new TempDirectory();
