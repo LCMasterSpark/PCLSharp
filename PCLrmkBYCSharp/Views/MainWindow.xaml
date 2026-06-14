@@ -300,11 +300,32 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <TextBlock Text="{Binding Title}"
-                                   FontSize="20"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource AppTextBrush}"
-                                   TextWrapping="Wrap" />
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+
+                            <Border Padding="9,3"
+                                    Margin="0,1,10,0"
+                                    VerticalAlignment="Top"
+                                    Background="{StaticResource AppAccentSoftBrush}"
+                                    BorderBrush="{StaticResource AppAccentBrush}"
+                                    BorderThickness="1"
+                                    CornerRadius="4">
+                                <TextBlock Text="{Binding KindText}"
+                                           FontSize="12"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource AppAccentBrush}" />
+                            </Border>
+
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding Title}"
+                                       FontSize="20"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource AppTextBrush}"
+                                       TextWrapping="Wrap" />
+                        </Grid>
 
                         <ScrollViewer Grid.Row="1"
                                       Margin="0,12,0,0"
@@ -329,7 +350,16 @@
                                  Padding="4"
                                  Background="{StaticResource AppCardBrush}"
                                  BorderBrush="{StaticResource AppBorderBrush}"
-                                 BorderThickness="1" />
+                                 BorderThickness="1"
+                                 ScrollViewer.VerticalScrollBarVisibility="Auto">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding}"
+                                               TextWrapping="Wrap"
+                                               LineHeight="18" />
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
 
                         <TextBox x:Name="PromptInputBox"
                                  Grid.Row="3"

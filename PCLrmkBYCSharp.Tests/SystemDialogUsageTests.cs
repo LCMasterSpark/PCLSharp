@@ -5,7 +5,7 @@ namespace PCLrmkBYCSharp.Tests;
 public sealed class SystemDialogUsageTests
 {
     [Fact]
-    public void AppCodeDoesNotUseSystemMessageBox()
+    public void AppCodeDoesNotUseSystemMessageBoxOrInputBox()
     {
         var projectRoot = GetProjectRoot();
         var sourceFiles = Directory
@@ -17,7 +17,9 @@ public sealed class SystemDialogUsageTests
         var offenders = sourceFiles
             .Select(path => new { Path = path, Text = File.ReadAllText(path) })
             .Where(file => file.Text.Contains("MessageBox.Show", StringComparison.Ordinal)
-                || file.Text.Contains("System.Windows.MessageBox", StringComparison.Ordinal))
+                || file.Text.Contains("System.Windows.MessageBox", StringComparison.Ordinal)
+                || file.Text.Contains("Interaction.InputBox", StringComparison.Ordinal)
+                || file.Text.Contains("Microsoft.VisualBasic.Interaction", StringComparison.Ordinal))
             .Select(file => Path.GetRelativePath(projectRoot, file.Path))
             .ToArray();
 

@@ -49,6 +49,7 @@ public sealed class UserPromptServiceTests
         Assert.False(request.AcceptsInput);
         Assert.Equal(Visibility.Collapsed, request.InputVisibility);
         Assert.Equal(Visibility.Collapsed, request.CancelVisibility);
+        Assert.Equal("提示", request.KindText);
         Assert.Equal("知道了", request.PrimaryButtonText);
         Assert.True(request.Confirmed);
     }
@@ -67,6 +68,7 @@ public sealed class UserPromptServiceTests
         Assert.False(request.AcceptsInput);
         Assert.Equal(Visibility.Collapsed, request.InputVisibility);
         Assert.Equal(Visibility.Visible, request.CancelVisibility);
+        Assert.Equal("确认", request.KindText);
         Assert.Equal("确定", request.PrimaryButtonText);
         Assert.False(request.Confirmed);
     }
@@ -85,6 +87,7 @@ public sealed class UserPromptServiceTests
         Assert.True(request.AcceptsInput);
         Assert.Equal(Visibility.Visible, request.InputVisibility);
         Assert.Equal(Visibility.Visible, request.CancelVisibility);
+        Assert.Equal("输入", request.KindText);
         Assert.Equal("确定", request.PrimaryButtonText);
         Assert.Equal("默认", request.InputText);
     }
@@ -107,6 +110,7 @@ public sealed class UserPromptServiceTests
         Assert.Equal(Visibility.Collapsed, request.InputVisibility);
         Assert.Equal(Visibility.Visible, request.ChoiceVisibility);
         Assert.Equal(Visibility.Visible, request.CancelVisibility);
+        Assert.Equal("选择", request.KindText);
         Assert.Equal(1, request.SelectedChoiceIndex);
         Assert.Equal("Steve", request.Choices[request.SelectedChoiceIndex]);
     }

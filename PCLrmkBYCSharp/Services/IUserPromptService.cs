@@ -163,6 +163,15 @@ public sealed class UserPromptRequest
 
     public Visibility CancelVisibility => Kind == UserPromptKind.Message ? Visibility.Collapsed : Visibility.Visible;
 
+    public string KindText => Kind switch
+    {
+        UserPromptKind.Message => "提示",
+        UserPromptKind.Confirm => "确认",
+        UserPromptKind.Input => "输入",
+        UserPromptKind.Choice => "选择",
+        _ => "提示"
+    };
+
     public string PrimaryButtonText => Kind == UserPromptKind.Message ? "知道了" : "确定";
 
     public bool IsCompleted { get; private set; }
