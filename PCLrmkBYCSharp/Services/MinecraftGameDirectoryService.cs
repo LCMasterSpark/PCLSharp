@@ -47,6 +47,11 @@ public sealed class MinecraftGameDirectoryService(IAppSettingsService settings) 
             }
         }
 
+        if (TryReadOldPclVersionIsolation(instance.VersionPath, out var oldPclIsolation))
+        {
+            return oldPclIsolation;
+        }
+
         if (VersionFolderContainsUserData(instance.VersionPath))
         {
             return true;
@@ -68,6 +73,36 @@ public sealed class MinecraftGameDirectoryService(IAppSettingsService settings) 
             3 => !isRelease || modable,
             _ => true
         };
+    }
+
+    private static bool TryReadOldPclVersionIsolation(string versionPath, out bool isolated)
+    {
+        isolated = false;
+        var setupPath = Path.Combine(versionPath, "PCL", "Setup.ini");
+        if (!File.Exists(setupPath))
+        {
+            return false;
+        }
+
+        foreach (var line in File.ReadLines(setupPath))
+        {
+            var separator = line.IndexOf(':');
+            if (separator <= 0)
+            {
+                continue;
+            }
+
+            var key = line[..separator].Trim();
+            if (!string.Equals(key, AppSettingKeys.VersionArgumentIndieV2, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var value = line[(separator + 1)..].Trim();
+            return bool.TryParse(value, out isolated);
+        }
+
+        return false;
     }
 
     private static bool VersionFolderContainsUserData(string versionPath)

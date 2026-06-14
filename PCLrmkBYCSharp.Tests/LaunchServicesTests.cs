@@ -1981,6 +1981,34 @@ public sealed class LaunchServicesTests
     }
 
     [Fact]
+    public void MinecraftGameDirectoryServiceHonorsOldPclVersionIsolationMetadata()
+    {
+        using var temp = new TempDirectory();
+        var instance = WriteInstance(temp.Path, "1.20.1", """
+        {
+          "id": "1.20.1",
+          "type": "release",
+          "mainClass": "net.minecraft.client.main.Main",
+          "libraries": []
+        }
+        """);
+        var setupDirectory = Path.Combine(instance.VersionPath, "PCL");
+        Directory.CreateDirectory(setupDirectory);
+        File.WriteAllText(
+            Path.Combine(setupDirectory, "Setup.ini"),
+            "VersionArgumentIndieV2:True" + Environment.NewLine);
+        var settings = new AppSettingsService(new TestAppPathService(temp.Path));
+        settings.Set(AppSettingKeys.LaunchArgumentIndieV2, 0);
+        var service = new MinecraftGameDirectoryService(settings);
+
+        var directory = service.Resolve(instance);
+
+        Assert.True(directory.IsIsolated);
+        Assert.Equal(Path.GetFullPath(instance.VersionPath), directory.Path);
+        Assert.False(settings.HasSaved($"Instance.{instance.Name}.{AppSettingKeys.VersionArgumentIndieV2}"));
+    }
+
+    [Fact]
     public void LaunchVariableReplacerUsesResolvedGameDirectoryForVersionIndieTokens()
     {
         var instance = CreateInstance("1.20.1");
