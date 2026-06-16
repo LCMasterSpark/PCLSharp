@@ -20,7 +20,7 @@ public static class LaunchNativesPath
             Directory.CreateDirectory(directory);
         }
 
-        shortenPath ??= path => MeloongCore.PathUtils.ToShortPath(path);
+        shortenPath ??= path => PclSharpPathUtils.ToShortPath(path);
         isGbkEncoding ??= IsGbkSystemEncoding;
         var shortened = shortenPath(directory);
         if (!isGbkEncoding() && !IsAsciiOnly(shortened))

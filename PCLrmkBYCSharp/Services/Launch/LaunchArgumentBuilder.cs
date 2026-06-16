@@ -623,7 +623,7 @@ public sealed partial class LaunchArgumentBuilder(
 
     private static string ToPclLaunchPath(string path, bool keepFileName = false)
     {
-        return MeloongCore.PathUtils.ToShortPath(path, keepFileName);
+        return PclSharpPathUtils.ToShortPath(path, keepFileName);
     }
 
     private string ResolvePureDirectory()

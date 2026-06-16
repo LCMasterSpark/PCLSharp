@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Text;
 using System.IO;
-using MeloongCore;
 
 namespace PCLrmkBYCSharp.Services;
 
@@ -12,33 +11,30 @@ public sealed class AppLoggerService(IAppPathService paths) : IAppLoggerService
 
     public void Initialize()
     {
+        AppDomain.CurrentDomain.SetData("REGEX_DEFAULT_MATCH_TIMEOUT", TimeSpan.FromSeconds(5));
         paths.EnsureCreated();
         _logFilePath = Path.Combine(paths.LogsDirectory, $"app-{DateTime.Now:yyyyMMdd-HHmmss}.log");
-        MeloongCore.Main.Init(new BaseLogger { MinLevel = LogLevel.Trace });
-        WriteLine(LogLevel.Info, "日志服务已初始化", null);
+        WriteLine("日志服务已初始化", null);
     }
 
     public void Info(string message)
     {
-        Logger.Info(message, LogBehavior.None);
-        WriteLine(LogLevel.Info, message, null);
+        WriteLine(message, null);
     }
 
     public void Warn(string message)
     {
-        Logger.Warn(message, LogBehavior.None);
-        WriteLine(LogLevel.Warn, message, null);
+        WriteLine(message, null);
     }
 
     public void Error(Exception exception, string message)
     {
-        Logger.Error(exception, message, LogBehavior.None);
-        WriteLine(LogLevel.Error, message, exception);
+        WriteLine(message, exception);
     }
 
-    private void WriteLine(LogLevel level, string message, Exception? exception)
+    private void WriteLine(string message, Exception? exception)
     {
-        var line = $"{DateTime.Now:O} [{level}] {message}";
+        var line = $"{DateTime.Now:O} [{(exception is not null ? "Error" : "Info")}] {message}";
         if (exception is not null)
         {
             line += Environment.NewLine + exception;

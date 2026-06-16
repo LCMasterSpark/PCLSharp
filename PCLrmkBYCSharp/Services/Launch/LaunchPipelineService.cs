@@ -758,7 +758,7 @@ public sealed class LaunchPipelineService : ILaunchPipelineService
                 : path + Path.PathSeparator + javaFolder;
         }
 
-        startInfo.EnvironmentVariables["appdata"] = MeloongCore.PathUtils.ToShortPath(request.MinecraftRootPath);
+        startInfo.EnvironmentVariables["appdata"] = PclSharpPathUtils.ToShortPath(request.MinecraftRootPath);
         return startInfo;
     }
 

@@ -428,7 +428,7 @@ public sealed class LaunchServicesTests
         var result = builder.Build(CreateRequest(instance, temp.Path), CreateJava("C:\\Java17\\bin\\java.exe", 17), new LegacyLoginService().CreateSession("Alex"));
 
         Assert.True(Directory.Exists(nativesDirectory));
-        Assert.Contains(MeloongCore.PathUtils.ToShortPath(nativesDirectory), result.Arguments);
+        Assert.Contains(PclSharpPathUtils.ToShortPath(nativesDirectory), result.Arguments);
     }
 
     [Fact]
@@ -1865,7 +1865,7 @@ public sealed class LaunchServicesTests
         Assert.Equal(instance.VersionPath, launcher.LastStartInfo?.WorkingDirectory);
         Assert.False(launcher.LastStartInfo?.UseShellExecute);
         Assert.True(launcher.LastStartInfo?.RedirectStandardError);
-        Assert.Equal(MeloongCore.PathUtils.ToShortPath(temp.Path), launcher.LastStartInfo?.EnvironmentVariables["appdata"]);
+        Assert.Equal(PclSharpPathUtils.ToShortPath(temp.Path), launcher.LastStartInfo?.EnvironmentVariables["appdata"]);
     }
 
     [Fact]
